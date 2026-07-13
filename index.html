@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chronicle — she walks the world without you</title>
+<meta name="description" content="An idle RPG where the adventurer lives her own life between your check-ins. If you don't answer, she decides for herself.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🗡️</text></svg>">
+<link rel="stylesheet" href="./web/style.css">
+</head>
+<body>
+
+<div id="boot" class="boot">
+  <div class="boot-inner">
+    <h1>Chronicle</h1>
+    <p class="lede">
+      She walks the world on her own. You are not her — you are a voice she hears
+      between chapters. Look in every few hours, read what happened while you were
+      gone, make a judgment call or two, and let her go again.
+    </p>
+    <p class="lede dim">
+      If you do not answer, <strong>she decides for herself</strong> — and becomes
+      whoever those decisions make her.
+    </p>
+
+    <div class="boot-form">
+      <label>Her name
+        <input id="boot-name" type="text" value="Kestrel of Ilmun" maxlength="40">
+      </label>
+
+      <label>Seed <span class="hint">the world she gets</span>
+        <input id="boot-seed" type="number" value="7" min="0" step="1">
+      </label>
+
+      <label>Pace <span class="hint">how fast a day passes</span>
+        <select id="boot-speed">
+          <option value="brisk">Brisk — a day every minute</option>
+          <option value="normal" selected>Normal — a day every 15 minutes</option>
+          <option value="slow">Slow — a day every hour</option>
+        </select>
+      </label>
+
+      <fieldset class="boot-dials">
+        <legend>Standing orders <span class="hint">what you ask of her</span></legend>
+        <label>cautious ↔ reckless <input id="boot-reckless" type="range" min="0" max="100" value="68"><output>68</output></label>
+        <label>solitary ↔ sociable <input id="boot-sociable" type="range" min="0" max="100" value="74"><output>74</output></label>
+        <label>hoard ↔ give freely <input id="boot-generous" type="range" min="0" max="100" value="50"><output>50</output></label>
+      </fieldset>
+
+      <button id="boot-go" class="primary">Send her out</button>
+    </div>
+  </div>
+</div>
+
+<main id="game" hidden>
+
+  <header class="topbar">
+    <div class="who">
+      <h1 id="her-name">—</h1>
+      <div class="sub"><span id="her-cycle"></span> · <span id="her-day"></span></div>
+    </div>
+    <div class="clock">
+      <div id="next-day" class="next-day">—</div>
+      <div class="sub">until the next day</div>
+    </div>
+  </header>
+
+  <section id="away" class="card away" hidden>
+    <h2>While you were away</h2>
+    <div id="away-log" class="log"></div>
+    <button id="away-dismiss" class="ghost">Read</button>
+  </section>
+
+  <section id="death" class="card death" hidden>
+    <h2 id="death-line">She is dead.</h2>
+    <p class="dim">
+      The coin and the wounds are lost. The dead, the debts, the threads, and
+      whoever she became are not — they go with her into the next life.
+    </p>
+    <button id="reincarnate" class="primary">Turn the cycle</button>
+  </section>
+
+  <section id="judgments"></section>
+
+  <section class="card">
+    <h2>Her state</h2>
+    <div id="vitals" class="vitals"></div>
+    <div id="people" class="people"></div>
+  </section>
+
+  <section class="card">
+    <h2>Standing orders</h2>
+    <p class="dim small">
+      The slider is a <em>request</em>. The mark beneath it is who she has actually
+      become. She drifts. Given long enough, she stops listening.
+    </p>
+    <div id="dials" class="dials"></div>
+    <div id="drift-note" class="drift-note" hidden></div>
+  </section>
+
+  <section class="card">
+    <h2>The chronicle</h2>
+    <div id="log" class="log"></div>
+  </section>
+
+  <footer class="footer">
+    <span id="save-note" class="dim small"></span>
+    <button id="new-life" class="ghost small">Abandon her and start over</button>
+  </footer>
+
+</main>
+
+<script type="module" src="./web/app.js"></script>
+</body>
+</html>

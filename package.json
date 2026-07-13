@@ -1,0 +1,25 @@
+{
+  "name": "chronicle-engine",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Simulation core for an idle RPG where the adventurer lives her own life between check-ins.",
+  "type": "module",
+  "main": "src/engine.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "sim": "node bin/run.js",
+    "balance": "node bin/balance.js",
+    "test": "node --test test/*.test.js",
+    "serve": "node bin/serve.js"
+  },
+  "keywords": [
+    "idle",
+    "incremental",
+    "rpg",
+    "simulation",
+    "emergent-narrative"
+  ],
+  "license": "UNLICENSED"
+}
