@@ -573,7 +573,7 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 .stat .gap.over { color: var(--close); }
 
 /* the shared vocabulary of a small card: a name, a sentence, and some cold small print */
-.item, .mark, .calling-now {
+.item, .scar, .calling-now {
   display: grid;
   gap: 0.3rem;
   padding: 0.7rem 0.8rem;
@@ -583,24 +583,24 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 }
 .kit, .marks, .calling { display: grid; gap: 0.6rem; margin-top: 1rem; }
 
-.item b, .mark b, .calling-now b { font-weight: 400; font-size: 1rem; }
+.item b, .scar b, .calling-now b { font-weight: 400; font-size: 1rem; }
 .item .from {
   font-size: 0.82rem;
   font-style: italic;
   color: var(--ink-low);
 }
-.mark .says, .calling-now .says { font-size: 0.88rem; line-height: 1.5; color: var(--ink-mid); }
+.scar .says, .calling-now .says { font-size: 0.88rem; line-height: 1.5; color: var(--ink-mid); }
 
-.item .tagline, .mark .tagline, .calling-now .tagline {
+.item .tagline, .scar .tagline, .calling-now .tagline {
   font-family: var(--mono);
   font-size: 0.6rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-low);
 }
-.item .tagline.bad, .mark .tagline.bad, .calling-now .tagline.bad { color: var(--blood); }
+.item .tagline.bad, .scar .tagline.bad, .calling-now .tagline.bad { color: var(--blood); }
 .item .tagline.warm { color: var(--close); }
-.item .moment, .mark .moment, .calling .moment {
+.item .moment, .scar .moment, .calling .moment {
   font-size: 0.8rem;
   color: var(--ink-low);
   font-style: italic;
@@ -692,3 +692,27 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 .ledger { padding-top: 1.5rem; }
 
 @media (prefers-reduced-motion: reduce) { .tab { transition: none; } }
+
+/* ══════════════════════════════════════════════════════════════ SINCE YOU LAST LOOKED
+   The reason anybody opens the Her tab. Sentences, not deltas: "Hand +1 · Heart −4" is a
+   diff, and "She buried Kessa Vane" is what happened. */
+.changed { display: grid; gap: 0.55rem; margin-top: 1rem; }
+.changed-when {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-low);
+  margin: 0 0 0.35rem;
+}
+.change {
+  margin: 0;
+  padding-left: 0.8rem;
+  border-left: 2px solid var(--rule);
+  font-size: 0.94rem;
+  line-height: 1.5;
+  color: var(--ink-mid);
+}
+/* what it cost her, and what she gained. the only two colours this game has. */
+.change.bad  { border-left-color: var(--blood); color: var(--ink); }
+.change.warm { border-left-color: var(--close); color: var(--ink); }

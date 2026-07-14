@@ -31,11 +31,35 @@ let sim = null;
 let elapsed = 1;
 let timer = null;
 
-// Her stats as they were WHEN YOU LAST LOOKED. This is the whole point of checking in
-// on someone: you come back and find out what the time did to them. It is recomputed by
-// replaying the journal to the day you last read, which costs nothing and keeps the
-// save a pure journal of inputs — no snapshot to drift out of sync.
+// WHO SHE WAS WHEN YOU LAST LOOKED.
+//
+// This is the whole point of checking in on someone: you come back and find out what the
+// time did to them. It is recomputed by replaying the journal to the day you last read,
+// which costs nothing and keeps the save a pure journal of inputs — no stored snapshot to
+// drift out of sync with the truth.
+//
+// It used to hold only her stats, which meant the interface could tell you her Hand had
+// gone up by one and could NOT tell you she had buried somebody, taken a name she cannot
+// put down, or come back with a ruined hand. Those are the things a person actually wants
+// to know, and they were the things it could not say.
 let before = null;
+
+const snapshot = (st) => ({
+  day: st.day,
+  alive: st.alive,
+  stat: { ...st.stat },
+  marks: st.marks.map((m) => m.key),
+  calling: st.calling,
+  kit: st.kit.map((i) => i.name),
+  traits: [...st.traits],
+  buried: st.ghosts.length,
+  with: Object.values(st.bonds).filter((b) => b.withHer && b.alive).map((b) => b.who),
+});
+
+// "hand, foot, eye" is a CSV. "her hand, her foot and her eye" is English.
+const list = (xs) =>
+  xs.length <= 1 ? (xs[0] ?? '')
+    : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -71,7 +95,7 @@ function begin() {
 
 function enter() {
   const wasAt = journal.seenElapsed ?? 1;
-  before = wasAt > 1 ? { ...replay(journal, wasAt).state.stat } : null;
+  before = wasAt > 1 ? snapshot(replay(journal, wasAt).state) : null;
 
   const r = replay(journal, targetElapsed(journal, Date.now()));
   sim = r.eng;
@@ -146,12 +170,13 @@ function render() {
   renderAsking(s);
   renderDeath(s);
   renderLog(s);
+  renderChanged(s);
   renderStats(s);
-  renderReach(s);
+  renderMarks(s);
   renderCalling(s);
   renderKit(s);
-  renderMarks(s);
   renderTraits(s);
+  renderReach(s);
   renderPeople(s);
   renderGhosts(s);
   renderMap(s);
@@ -269,7 +294,7 @@ function renderStats(s) {
       if (S.domain !== dom) continue;
       const v = s.stat[k];                 // what she KNOWS. never falls.
       const can = sim.eff(k);              // what she can DO with it today.
-      const grew = before ? v - before[k] : 0;
+      const grew = before ? v - before.stat[k] : 0;
       const cond = S.kind === 'condition';
 
       const row = el('div', `stat ${cond ? 'condition' : ''} ${k === 'faith' ? 'faith' : ''}`);
@@ -296,7 +321,7 @@ function renderStats(s) {
       bar.append(fill);
       if (grew !== 0 && before) {
         const was = el('div', 'was');
-        was.style.left = `${(before[k] / STAT_MAX) * 100}%`;
+        was.style.left = `${(before.stat[k] / STAT_MAX) * 100}%`;
         bar.append(was);
       }
       row.append(bar);
@@ -315,6 +340,99 @@ function renderStats(s) {
   }
 
   $('kill').textContent = `It takes ${sim.killedAt()} wounds to kill her. She is carrying ${s.wounds}.`;
+}
+
+// ══════════════════════════════════════════════════════════ SINCE YOU LAST LOOKED
+//
+// The reason anybody opens this tab. Nobody comes to a page like this to admire a stat
+// block — they come to find out what the time did to her while they were not there, which
+// is the whole of what it means to check in on somebody.
+//
+// Written as sentences, not deltas. "Hand +1 · Heart −4" is a diff. "She buried Kessa Vane"
+// is what happened.
+function renderChanged(s) {
+  const host = $('changed');
+  host.replaceChildren();
+
+  if (!before) {
+    host.append(el('p', 'quiet small', 'You have only just been assigned to her. Everything from here is new.'));
+    return;
+  }
+
+  const days = s.day - before.day;
+  const said = [];
+  const add = (text, cls) => said.push([text, cls]);
+
+  // ── the ones that cost her something. these go first, always.
+  if (!s.alive && before.alive) add('She died.', 'bad');
+
+  const buried = s.ghosts.length - before.buried;
+  if (buried > 0) {
+    const who = s.ghosts.slice(-buried).map((g) => g.name).join(' and ');
+    add(`She buried ${who}.`, 'bad');
+  }
+
+  const gone = before.with.filter((w) => !s.bonds[w]?.withHer || !s.bonds[w]?.alive);
+  for (const w of gone) {
+    if (s.bonds[w] && !s.bonds[w].alive) continue;   // already said, above
+    add(`${w} is not walking with her any more.`, 'bad');
+  }
+
+  for (const k of s.marks.map((m) => m.key)) {
+    if (before.marks.includes(k)) continue;
+    add(`${MARKS[k].name} — ${MARKS[k].line}`, 'bad');
+  }
+
+  // ── what she became
+  if (s.calling && s.calling !== before.calling) {
+    add(`She answers to ${CALLINGS[s.calling].name} now. She cannot put it back down.`, 'warm');
+  }
+  for (const t of s.traits) {
+    if (!before.traits.includes(t)) add(`${TRAITS[t].name}. ${TRAITS[t].line}`, 'warm');
+  }
+
+  // ── the skills. said as a sentence, and only the ones that actually moved.
+  const grew = Object.keys(STATS)
+    .filter((k) => STATS[k].kind === 'skill' && s.stat[k] > before.stat[k])
+    .map((k) => STATS[k].name.toLowerCase());
+  if (grew.length >= 6) {
+    // She has been away a long time and everything moved. Listing all seven is a CSV, not
+    // a sentence, and it says less than the short version does.
+    add('She is better at nearly everything than she was. It has been a long time.');
+  } else if (grew.length) {
+    add(`She is better with her ${list(grew)} than she was.`);
+  }
+
+  // ── condition moves BOTH ways, and the down is the one that matters
+  for (const k of ['heart', 'faith']) {
+    const d = s.stat[k] - before.stat[k];
+    if (d <= -2) {
+      add(k === 'faith'
+        ? 'She believes in you less than she did.'
+        : 'There is less of her left than there was.', 'bad');
+    } else if (d >= 2) {
+      add(k === 'faith' ? 'She believes in you more than she did.' : 'Something has opened up in her again.', 'warm');
+    }
+  }
+
+  // ── and the things
+  const got = s.kit.map((i) => i.name).filter((n) => !before.kit.includes(n));
+  const lost = before.kit.filter((n) => !s.kit.some((i) => i.name === n));
+  if (got.length) add(`She is carrying ${got.join(', and ')}.`);
+  if (lost.length) add(`She no longer has ${lost.join(', and ')}.`, 'bad');
+
+  host.append(el('p', 'changed-when',
+    days <= 0 ? 'You have not been away.' : `${days} ${days === 1 ? 'day' : 'days'} have passed since you last looked in on her.`));
+
+  if (!said.length) {
+    host.append(el('p', 'quiet small',
+      days <= 0
+        ? 'Nothing has happened to her that you have not seen.'
+        : 'Nothing in her has changed. She walked, and she is still walking.'));
+    return;
+  }
+
+  for (const [text, cls] of said) host.append(el('p', `change ${cls ?? ''}`, text));
 }
 
 // ══════════════════════════════════════════════════════════════════ CAN SHE REACH YOU
@@ -492,7 +610,11 @@ function renderMarks(s) {
 
   for (const m of s.marks) {
     const M = MARKS[m.key];
-    const row = el('div', 'mark');
+    // `.scar`, NOT `.mark` — `.mark` was already the 1px absolutely-positioned tick on the
+    // dial slider that shows who she has actually become. Reusing the name gave every scar
+    // card `position:absolute; width:1px; height:9px`, and her whole history spilled in a
+    // one-word-wide column across the stat sheet. A class name is an API.
+    const row = el('div', 'scar');
     row.append(el('b', null, M.name));
     row.append(el('span', 'says', M.line));
 

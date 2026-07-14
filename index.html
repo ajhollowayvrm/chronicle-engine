@@ -129,11 +129,30 @@
 
   <div id="tab-her" class="panel" role="tabpanel" aria-labelledby="tab-her-btn" hidden>
 
+    <!-- WHY YOU OPENED THIS TAB.
+         Nobody comes to a page like this to admire a stat block. They come to find out
+         what the time did to her while they were not looking — which is the entire
+         premise of checking in on somebody. So that goes first, and everything else is
+         the detail behind it. -->
+    <section class="block">
+      <p class="eyebrow">Since you last looked</p>
+      <div id="changed" class="changed"></div>
+    </section>
+
     <section class="block">
       <p class="eyebrow">What she is</p>
       <p class="quiet small">She gets better at what she actually does, and at nothing else.</p>
       <div id="stats" class="stats"></div>
       <p id="kill" class="quiet small"></p>
+    </section>
+
+    <!-- The only thing in the game that lowers a number, and it still does not touch
+         what she knows. Directly under the stats, because it is the explanation for
+         every gap in them. -->
+    <section class="block">
+      <p class="eyebrow">What it left on her</p>
+      <p class="quiet small">It does not take what she learned. It takes what she can do with it.</p>
+      <div id="marks" class="marks"></div>
     </section>
 
     <!-- The name the world has started using for her. She is not shown a menu — the
@@ -150,14 +169,6 @@
       <p class="eyebrow">What she carries</p>
       <p class="quiet small">She can pick up anything. What is over her head uses her, and she knows it.</p>
       <div id="kit" class="kit"></div>
-    </section>
-
-    <!-- The only thing in the game that lowers a number, and it still does not touch
-         what she knows. -->
-    <section class="block">
-      <p class="eyebrow">What it left on her</p>
-      <p class="quiet small">It does not take what she learned. It takes what she can do with it.</p>
-      <div id="marks" class="marks"></div>
     </section>
 
     <section class="block">

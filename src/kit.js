@@ -57,8 +57,14 @@ export function mint(roll, { shape, econ = {}, tech = {}, magic = {}, factions =
     const seal = factions.length ? roll.pick(factions).name : (econ.who_is_rich ?? 'somebody who is not here');
     name = `${an(adj)} ${adj} ${word} under the seal of ${seal}`;
   } else {
+    // A LENS IS MADE OF GLASS AND IS ALSO CALLED A GLASS. The material vocabulary and the
+    // noun vocabulary overlap, and unguarded that produces "a true true glass glass" and
+    // "a ground works glass glass" — which is the kind of thing that makes a player stop
+    // believing anybody is looking. Collapse a word that has already been said.
+    const words = `${adj} ${stuff} ${word}`.split(/\s+/);
+    const tidy = words.filter((w, i) => i === 0 || w.toLowerCase() !== words[i - 1].toLowerCase()).join(' ');
     // boots are a pair of things and do not take an article
-    name = S.plural ? `${adj} ${stuff} ${word}` : `${an(adj)} ${adj} ${stuff} ${word}`;
+    name = S.plural ? tidy : `${an(tidy)} ${tidy}`;
   }
 
   const [lo, hi] = spec.worth;
