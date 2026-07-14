@@ -23,9 +23,14 @@ jobs:
         with:
           node-version: 20
       # zero dependencies, so there is nothing to install
-      - name: validate the lore packs
-        run: node bin/lore.js       # every slot filled, no two worlds sharing a line
-      - name: invariants
+      #
+      # `node bin/lore.js` used to run here and validated the hand-written lore packs.
+      # The seed-engine rebuild deleted both the packs and that script, and this step
+      # kept running it — so the first push after the rebuild failed the deploy on a
+      # MODULE_NOT_FOUND for a file that no longer exists. The worlds are generated now,
+      # and the generator validates every one of them it can mint (gen/validate.js),
+      # which is what `npm test` covers.
+      - name: every world the generator can mint is valid, and the sim holds
         run: node --test test/*.test.js
 
   deploy:
