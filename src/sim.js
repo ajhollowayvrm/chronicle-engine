@@ -24,6 +24,7 @@ import { CHRONICLE } from '../gen/tables/chronicle.js';
 import { applyPatch } from '../gen/patch.js';
 import { VOICE, speaksTo } from '../gen/tables/voice.js';
 import { TRAITS } from '../gen/tables/traits.js';
+import { STATS, STAT_MAX, toNext, SHE_NOTICED } from '../gen/tables/stats.js';
 
 function mulberry32(a) {
   return function () {
@@ -96,6 +97,15 @@ export class Sim {
       log: [],
       eras: 0,             // eras the world has written since she started walking
 
+      // WHAT SHE IS, MEASURED. Rolled at birth — so the woman the seed hands you is a
+      // particular person before she has done anything — and then moved by USE, and only
+      // by use. She gets better at what she actually does and at nothing else.
+      stat: {
+        body:   this.int(3, 7), hand:   this.int(3, 7), foot:   this.int(3, 7),
+        eye:    this.int(3, 7), tongue: this.int(3, 7), nerve:  this.int(3, 7),
+      },
+      practice: { body: 0, hand: 0, foot: 0, eye: 0, tongue: 0, nerve: 0 },
+
       // THE LEDGER. Everything she has actually done. Traits are earned off this and
       // nothing else — she cannot buy what she has not lived.
       lived: {
@@ -162,6 +172,39 @@ export class Sim {
     }
     return out;
   }
+  // ─────────────────────────────────────────────────────────────────── the stats
+  // How good she is at a thing, as a number the sim can multiply by.
+  //
+  // CENTRED ON 6, NOT 8. She is BORN at 3–7, so centring on 8 meant every new woman was
+  // below baseline at everything she did — penalised for being new, with her starting
+  // rolls as dead weight until she ground past a threshold she could not see. Worse, it
+  // made whole stats inert: `eye` gated its effect on st() > 0, so a woman born with a
+  // good eye got nothing for it, and the numbers proved it (she did not live any longer
+  // than a blind one). Centre it where she actually starts, and being born quick means
+  // being quick.
+  st(k) { return (this.state.stat[k] - 6) / 12; }
+
+  // USE IS GROWTH. She practises a thing by doing it, and the next point costs more
+  // than the last — so early growth is visible and late growth is earned, which is the
+  // shape of every skill anybody has ever had.
+  use(k, n = 1) {
+    const s = this.state;
+    if (s.stat[k] >= STAT_MAX) return;
+    s.practice[k] += n;
+    const need = toNext(s.stat[k]);
+    if (s.practice[k] < need) return;
+
+    s.practice[k] -= need;
+    s.stat[k]++;
+    this.say(`${STATS[k].name.toLowerCase()} — ${s.stat[k]}. ${STATS[k].does}.`, 'stat', { stat: k, to: s.stat[k] });
+    // she is the one who notices. not the interface.
+    if (this.chance(0.5)) this.speak(this.fresh(SHE_NOTICED[k]), 'became');
+  }
+
+  // How many wounds it takes to kill her. NOT a constant — a woman who has been broken
+  // and set can take more than one who has not, and that is the entire point of Body.
+  killedAt() { return 5 + Math.floor(this.state.stat.body / 4); }
+
   // what her traits give her. earned, and every one of them cost something.
   trait(key) {
     let v = 0;
@@ -186,7 +229,7 @@ export class Sim {
 
   standing(name) { return this.state.standing[name] ?? 0; }
   nudge(name, d) {
-    const speed = 1 + this.trait('standing_speed');
+    const speed = 1 + this.trait('standing_speed') + this.st('tongue') * 0.5;
     this.state.standing[name] = clamp(this.standing(name) + d * speed, -20, 20);
   }
 
@@ -469,6 +512,7 @@ export class Sim {
 
       case 'work': {
         s.lived.worked++;
+        this.use('body');
         const pay = Math.round(this.int(18, 40) * wealth * (1 + this.trait('earn')));
         s.coin += pay;
         s.wounds = Math.max(0, s.wounds - 1);
@@ -483,7 +527,9 @@ export class Sim {
 
       case 'law': {
         s.lived.paid++;
-        const toll = Math.round(this.int(10, 40) * (0.5 + tier / 6) * (1 + (econ.pressure ?? 0) * 0.4));
+        this.use('tongue');
+        // a tongue is worth money. she argues the figure down, and they let her.
+        const toll = Math.round(this.int(10, 40) * (0.5 + tier / 6) * (1 + (econ.pressure ?? 0) * 0.4) * (1 - this.st('tongue') * 0.45));
         const paid = Math.min(s.coin, toll);
         s.coin -= paid;
         s.attention += 1;
@@ -493,29 +539,51 @@ export class Sim {
 
       case 'defy':
         s.lived.defied++;
-        s.attention += 2 + this.trait('attention_rate');
-        if (this.chance(0.45)) s.wounds += 1;
+        this.use('tongue', 2);
+        this.use('nerve', 2);
+        // NERVE decides how loud she is to the thing that is counting. a woman who does
+        // not shake is a woman it takes longer to find.
+        s.attention += Math.max(1, Math.round((2 + this.trait('attention_rate')) * (1 - this.st('nerve') * 0.55)));
+        // and a tongue talks her out of the beating
+        if (this.chance(Math.max(0.05, 0.45 - this.st('tongue') * 0.5))) s.wounds += 1;
         this.drift('reckless', +0.03);
         for (const f of ctx.factions) this.nudge(f.name, f.kind === 'crime' ? 1.6 : -1.2);
         return this.say(this.line('defy'), 'event', { id: act });
 
       case 'find': {
-        const take = Math.round(this.int(20, 90) * wealth);
+        this.use('eye', 3);
+        const take = Math.round(this.int(20, 90) * wealth * (1 + this.st('eye') * 0.6));
         s.coin += take;
         return this.say(this.line('find', { coin: take }), 'event', { id: act });
       }
 
       case 'relic':
-        s.attention += 2;
+        this.use('eye');
+        s.attention += Math.max(1, Math.round(2 * (1 - this.st('nerve') * 0.5)));
         return this.say(this.line('relic'), 'event', { id: act });
 
       case 'danger': {
+        // EYE: she saw it before it happened. this is the stat that stops a fight
+        // being a fight, and it is why a woman with an eye lives longer than one with
+        // a hand.
+        if (this.chance(clamp(0.10 + this.st('eye') * 0.40, 0, 0.55))) {
+          this.use('eye', 2);
+          return this.say(this.pick([
+            `she saw them at ${this.here().name} before they saw her, and took the long way round, and said nothing about it to anyone.`,
+            `there was going to be trouble at ${this.here().name}. she was somewhere else by the time it arrived.`,
+          ]), 'event', { id: 'avoided' });
+        }
+
         s.lived.fights++;
-        // her traits are here, and only here, and she paid for every one of them
-        const swing = this.rng() * 2 - 1 + 0.4 * this.off('reckless') + this.trait('swing');
+        this.use('hand', 3);
+        this.use('nerve', 2);
+        // her traits and her hand are here, and only here, and she paid for both
+        const swing = this.rng() * 2 - 1 + 0.4 * this.off('reckless') + this.trait('swing')
+          + this.st('hand') * 0.9 + this.st('nerve') * 0.45;
         if (swing < -0.45) {
           s.wounds += 2;
           s.lived.hurt_badly++;
+          this.use('body', 3);   // she was hurt, and got up. that is how a body is made.
           s.coin = Math.max(0, s.coin - this.int(10, 50));
           this.drift('reckless', -0.05);
         } else {
@@ -532,13 +600,16 @@ export class Sim {
         return this.say(this.line('unrest'), 'event', { id: act });
 
       case 'sick':
-        s.wounds += 1;
+        this.use('body', 2);
+        // a body that has been ill enough times stops being ill
+        if (!this.chance(Math.max(0, this.st('body')) * 0.5)) s.wounds += 1;
         return this.say(this.line('sick'), 'event', { id: act });
 
       case 'travel':
         return this.travel();
 
       case 'power': {
+        this.use('nerve', 3);
         const gods = this.world.children.filter((c) => c.kind === 'figure' && c.divine);
         const g = gods.length ? this.pick(gods) : null;
         s.attention = Math.max(0, s.attention - 4);
@@ -557,6 +628,7 @@ export class Sim {
 
       case 'figure_meet': {
         const f = this.pick(ctx.figures);
+        this.use('tongue');
         s.met[f.name] = (s.met[f.name] ?? 0) + 1;      // this is how a companion begins
         this.drift('sociable', +0.02);
         return this.say(this.line('figure_meet', { figure: f.name, want: f.wants ?? 'something she cannot get out of them', known: f.known_for ?? 'nothing she can confirm' }), 'event', { id: act });
@@ -619,8 +691,10 @@ export class Sim {
     this.state.at = to.i;
     if (!this.state.seen.includes(to.i)) this.state.seen.push(to.i);
     this.state.lived.travelled++;
-    this.state.coin = Math.max(0, this.state.coin - Math.round(this.int(5, 18) * (1 + this.trait('travel_cost'))));
-    if (this.chance(Math.max(0.02, 0.15 * (1 + this.trait('travel_wound'))))) this.state.wounds += 1;
+    this.use('foot', 3);
+    const foot = this.st('foot');
+    this.state.coin = Math.max(0, this.state.coin - Math.round(this.int(5, 18) * (1 + this.trait('travel_cost') - foot * 0.4)));
+    if (this.chance(Math.max(0.02, (0.15 - foot * 0.09) * (1 + this.trait('travel_wound'))))) this.state.wounds += 1;
 
     // the arrival is rendered from where she now IS, so the vocabulary (commodity,
     // who pays, the law) is already the new country's before the sentence is written
@@ -923,11 +997,11 @@ export class Sim {
     if (learned) this.say(learned.text, learned.kind);
 
     // upkeep
-    if (s.wounds > 0 && this.chance(0.12 + this.trait('heal'))) s.wounds--;
+    if (s.wounds > 0 && this.chance(0.12 + this.trait('heal') + this.st('body') * 0.10)) s.wounds--;
     this.applyTraitDrift();
     this.applyIntentPull();
 
-    if (s.wounds >= 6) {
+    if (s.wounds >= this.killedAt()) {
       s.alive = false;
       this.say(this.line('death'), 'death');
     }

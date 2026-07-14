@@ -15,6 +15,7 @@ import {
   SAVE_KEY, SPEEDS, DEFAULT_SPEED,
 } from '../src/game.js';
 import { TRAITS } from '../gen/tables/traits.js';
+import { STATS, STAT_MAX, rankOf } from '../gen/tables/stats.js';
 
 const $ = (id) => document.getElementById(id);
 const store = window.localStorage;
@@ -23,6 +24,12 @@ let journal = null;
 let sim = null;
 let elapsed = 1;
 let timer = null;
+
+// Her stats as they were WHEN YOU LAST LOOKED. This is the whole point of checking in
+// on someone: you come back and find out what the time did to them. It is recomputed by
+// replaying the journal to the day you last read, which costs nothing and keeps the
+// save a pure journal of inputs — no snapshot to drift out of sync.
+let before = null;
 
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
@@ -57,6 +64,9 @@ function begin() {
 }
 
 function enter() {
+  const wasAt = journal.seenElapsed ?? 1;
+  before = wasAt > 1 ? { ...replay(journal, wasAt).state.stat } : null;
+
   const r = replay(journal, targetElapsed(journal, Date.now()));
   sim = r.eng;
   elapsed = r.elapsed;
@@ -124,6 +134,7 @@ function render() {
   renderAsking(s);
   renderDeath(s);
   renderLog(s);
+  renderStats(s);
   renderTraits(s);
   renderPeople(s);
   renderGhosts(s);
@@ -216,6 +227,47 @@ function renderLog(s) {
     row.append(el('p', null, l.text));
     host.append(row);
   }
+}
+
+// ══════════════════════════════════════════════════════════════════ WHAT SHE IS
+// Six numbers, and the sentence that says what the number means. The digit is for you
+// — an idle game needs the digit going up. The sentence is for her, because "Hand 14"
+// tells you nothing about a woman and "there are not many people who would take her on
+// purpose" does.
+function renderStats(s) {
+  const host = $('stats');
+  host.replaceChildren();
+
+  for (const [k, S] of Object.entries(STATS)) {
+    const v = s.stat[k];
+    const grew = before ? v - before[k] : 0;
+
+    const row = el('div', 'stat');
+
+    const head = el('div', 'stat-head');
+    head.append(el('b', null, S.name));
+    const n = el('span', 'n', String(v));
+    if (grew > 0) n.append(el('i', 'up', `+${grew}`));   // what the time did to her
+    head.append(n);
+    row.append(head);
+
+    const bar = el('div', 'bar');
+    const fill = el('div', 'fill');
+    fill.style.width = `${(v / STAT_MAX) * 100}%`;
+    bar.append(fill);
+    if (grew > 0) {
+      const was = el('div', 'was');
+      was.style.left = `${(before[k] / STAT_MAX) * 100}%`;
+      bar.append(was);
+    }
+    row.append(bar);
+
+    row.append(el('span', 'rank', rankOf(k, v)));
+    host.append(row);
+  }
+
+  const kill = sim.killedAt();
+  $('kill').textContent = `It takes ${kill} wounds to kill her. She is carrying ${s.wounds}.`;
 }
 
 // ─────────────────────────────────────────────── what she has become, and its cost
