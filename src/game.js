@@ -44,10 +44,14 @@ export const EPITAPH_KEY = 'chronicle.epitaphs.v1';
 // must not blow up into a million-tick replay. Cap the catch-up.
 const MAX_ELAPSED = 20000;
 
-// She was already out there before you thought to look. A new life starts with a
-// few days behind it, so the first thing you ever see is a chronicle and possibly
-// a judgment already waiting — not an empty page and a fifteen-minute wait.
-export const HEADSTART_DAYS = 5;
+// SHE STARTS ON DAY ONE, AND YOU ARE THERE FOR IT.
+//
+// This used to be 5: a new life began with a week already behind it, so the first thing you
+// ever read was a chronicle of days you had missed. The intent was to avoid an empty page —
+// but the price was that you never once saw her start. You were late to her from the first
+// second, and for a game whose entire subject is whether you turn up, that was the wrong
+// note to open on.
+export const HEADSTART_DAYS = 0;
 
 export function newJournal({
   seed,                    // the world AND the life. worldFromSeed(seed) rebuilds the
@@ -119,6 +123,11 @@ export function replay(journal, toElapsed) {
         eng.answer(entry.id, entry.key);
       } else if (entry.type === 'dials') {
         Object.assign(eng.state.intent, entry.dials);
+      } else if (entry.type === 'bless') {
+        // A BLESSING IS AN INPUT LIKE ANY OTHER. It is the only thing you do TO her rather
+        // than ask OF her, and it still goes in the journal and replays from day one — so
+        // the woman you come back to is the woman you made, exactly, every time.
+        eng.bless(entry.kind, entry.at ?? null);
       } else if (entry.type === 'suggest') {
         // Where the player would LIKE her to go — an index into sim.sites. It is not
         // an order: `heeds()` weighs it, and that decays as she drifts away from them.

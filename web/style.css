@@ -716,3 +716,67 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 /* what it cost her, and what she gained. the only two colours this game has. */
 .change.bad  { border-left-color: var(--blood); color: var(--ink); }
 .change.warm { border-left-color: var(--close); color: var(--ink); }
+
+/* ═══════════════════════════════════════════════════════════ WHAT YOU CAN DO FOR HER
+   The only thing you do TO her. The cost is printed on every one of them, always, because
+   the cost IS the mechanic: a blessed woman glows, and something is looking for exactly
+   that. And when she has stopped believing in you, the reason is spelled out rather than
+   greyed out — that message is the bill for months of not turning up. */
+.bless { display: grid; gap: 0.9rem; margin-top: 1rem; }
+.gift {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--close);
+  border-radius: 2px;
+}
+.gift.shut { border-left-color: var(--rule); opacity: 0.62; }
+.gift-do { justify-self: start; }
+.gift-do:disabled { cursor: not-allowed; opacity: 0.5; }
+.gift-what { font-size: 0.88rem; line-height: 1.5; color: var(--ink-mid); }
+.gift-cost, .gift-shut {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: var(--ink-low);
+}
+.gift-shut { color: var(--blood); }
+
+/* ═══════════════════════════════════════════════════════════════ WHAT SHE IS HUNTING */
+.hunt { display: grid; gap: 0.7rem; margin-top: 1rem; }
+.quarry {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.quarry b { font-weight: 400; font-size: 1rem; }
+.quarry .says { font-size: 0.88rem; line-height: 1.5; color: var(--ink-mid); }
+.quarry .moment { font-size: 0.8rem; font-style: italic; color: var(--ink-low); line-height: 1.45; }
+.quarry .tagline {
+  font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-low);
+}
+.quarry .tagline.bad { color: var(--blood); }
+.quarry.taken { border-left: 2px solid var(--close); }
+.quarry.here  { border-left: 2px solid var(--blood); }
+/* THE GREAT ONE. It gets the only border in the game that is all the way blood. */
+.quarry.great { border: 1px solid var(--blood); }
+.quarry.dead b { color: var(--close); }
+
+/* the chronicle, when she hunts */
+.entry.hunt p { color: var(--ink); }
+.entry.bounty p { color: var(--ink-mid); }
+.entry.bless p { color: var(--close); }
+
+/* A blessing sits in the same list as her scars — because that is what it is: a thing that
+   happened to her, that she did not choose, that she cannot put down. The difference is
+   only that the world did not leave it. You did. */
+.scar.given { border-left: 2px solid var(--close); }
+.scar.given b { color: var(--close); }

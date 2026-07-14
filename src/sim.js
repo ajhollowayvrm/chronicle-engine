@@ -34,6 +34,13 @@ import {
   mint, bare, eff, usable, underAsk, unsworn, wielded,
   kitBonus, callingBonus, straining, best, worst,
 } from './kit.js';
+import { bestiary } from './beasts.js';
+import { GREAT, POSTED, TOOK, REFUSED } from '../gen/tables/beasts.js';
+import { BLESSINGS, FIRST, UNFELT } from '../gen/tables/blessings.js';
+
+// YOU CANNOT BE A CONSTANT MIRACLE. A long silence between blessings, or she stops being a
+// woman walking a hard country and becomes a character you are buffing.
+const BLESS_GAP = 25;
 
 function mulberry32(a) {
   return function () {
@@ -86,6 +93,14 @@ export class Sim {
       .filter(({ node: n, path }) => n.kind === 'place' && STANDABLE.has(n.scale) && !path.some((p) => p.kind === 'era'))
       .map(({ node: n, path }, i) => ({ i, node: n, path }));
 
+    // WHAT IS OUT THERE. Derived from the tree, never rolled against `this.rng` — a beast is
+    // a fact this world already contains, stood up and given a body. Which beast is where is
+    // therefore a property of the WORLD and not of her life, and looking at it cannot change
+    // what happens to her.
+    const { beasts, great } = bestiary(this.world, this.sites, this.seed);
+    this.beasts = beasts;
+    this.great = great;
+
     const her = this.pickHeroine(name);
 
     this.state = {
@@ -132,7 +147,15 @@ export class Sim {
       lived: {
         hurt_badly: 0, travelled: 0, worked: 0, defied: 0, paid: 0,
         buried: 0, nights_alone: 0, with_someone: 0, fights: 0, found: 0,
+        hunted: 0, slain: 0,
       },
+
+      // WHAT SHE HUNTS. A bounty is a fact about this world with a price on it, and somebody
+      // is paying — which is the same question the engine asks about everything else.
+      bounty: null,          // the one she has taken. she goes toward it.
+      slain: [],             // by name. the dead do not come back, and neither does the coin.
+      knowsGreat: false,     // she has read the posting, and the names of the ones before her
+      greatSlain: false,     // almost nobody gets to write this down
       traits: [],          // what she has become. she cannot choose these. neither can you.
 
       // WHAT SHE CARRIES. Not a build. A blade she bought, a coat somebody dead put on
@@ -425,6 +448,335 @@ export class Sim {
     });
   }
 
+  // ══════════════════════════════════════════════════════════════════════ THE HUNT
+  //
+  // WHAT SHE BRINGS TO IT. Her hand, her nerve, what she is carrying, what she has become,
+  // and whatever you have laid on her. Everything she has ever earned arrives here at once,
+  // which is exactly what a boss fight is for.
+  might() {
+    return 1.5
+      + this.eff('hand') * 0.34
+      + this.eff('nerve') * 0.20
+      + this.bonus('swing') * 2.2
+      + this.bonus('soak') * 1.5
+      + this.withHer().length * 0.6;      // somebody at her back is worth more than a knife
+  }
+
+  // Some beasts are NAMED for where they are ("the long machine at The Basin of Kell"), and
+  // then saying it again gives you "the long machine at The Basin of Kell at The Basin of
+  // Kell". Say it once.
+  beastAt(b) { return b.name.includes(b.where) ? '' : ` at ${b.where}`; }
+
+  // WHAT SHE THINKS HER CHANCES ARE. She is the one who has to do it, and she knows more
+  // about what she is than you do. She does not give you a number. She tells you.
+  odds(b) {
+    const edge = this.might() - b.power;
+    if (edge > 2.5) return 'I can do this one. I want to be honest that I could do this one in my sleep, and that I am going to charge them full price anyway.';
+    if (edge > 0.5) return 'I think I can take it. I am not certain. I have not been certain about anything for a long time and I have not stopped working.';
+    if (edge > -1.5) return 'It is close. It is genuinely close, and I am telling you that because you are the only one I can tell.';
+    return 'I do not think I can take it. I want you to know that I have looked at this squarely, and that I am asking anyway, and you should think about why.';
+  }
+
+  beastHere() {
+    const b = this.beasts[this.state.at];
+    if (!b || this.state.slain.includes(b.name)) return null;
+    return b;
+  }
+
+  // Every beast still standing, anywhere she could walk to.
+  quarry() {
+    return Object.entries(this.beasts)
+      .filter(([, b]) => !this.state.slain.includes(b.name))
+      .map(([i, b]) => ({ at: Number(i), beast: b }));
+  }
+
+  // ── SHE READS THE BOARD. A posting is not a quest marker; it is a fact with a price on it
+  //    and somebody paying, and she asks you whether it is worth her life.
+  readBoard() {
+    const s = this.state;
+    if (s.bounty || s.pending.some((p) => p.kind === 'bounty')) return;
+
+    const open = this.quarry();
+    if (!open.length) return;
+
+    // she takes an interest in what is near her, but a good price travels
+    const q = this.pick(open);
+    const b = q.beast;
+
+    const posted = this.pick(POSTED)
+      .replace('{place}', this.here().name)
+      .replace('{who}', this.factionsHere()[0]?.name ?? (this.law('economy')?.who_is_rich ?? 'somebody who will not give a name'));
+
+    this.say(`there is a posting at ${this.here().name}: ${b.name}, at ${b.where}. ${b.worth} coin. ${posted}`, 'bounty');
+
+    s.pending.push({
+      id: `bounty_${b.name}`,
+      kind: 'bounty',
+      who: b.name,
+      at: q.at,
+      raisedOn: s.day,
+      dueOn: s.day + 5,
+      // HER OWN READ ON IT, and it is the single most useful thing she can tell you: she is
+      // the one who has to fight it, and she has a better idea than you do of what she is.
+      prompt: `${b.what} They are paying ${b.worth} coin for it, at ${b.where}. ${posted} ${this.odds(b)}`,
+      options: { take: 'Take it', leave: 'Leave it on the board' },
+    });
+  }
+
+  resolveBounty(j, key, by) {
+    const s = this.state;
+    const q = this.quarry().find((x) => x.beast.name === j.who);
+
+    if (key === 'take' && q) {
+      s.bounty = { at: q.at, name: q.beast.name, where: q.beast.where, worth: q.beast.worth };
+      this.use('name');
+      this.speak(this.fresh(TOOK), 'close');
+      this.say(`she took ${q.beast.name} off the board at ${this.here().name}. everyone watched her do it.`, 'bounty');
+    } else {
+      this.speak(this.fresh(REFUSED), 'cold');
+      this.say(`she left ${j.who} on the board. somebody else will take it.`, 'event');
+    }
+
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id,
+      text: key === 'take' ? `she is going after ${j.who}. [${by === 'you' ? 'you' : 'she'} decided]`
+                           : `she left ${j.who} on the board. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════ SHE FIGHTS IT
+  hunt(beast) {
+    const s = this.state;
+    s.lived.hunted++;
+    s.lived.fights++;
+    this.use('hand', 4);
+    this.use('nerve', 3);
+    this.use(beast.asks, 2);
+    this.strain('danger');
+
+    // EVERYTHING SHE HAS, AGAINST A NUMBER THAT DOES NOT CARE. The great one does not scale
+    // to her and it never will: she is either ready or she is the fifth name on the notice.
+    const edge = this.might() - beast.power + (this.rng() * 3 - 1.5);
+
+    if (edge > 0.6) return this.slay(beast, edge);
+
+    // ── SHE BREAKS OFF. Badly outmatched, and an eye is the thing that tells her so in time.
+    //    This is the same mechanic that already makes a woman with an eye outlive a woman
+    //    with a hand, and it is why a failed hunt is a bad week rather than a funeral.
+    if (edge < -2.2 && this.chance(clamp(0.35 + this.st('eye') * 0.45 + this.st('foot') * 0.2, 0, 0.85))) {
+      s.wounds += 1;
+      this.use('eye', 2);
+      this.use('foot', 2);
+      this.drift('reckless', -0.03);
+      this.speak(this.pick([
+        `I turned around and walked out. I have been telling myself all week that that was the brave thing.`,
+        `I got one look at it and I did not go any further. I am not going to apologise for that to you or to anybody.`,
+      ]), 'cold');
+      return this.say(
+        `she got close enough to ${beast.name}${this.beastAt(beast)} to see what it was, and turned round, and came back. it is still there.`,
+        'hunt');
+    }
+
+    // ── it went badly.
+    const bad = edge < -1.6;
+    s.wounds += bad ? 2 : 1;
+    s.lived.hurt_badly++;
+    this.use('body', 4);
+    this.drift('reckless', -0.04);
+    s.attention += 1;
+
+    if (this.chance(bad ? 0.3 : 0.12)) {
+      this.mark(this.pick(['ruined_hand', 'limp', 'bad_eye', 'scarred']), `${beast.name} did this to her${this.beastAt(beast)}`);
+    }
+
+    // she does not have to die to lose. she can simply not be enough, and know it.
+    this.speak(this.pick([
+      `I could not do it. I want to be clear that it was not close. I have been telling people it was close.`,
+      `It is still there. I am not. I got out and I do not entirely remember how.`,
+    ]), 'cold');
+
+    return this.say(
+      `she went after ${beast.name}${this.beastAt(beast)} and came back out of it, and it did not.` +
+      (bad ? ' she was a long time getting up.' : ''),
+      'hunt');
+  }
+
+  slay(beast, edge) {
+    const s = this.state;
+    s.slain.push(beast.name);
+    s.lived.slain++;
+
+    const paid = beast.worth + (s.bounty?.name === beast.name ? Math.round(beast.worth * 0.2) : 0);
+    s.coin += paid;
+    s.wounds += beast.great ? 3 : this.chance(0.6) ? 1 : 2;
+
+    // A NAME IS THE REAL PAYMENT, AND IT IS A LIABILITY. Killing the thing everybody was
+    // frightened of is the loudest thing a person can do, and the thing that is counting has
+    // been counting.
+    this.use('name', beast.great ? 12 : 4);
+    s.attention += beast.great ? 8 : 2;
+    for (const f of this.factionsHere()) this.nudge(f.name, 2);
+
+    if (s.bounty?.name === beast.name) s.bounty = null;
+
+    if (beast.great) {
+      s.greatSlain = true;
+      this.condition('faith', +2, 'she lived');
+      this.speak(this.fresh(GREAT.after), 'close');
+      return this.say(
+        `${beast.name} is dead. she killed it${this.beastAt(beast)}, and she is alive, and almost nobody who has ever gone after it has been able to say both of those things. ${paid} coin. she has not spent any of it.`,
+        'hunt', { great: true });
+    }
+
+    return this.say(this.pick([
+      `${beast.name} is dead${this.beastAt(beast)}. ${paid} coin. she collected it herself and did not say a word to anyone in the room.`,
+      `she killed ${beast.name}${this.beastAt(beast)}. ${paid} coin, and a long walk back with it in a sack, and nobody would sit near her on the road.`,
+    ]), 'hunt');
+  }
+
+  // ══════════════════════════════════════════════════════════════ AND THE GREAT ONE
+  //
+  // She does not stumble into it. She finds out about it — the posting, the raised price, the
+  // names of the four before her — and then she has to stand outside it and decide. That is a
+  // judgment, and it is the biggest one this game has: she is asking you whether to die.
+  offerGreat() {
+    const s = this.state;
+    const g = this.great;
+    if (!g || s.greatSlain || s.slain.includes(g.name)) return;
+    if (s.pending.some((p) => p.kind === 'great')) return;
+
+    // she has to have heard of it first, and she hears of it the way anybody hears of
+    // anything: standing somewhere, from somebody who is frightened.
+    if (!s.knowsGreat) {
+      if (s.at !== g.at && !this.chance(0.02)) return;
+      s.knowsGreat = true;
+      return this.say(
+        `she heard about ${g.name} at ${this.here().name}. ${g.what} ${g.rumour}`,
+        'bounty');
+    }
+
+    // and she has to be standing in front of it
+    if (s.at !== g.at) return;
+    if (!this.chance(0.25)) return;
+
+    this.speak(this.fresh(GREAT.before), 'afraid');
+    s.pending.push({
+      id: `great_${g.name}`,
+      kind: 'great',
+      who: g.name,
+      raisedOn: s.day,
+      dueOn: s.day + 4,
+      prompt: `${g.what} ${g.rumour} It is here. I am standing outside it. They are paying ${g.worth} coin and the coin is not why, and we both know the coin is not why.`,
+      options: { go: 'Go in', walk: 'Walk away from it' },
+    });
+  }
+
+  resolveGreat(j, key, by) {
+    const s = this.state;
+    const g = this.great;
+
+    if (key === 'go') {
+      s.log.push({
+        day: s.day, kind: 'judgment', by, id: j.id,
+        text: `she went in after ${g.name}. [${by === 'you' ? 'you' : 'she'} decided]`,
+      });
+      return this.hunt(g);
+    }
+
+    // SHE WALKED AWAY, AND IT COSTS. Not a scolding — she is the one who has to live with
+    // having been outside it and not gone in.
+    s.attention = Math.max(0, s.attention - 2);
+    this.condition('heart', -1, 'walked away');
+    this.speak(this.pick([
+      `I walked away from it. I am going to be walking away from it for the rest of my life.`,
+      `We did the sensible thing. I want that on the record in exactly those words, because I am going to want to reread it.`,
+    ]), 'cold');
+    this.say(`she stood outside ${g.name} at ${g.where}, and she did not go in. it is still there.`, 'event');
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id,
+      text: `she walked away from ${g.name}. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════ YOU BLESS HER
+  //
+  // The only thing in this game you do TO her rather than ask OF her — and it is bound by
+  // three things, none of them negotiable (see gen/tables/blessings.js):
+  //
+  //   SHE HAS TO BELIEVE. A blessing lands on Faith, and a woman who has stopped believing
+  //   anything is listening has no surface for it to land on. Not "reduced effect" — nothing.
+  //   Neglect no longer merely costs you a judgment. It takes your hands away.
+  //
+  //   IT MAKES HER LOUD. `attention` is the thing that is counting, and it is what eventually
+  //   sends men to the inn she is sleeping in. Every gift is a light switched on over her
+  //   head, in a country where something is looking for exactly that.
+  //
+  //   YOU CANNOT BE A CONSTANT MIRACLE. There is a long silence between blessings, or she
+  //   stops being a woman walking a hard country and becomes a character you are buffing.
+
+  canBless(key) {
+    const s = this.state;
+    const B = BLESSINGS[key];
+    if (!B || !s.alive) return { ok: false, why: 'no' };
+    if (s.day - (s.lastBlessed ?? -BLESS_GAP) < BLESS_GAP) {
+      return { ok: false, why: `not yet — ${BLESS_GAP - (s.day - s.lastBlessed)} days` };
+    }
+    if (B.mark && s.marks.some((m) => m.key === B.mark)) return { ok: false, why: 'she already carries this' };
+    if (B.onItem && !s.kit.length) return { ok: false, why: 'she is carrying nothing' };
+    if (this.eff('faith') < B.needs) return { ok: false, why: 'she does not believe in you enough for this' };
+    return { ok: true };
+  }
+
+  bless(key, target) {
+    const s = this.state;
+    const B = BLESSINGS[key];
+    if (!B || !s.alive) return null;
+
+    // ── SHE HAS STOPPED BELIEVING, AND THERE IS NOTHING TO LAND ON.
+    //    This is not a failure message. It is the bill for a year of not turning up.
+    if (this.eff('faith') < B.needs) {
+      this.say(this.pick(UNFELT), 'bless');
+      return { landed: false };
+    }
+
+    s.lastBlessed = s.day;
+    s.blessings = (s.blessings ?? 0) + 1;
+
+    // IT MAKES HER LOUD.
+    s.attention += B.attention;
+
+    if (B.wounds) s.wounds = Math.max(0, s.wounds + B.wounds);
+    if (B.heart) this.condition('heart', B.heart, 'blessed');
+    if (B.mark) this.mark(B.mark, 'you did this to her');
+
+    if (B.onItem) {
+      const it = s.kit.find((i) => i.shape === target) ?? best(s.kit);
+      if (it && !it.blessed) {
+        it.blessed = true;
+        it.name = `${it.name}, and it is not what it was`;
+        // it gives more, and it is seen to give more, which is the cost
+        for (const k of Object.keys(it.gives)) it.gives[k] *= 1.8;
+        it.gives.attention_rate = (it.gives.attention_rate ?? 0) + 0.5;
+        it.worth = Math.round(it.worth * 2.5);
+        this.say(BLESSINGS.item.line, 'bless');
+        this.speak(this.fresh(BLESSINGS.item.she), 'close');
+      }
+    } else if (B.she) {
+      this.say(B.line, 'bless');
+      this.speak(this.fresh(B.she), 'close');
+    }
+
+    // ── AND SHE FINDS OUT SOMETHING SHE DID NOT KNOW.
+    //
+    // This is the real weight of it. Until now she has believed in you the way people believe
+    // in things — on nothing, out of need, with a great deal of doubt. A blessing is PROOF.
+    // Her faith goes up because you were real. And she is frightened, because you were real.
+    this.condition('faith', +3, 'you were real');
+    if (s.blessings === 1) this.speak(this.pick(FIRST), 'afraid');
+
+    return { landed: true };
+  }
+
   standing(name) { return this.state.standing[name] ?? 0; }
   nudge(name, d) {
     // NAME: how fast people take sides about her. A woman nobody has heard of is judged
@@ -715,6 +1067,24 @@ export class Sim {
       // There is a market here and she has money in her pocket. That is the whole of the
       // condition — she does not go shopping on a mountain.
       buy: market && s.coin >= 70 ? 3 + Math.min(4, s.coin / 220) : 0,
+
+      // THE BOARD, AND THE THING ON IT. A posting is read where people are; a beast is
+      // fought where it lives. And she goes at the one she took the money for far harder
+      // than at the one she merely walked into.
+      board: market && !s.bounty && this.quarry().length ? 4 : 0,
+      // SHE IS NOT AN IDIOT, AND THIS COST HER HER LIFE FORTY-ONE TIMES IN SIXTY.
+      //
+      // Unguarded, she picked a fight with anything standing in the same town — including
+      // things four times her weight — and mortality doubled against the pre-hunting
+      // baseline. A woman with an eye does not walk into that. She walks AROUND it, and she
+      // has been walking around things her whole life.
+      //
+      // The exception is a bounty: she took the money, and she goes, ready or not. That is
+      // what taking the money means, and it is why she asks YOU first.
+      hunt: this.beastHere()
+        ? (s.bounty?.at === s.at ? 24
+           : this.might() >= this.beastHere().power - 0.5 ? 2 + 5 * this.off('reckless') : 0)
+        : 0,
       figure_meet: figures.length ? 9 + 8 * this.off('sociable') : 0,
       figure_clash: figures.length ? 2 + 4 * this.off('reckless') : 0,
       faction_favour: friends.length ? 5 : 0,
@@ -1006,6 +1376,15 @@ export class Sim {
         if (!this.chance(Math.max(0, this.st('body')) * 0.5)) s.wounds += 1;
         return this.say(this.line('sick'), 'event', { id: act });
 
+      case 'board':
+        return this.readBoard();
+
+      case 'hunt': {
+        const beast = this.beastHere();
+        if (!beast) return this.say(this.line('road'), 'event', { id: 'road' });
+        return this.hunt(beast);
+      }
+
       case 'travel':
         return this.travel();
 
@@ -1096,6 +1475,8 @@ export class Sim {
       x *= 1 + shared;
       if (this.state.suggested === s.i) x += 8 * this.heeds();
       if (!this.state.seen.includes(s.i)) x += 1;
+      // SHE TOOK THE MONEY. She is going there, and she does not need to be asked twice.
+      if (this.state.bounty?.at === s.i) x += 14;
       if (s.node.status) x += 0.5 * this.off('reckless');   // a fallen place draws the reckless
       return Math.max(0.05, x);
     });
@@ -2106,6 +2487,8 @@ export class Sim {
     else if (j.kind === 'romance') this.resolveRomance(j, key, 'you');
     else if (j.kind === 'counsel') this.resolveCounsel(j, key, 'you');
     else if (j.kind === 'calling') this.resolveCalling(j, key, 'you');
+    else if (j.kind === 'bounty') this.resolveBounty(j, key, 'you');
+    else if (j.kind === 'great') this.resolveGreat(j, key, 'you');
     else this.resolveHook(j, key, 'you');
     return j;
   }
@@ -2158,6 +2541,25 @@ export class Sim {
       const pickKey = closed ? keys[keys.length - 1] : this.pick(keys);
       this.speak(this.fresh(VOICE.absent), 'absent');
       return this.resolveCounsel(j, pickKey, 'her');
+    }
+    if (j.kind === 'bounty') {
+      // She asked whether it was worth her life, and nobody answered. A reckless woman takes
+      // it; a careful one does not; a broke one takes it whatever she is.
+      const broke = this.state.coin < 60;
+      const yes = this.chance(clamp(0.3 + 0.4 * this.off('reckless') + (broke ? 0.25 : 0), 0, 0.9));
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveBounty(j, yes ? 'take' : 'leave', 'her');
+    }
+    if (j.kind === 'great') {
+      // SHE STOOD OUTSIDE THE WORST THING IN THE WORLD AND ASKED YOU WHETHER TO GO IN, AND
+      // YOU WERE NOT THERE.
+      //
+      // A woman who still believes somebody is watching goes in. That is the whole of it, and
+      // it is the cruellest thing Faith does in this entire game: your silence is what stops
+      // her — or your silence is what kills her, and you will not know which until you look.
+      const yes = this.chance(clamp(0.2 + 0.5 * this.off('reckless') + this.eff('faith') / 30, 0, 0.85));
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveGreat(j, yes ? 'go' : 'walk', 'her');
     }
     if (j.kind === 'calling') {
       // SHE ASKED YOU WHO SHE IS AND YOU DID NOT COME.
@@ -2258,6 +2660,7 @@ export class Sim {
     this.raiseHooks();     // and sometimes puts two things together
     this.offerCompanion(); // and sometimes asks you about somebody
     this.offerCalling();   // and sometimes the world tells her what it has decided she is
+    this.offerGreat();     // and one day she is standing outside the worst thing in the world
     this.earnTraits();     // and slowly becomes someone she did not choose to be
     this.maybeSpeak();     // and talks to you, less and less
 

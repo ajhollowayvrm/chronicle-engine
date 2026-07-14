@@ -71,6 +71,15 @@ function words(eng, j) {
   const s = eng.state;
   const her = s.name;
 
+  // SHE IS STANDING OUTSIDE THE WORST THING IN THE WORLD. This is the biggest push this game
+  // will ever send, and it is the one that must never be missed: unanswered, she decides for
+  // herself, and a woman who still believes somebody is watching goes IN.
+  if (j.kind === 'great') {
+    return { title: `${her} has found it`, body: j.prompt };
+  }
+  if (j.kind === 'bounty') {
+    return { title: `${her} is asking about a bounty`, body: j.prompt };
+  }
   if (j.kind === 'calling') {
     return { title: `${her} is being called something`, body: j.prompt };
   }

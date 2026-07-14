@@ -21,6 +21,7 @@ import { MARKS } from '../gen/tables/marks.js';
 import { CALLINGS } from '../gen/tables/callings.js';
 import { SHAPES } from '../gen/tables/goods.js';
 import { usable, underAsk, unsworn } from '../src/kit.js';
+import { BLESSINGS } from '../gen/tables/blessings.js';
 import { reachable, letHerReachYou, tellTheServer, stopWatching, vigilId } from './reach.js';
 
 const $ = (id) => document.getElementById(id);
@@ -171,6 +172,8 @@ function render() {
   renderDeath(s);
   renderLog(s);
   renderChanged(s);
+  renderBless(s);
+  renderHunt(s);
   renderStats(s);
   renderMarks(s);
   renderCalling(s);
@@ -225,7 +228,8 @@ function renderAsking(s) {
   const facts = $('ask-facts');
   // A calling carries a `prompt` and no `facts` — read it as a hook and the screen throws
   // on `j.facts[0]` the first time the world offers her a name.
-  if (j.kind === 'join' || j.kind === 'romance' || j.kind === 'counsel' || j.kind === 'calling') {
+  if (j.kind === 'join' || j.kind === 'romance' || j.kind === 'counsel' || j.kind === 'calling'
+      || j.kind === 'bounty' || j.kind === 'great') {
     $('ask-prompt').textContent = j.prompt;
     facts.hidden = true;
   } else {
@@ -435,6 +439,94 @@ function renderChanged(s) {
   for (const [text, cls] of said) host.append(el('p', `change ${cls ?? ''}`, text));
 }
 
+// ══════════════════════════════════════════════════════════════════ WHAT YOU CAN DO
+//
+// The first and only thing the player does TO her. Every button here is bound by the three
+// rules in gen/tables/blessings.js, and the UI must state them plainly rather than greying
+// something out and letting the player guess — because the most important of the three
+// ("she has stopped believing in you, so nothing you do lands") is the bill for months of
+// not turning up, and it deserves a sentence, not a disabled button.
+function renderBless(s) {
+  const host = $('bless');
+  host.replaceChildren();
+
+  if (!s.alive) {
+    host.append(el('p', 'quiet small', 'There is nothing you can do for her now.'));
+    return;
+  }
+
+  for (const [key, B] of Object.entries(BLESSINGS)) {
+    const can = sim.canBless(key);
+    const row = el('div', `gift ${can.ok ? '' : 'shut'}`);
+
+    const b = el('button', 'gift-do', B.name);
+    b.disabled = !can.ok;
+    b.addEventListener('click', () => {
+      // A blessing is an INPUT. It goes in the journal and replays from day one, so the
+      // woman you come back to is the woman you made, exactly, every time.
+      sim.bless(key, null);
+      journal.entries.push({ elapsed, type: 'bless', kind: key, at: null });
+      save(journal, store);
+      tellTheServer(journal);
+      render();
+    });
+    row.append(b);
+    row.append(el('span', 'gift-what', B.blurb));
+
+    // what it costs, always shown, never buried
+    row.append(el('span', 'gift-cost',
+      `it makes her louder to the thing that is counting — attention up. she must believe in you at ${B.needs} or more.`));
+
+    if (!can.ok) row.append(el('span', 'gift-shut', can.why));
+    host.append(row);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════ WHAT SHE IS HUNTING
+function renderHunt(s) {
+  const host = $('hunt');
+  host.replaceChildren();
+
+  if (s.bounty) {
+    const row = el('div', 'quarry taken');
+    row.append(el('b', null, s.bounty.name));
+    row.append(el('span', 'says', `She took the money. ${s.bounty.worth} coin, at ${s.bounty.where}. She is going there.`));
+    host.append(row);
+  }
+
+  const beast = sim.beastHere();
+  if (beast) {
+    const row = el('div', 'quarry here');
+    row.append(el('b', null, beast.name));
+    row.append(el('span', 'says', beast.what));
+    row.append(el('span', 'tagline bad', 'it is where she is standing'));
+    host.append(row);
+  }
+
+  // THE GREAT ONE. It does not scale to her. It does not wait.
+  const g = sim.great;
+  if (g && !s.greatSlain && s.knowsGreat) {
+    const row = el('div', 'quarry great');
+    row.append(el('b', null, g.name));
+    row.append(el('span', 'says', g.what));
+    row.append(el('span', 'moment', g.rumour));
+    row.append(el('span', 'tagline bad', `${g.worth} coin. it is at ${g.where}. it does not scale to her.`));
+    host.append(row);
+  } else if (g && s.greatSlain) {
+    const row = el('div', 'quarry dead');
+    row.append(el('b', null, `${g.name} is dead`));
+    row.append(el('span', 'says', 'She killed it, and she is alive, and almost nobody who has ever gone after it has been able to say both of those things.'));
+    host.append(row);
+  }
+
+  if (!host.children.length) {
+    host.append(el('p', 'quiet small',
+      s.slain.length
+        ? `Nothing, at the moment. She has killed ${s.slain.length} ${s.slain.length === 1 ? 'thing' : 'things'} that people were frightened of.`
+        : 'Nothing yet. She reads the boards, and she has not taken anything off one.'));
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════ CAN SHE REACH YOU
 //
 // And the honest version of this, which is the only one worth shipping: turning this on
@@ -614,7 +706,10 @@ function renderMarks(s) {
     // dial slider that shows who she has actually become. Reusing the name gave every scar
     // card `position:absolute; width:1px; height:9px`, and her whole history spilled in a
     // one-word-wide column across the stat sheet. A class name is an API.
-    const row = el('div', 'scar');
+    // A blessing lives in the SAME LIST as her scars, because that is honestly what it is:
+    // a thing that happened to her, that she did not choose, that she cannot put down. But
+    // it was not the world that left it. It was you.
+    const row = el('div', `scar ${M.blessing ? 'given' : ''}`);
     row.append(el('b', null, M.name));
     row.append(el('span', 'says', M.line));
 
@@ -638,7 +733,9 @@ function renderMarks(s) {
     }
 
     row.append(el('span', 'moment',
-      M.mends ? `day ${m.since} — it may still mend` : `day ${m.since} — she carries this to the grave`));
+      M.blessing ? `day ${m.since} — you did this to her`
+        : M.mends ? `day ${m.since} — it may still mend`
+        : `day ${m.since} — she carries this to the grave`));
     if (m.why) row.append(el('span', 'moment', m.why));
     host.append(row);
   }

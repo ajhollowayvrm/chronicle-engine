@@ -119,6 +119,45 @@ export const MARKS = {
     she: 'I said the words. I meant them at the time and I want you to remember that I meant them at the time.',
   },
 
+  // ──────────────────────────────────────────────────────────── WHAT YOU DID TO HER
+  //
+  // Your blessings live in HER SCAR LIST. Not in a separate golden panel — here, in among
+  // the ruined hand and the fever that stayed, because that is honestly what they are:
+  // things that happened to her, that she did not choose, that she cannot put down, and that
+  // she can feel. She did not ask to be quick. You made her quick. She has opinions about it.
+
+  blessed_hand: {
+    name: 'A hand that is not hers',
+    blessing: true,
+    mods: { hand: +3 },
+    line: 'she is faster than she has any business being, and she knows exactly when it started.',
+    she: 'My hand is not mine. I want to be careful how I say this. It does what I want before I have finished wanting it, and I did not earn that, and I have not given it back.',
+  },
+
+  blessed_foot: {
+    name: 'The road gave way',
+    blessing: true,
+    mods: { foot: +3 },
+    line: 'the country has stopped arguing with her. she noticed the day it stopped.',
+    she: 'The road is easy now. The road has never been easy. I have walked this country for eleven years and it has decided to let me.',
+  },
+
+  blessed_eye: {
+    name: 'She sees it coming',
+    blessing: true,
+    mods: { eye: +3 },
+    line: 'she has started seeing it a long beat before it happens, and she has stopped explaining how.',
+    she: 'I see things before they happen now. Not visions. Just — early. I have stopped telling people, because of the way they look at me.',
+  },
+
+  blessed_nerve: {
+    name: 'She does not break',
+    blessing: true,
+    mods: { nerve: +3, heart: -1 },
+    line: 'she has stopped being frightened of things that should frighten her, and the people around her have noticed before she has.',
+    she: 'I am not afraid. Of anything. I have tested it and I could not find the bottom of it and I am telling you because I think you should know what you have done.',
+  },
+
   kept_it: {
     name: 'The thing she knows',
     mods: { eye: +1, heart: -1 },

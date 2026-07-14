@@ -41,6 +41,9 @@ gen/tables/marks.js    what a life took. the only thing that lowers a stat.
 gen/tables/callings.js what they call her. the class system, and she is not shown a menu.
 src/kit.js             minting, and the arithmetic of raw vs bare vs effective.
 
+gen/tables/beasts.js   what she fights. there are no dragons in it, and that is the point.
+gen/tables/blessings.js what YOU can do to her, and the three things that bind it.
+src/beasts.js          the bestiary, derived from the tree. never touches sim.rng.
 sw.js                  offline, and the only route she has to your lock screen.
 web/reach.js           asking your phone whether she may wake it.
 server/foresee.js      WHEN will she next need you. the whole backend rests on this.
@@ -49,6 +52,38 @@ server/api.js          subscribe / sync / unsubscribe. a Lambda Function URL.
 server/wake.js         a cron, every five minutes: is anybody's alarm due?
 infra/template.yaml    SAM. one table, two Lambdas. free tier, and it stays there.
 ```
+
+## What she hunts, and what you can do about it
+
+**A beast is rolled out of the tree, exactly like an item.** There is no dragon in
+`gen/tables/beasts.js` and there never will be: a stock bestiary would be monsters dropped
+into a world with no reason to contain them, and the seed engine would stop paying for
+itself. A country that burns godash — refined divine remains — to run its trains gets a
+thing that came back up out of the refinery. The horror is not that there is a monster. It
+is that the monster is downstream of something the player already read in the economy.
+
+Every world has exactly **one great beast**: its largest fact, standing up. It does not
+scale to her and it does not wait. She finds out about it the way anybody finds out about
+anything — a posting, a raised price, the names of the four before her — and then she stands
+outside it and asks you whether to go in. About **9% of lives kill it**.
+
+**A blessing is the only thing you do TO her rather than ask OF her**, and it is bound by
+three things that must never come loose:
+
+- **She has to believe you are there.** It lands on Faith. A woman who has stopped believing
+  anything is listening has no surface for it to land on — not "reduced", *nothing*. Neglect
+  no longer merely costs you a judgment. It takes your hands away.
+- **It makes her loud.** `attention` is what eventually sends men to the inn she is sleeping
+  in. Every gift is a light switched on over her head in a country where something is looking
+  for exactly that.
+- **You cannot be a constant miracle.** 25 days between blessings, or she stops being a woman
+  walking a hard country and becomes a character you are buffing.
+
+And the first one is PROOF. Until then she believed in you the way people believe in things:
+on nothing, out of need, with a great deal of doubt. Her Faith goes up because you were real,
+and she is frightened, because you were real.
+
+Her blessings live in the same list as her scars, because that is what they are.
 
 ## How she reaches you
 

@@ -298,6 +298,68 @@ test('a life with a name, a kit and a scar replays from the journal exactly', ()
   assert.deepStrictEqual(state.log.map((l) => l.text), live.state.log.map((l) => l.text));
 });
 
+// ------------------------------------------------- what you can do, and what it costs
+test('a blessing is not a free stat button', () => {
+  // The first direct power the player has ever had, and it is bound by three things. If any
+  // of them ever comes loose, the game's central claim — that you cannot simply MAKE her
+  // better — is gone, and nobody will notice until it is far too late to take back.
+  const s = new Sim({ seed: 3 });
+  s.run(30);
+
+  // 1. IT MAKES HER LOUD. attention is what eventually sends men to the inn she sleeps in.
+  s.state.stat.faith = 20;
+  const loudBefore = s.state.attention;
+  assert.ok(s.canBless('mend').ok);
+  s.bless('mend');
+  assert.ok(s.state.attention > loudBefore, 'a blessing must cost her attention. it did not.');
+
+  // 2. YOU CANNOT BE A CONSTANT MIRACLE.
+  assert.strictEqual(s.canBless('warmth').ok, false, 'she was blessed twice in a day');
+
+  // 3. SHE HAS TO BELIEVE YOU ARE THERE — and this is the one that matters, because it is
+  //    the bill for months of not turning up. A woman who has stopped believing has no
+  //    surface for it to land on. Not "reduced": nothing.
+  s.state.lastBlessed = -999;
+  s.state.stat.faith = 0;
+  assert.strictEqual(s.canBless('quick').ok, false, 'an unbelieving woman could still be blessed');
+
+  const hand = s.eff('hand');
+  const r = s.bless('quick');
+  assert.strictEqual(r.landed, false, 'the blessing landed on a woman with no faith');
+  assert.strictEqual(s.eff('hand'), hand, 'it changed her anyway');
+});
+
+test('a beast is made of the world it is standing in, and never of a bestiary', () => {
+  // A stock dragon in a salt desert is the seed engine failing to pay for itself. Every
+  // beast must cite a fact the player can already read somewhere else in the game.
+  for (let seed = 1; seed <= 40; seed++) {
+    const s = new Sim({ seed });
+    const all = [...Object.values(s.beasts), s.great].filter(Boolean);
+    assert.ok(s.great, `seed ${seed} has no great beast — every world has exactly one`);
+    for (const b of all) {
+      assert.ok(b.name && b.what && b.where, `seed ${seed}: a beast with no name, no reason, or nowhere to be`);
+      assert.ok(!/undefined|null|\{/.test(b.name + b.what), `seed ${seed}: a hole in "${b.name}" / "${b.what}"`);
+      assert.ok(b.power > 0 && b.worth > 0);
+    }
+  }
+});
+
+test('looking at the bestiary does not change her life', () => {
+  // The bestiary is derived from the world and must NEVER touch `sim.rng` — the random
+  // stream is the spine of the save. Consume one draw here that the client does not consume
+  // there, and the same seed stops producing the same life.
+  const a = new Sim({ seed: 9 });
+  const b = new Sim({ seed: 9 });
+  for (let i = 0; i < 5; i++) { b.quarry(); b.beastHere(); b.might(); }   // stare at it hard
+  a.run(120);
+  b.run(120);
+  assert.deepStrictEqual(
+    a.state.log.map((l) => l.text),
+    b.state.log.map((l) => l.text),
+    'reading the bestiary changed what happened to her'
+  );
+});
+
 // ------------------------------------------------------------------ the prose
 test('every chronicle pool can actually be reached', () => {
   // The dead-slot bug, which shipped once already: prose written for an outcome that
