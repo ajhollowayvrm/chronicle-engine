@@ -620,3 +620,25 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 /* THE NAME SHE ANSWERS TO. The only warm-bordered thing in the panel: she chose it,
    out loud, in front of people, and she cannot put it back down. */
 .calling-now { border-left: 2px solid var(--close); }
+
+/* ═══════════════════════════════════════════════════════════════════ CAN SHE REACH YOU
+   And the honest part: turning it on does not mean she will use it. The knock is gated on
+   Faith exactly as her voice is, so a phone that has gone quiet has not broken — she has
+   stopped believing anybody is there. This panel has to be able to say so. */
+.reach { display: grid; gap: 0.6rem; margin-top: 1rem; }
+.reach button { justify-self: start; }
+.reach .reach-on {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--close);
+}
+.reach .reach-how {
+  padding: 0.6rem 0.7rem;
+  background: var(--card);
+  border-left: 2px solid var(--ink-low);
+  font-size: 0.84rem;
+  color: var(--ink-mid);
+  line-height: 1.5;
+}

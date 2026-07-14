@@ -21,6 +21,7 @@ import { MARKS } from '../gen/tables/marks.js';
 import { CALLINGS } from '../gen/tables/callings.js';
 import { SHAPES } from '../gen/tables/goods.js';
 import { usable, underAsk, unsworn } from '../src/kit.js';
+import { reachable, letHerReachYou, tellTheServer, stopWatching, vigilId } from './reach.js';
 
 const $ = (id) => document.getElementById(id);
 const store = window.localStorage;
@@ -108,6 +109,9 @@ function answer(id, key) {
   sim.answer(id, key);
   journal.entries.push({ elapsed, type: 'answer', id, key });
   save(journal, store);
+  // YOU CAME, so her future is a different future — and the server's prediction of when she
+  // will next need you is now a prediction about a woman who no longer exists.
+  tellTheServer(journal);
   render();
 }
 
@@ -115,6 +119,7 @@ function setDial(dial, value) {
   sim.state.intent[dial] = value;
   journal.entries.push({ elapsed, type: 'dials', dials: { [dial]: value } });
   save(journal, store);
+  tellTheServer(journal);
 }
 
 // You cannot move her. You can tell her where you would rather she was, and she will
@@ -142,6 +147,7 @@ function render() {
   renderDeath(s);
   renderLog(s);
   renderStats(s);
+  renderReach(s);
   renderCalling(s);
   renderKit(s);
   renderMarks(s);
@@ -309,6 +315,75 @@ function renderStats(s) {
   }
 
   $('kill').textContent = `It takes ${sim.killedAt()} wounds to kill her. She is carrying ${s.wounds}.`;
+}
+
+// ══════════════════════════════════════════════════════════════════ CAN SHE REACH YOU
+//
+// And the honest version of this, which is the only one worth shipping: turning this on
+// does NOT guarantee she will use it. `foresee()` gates the knock on Faith, exactly as
+// `maybeSpeak()` gates her voice — so a woman who has stopped believing anybody is
+// listening stops reaching out, and your phone goes quiet, and that is not a bug in the
+// notification system. It is the thing the notification system is FOR.
+//
+// So this panel tells the player the truth: she can reach you, and whether she will is
+// between the two of you.
+function renderReach(s) {
+  const host = $('reach');
+  host.replaceChildren();
+
+  const state = reachable();
+  const say = (t, cls) => host.append(el('p', cls ?? 'quiet small', t));
+
+  if (state === 'install-first') {
+    // The one that catches everybody. On iOS there is no push in a browser tab — not
+    // "disabled", not "denied": the API does not exist. Say what to do about it.
+    say('She cannot reach a browser tab. Nothing can — iOS does not allow it.');
+    say('Tap Share, then “Add to Home Screen”, and open her from there. Then she can wake your phone when she needs you.', 'reach-how');
+    return;
+  }
+
+  if (state === 'never') {
+    say('This device cannot be reached. She will be here whenever you open her.');
+    return;
+  }
+
+  if (state === 'denied') {
+    say('You told your phone she was not allowed to reach you, and your phone believed you.');
+    say('If you change your mind, it is in Settings, not here. She cannot ask twice.', 'reach-how');
+    return;
+  }
+
+  if (state === 'granted' && vigilId()) {
+    say('She can reach you.', 'reach-on');
+    // THE HONEST SENTENCE. A player whose phone has gone silent should be able to find out,
+    // here, that it went silent because of what they did.
+    const faith = sim.eff('faith');
+    say(
+      faith <= 0
+        ? 'She has stopped believing there is anybody there. She will not reach out again. If you want to know what becomes of her, you will have to come and look.'
+        : faith < 8
+          ? 'She has mostly stopped asking. You will hear from her less now, and that is not the phone.'
+          : 'She will wake you when she needs you — and she does not need you often.'
+    );
+    return;
+  }
+
+  const b = el('button', 'primary', 'Let her reach you');
+  b.addEventListener('click', async () => {
+    b.disabled = true;
+    b.textContent = 'asking your phone…';
+    const r = await letHerReachYou(journal);
+    if (!r.ok) {
+      b.remove();
+      say(r.why === 'denied'
+        ? 'Your phone said no. She will not ask again.'
+        : 'That did not work. She is still here; she just cannot reach you.');
+      return;
+    }
+    render();
+  });
+  host.append(b);
+  say('She will wake your phone when she turns to you and asks something — and not otherwise. No streaks, no reminders, nothing daily. She is not trying to retain you.');
 }
 
 // ══════════════════════════════════════════════════════════════ WHAT THEY CALL HER
@@ -675,12 +750,14 @@ $('new-life').addEventListener('click', () => {
   const s = sim.state;
   bury(store, { name: s.name, world: String(journal.seed), day: s.day });
   store.removeItem(SAVE_KEY);
+  stopWatching();     // she is dead. nobody should be knocking on her behalf.
   location.reload();
 });
 
 $('abandon').addEventListener('click', () => {
   if (!confirm('Abandon her? She does not get a death for it. She simply stops.')) return;
   store.removeItem(SAVE_KEY);
+  stopWatching();
   location.reload();
 });
 

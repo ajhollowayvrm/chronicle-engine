@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+# HOW SHE REACHES YOU.
+#
+# The smallest backend that can exist for this game, and it is small for a real reason:
+# the engine is deterministic, so the server never simulates her. It replays the journal,
+# works out the exact minute she will next turn round and ask you something, writes that
+# down, and goes back to sleep. Nothing runs in between.
+#
+#   Vigils  — one row per phone. a push endpoint, a journal, and one alarm.
+#   Api     — a Function URL. subscribe / sync / unsubscribe. that is the whole API.
+#   Wake    — a cron, every five minutes. "is anybody's alarm due?" almost always: no.
+#
+# FREE TIER, and it stays there: Lambda's 1M requests/month is always-free and this uses
+# ~9k (the cron) plus a handful of syncs. DynamoDB on-demand at this volume is pennies at
+# worst and inside the always-free 25GB. No VPC, so no NAT Gateway — the classic free-tier
+# killer, at ~$32/month just to exist.
+
+Parameters:
+  VapidPublic:
+    Type: String
+    Description: VAPID public key (base64url). Also compiled into the web client.
+  VapidPrivate:
+    Type: String
+    NoEcho: true
+    Description: VAPID private key (base64url). Never leaves the Lambda.
+  VapidSubject:
+    Type: String
+    Default: mailto:ajhollowayvrm@gmail.com
+    Description: Contact of record. The push services want a way to shout at us.
+
+Globals:
+  Function:
+    Runtime: nodejs24.x          # 20.x went EOL. 24 still ships the AWS SDK v3 in the runtime.
+    Architectures:               # plural, and a list. `Architecture: arm64` is silently not a thing.
+      - arm64                    # ~20% cheaper than x86 for identical work
+    MemorySize: 512              # she replays a few hundred days of a world. it is not free.
+    Timeout: 30
+    Environment:
+      Variables:
+        TABLE: !Ref Vigils
+        VAPID_PUBLIC: !Ref VapidPublic
+        VAPID_PRIVATE: !Ref VapidPrivate
+        VAPID_SUBJECT: !Ref VapidSubject
+
+Resources:
+  # ONE ROW PER PHONE. The save still lives in the browser — this is a copy of the journal
+  # (a seed and a list of answers) kept only so the server can foresee her, plus the
+  # endpoint to knock on. There is no account and nothing to breach.
+  Vigils:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: chronicle-vigils
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      # a vigil nobody has touched in 400 days sweeps itself up
+      TimeToLiveSpecification:
+        AttributeName: expires
+        Enabled: true
+
+  Api:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: chronicle-vigil-api
+      CodeUri: ../dist
+      Handler: server/api.handler
+      FunctionUrlConfig:
+        AuthType: NONE           # see server/api.js — there is nothing here worth stealing
+        Cors:
+          AllowOrigins: ['*']
+          AllowMethods: ['POST']   # OPTIONS is handled by the URL itself and is not a legal value here
+          AllowHeaders: ['content-type']
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Vigils
+
+  Wake:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: chronicle-vigil-wake
+      CodeUri: ../dist
+      Handler: server/wake.handler
+      Events:
+        Tick:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+            Name: chronicle-vigil-tick
+            Description: is anybody's alarm due?
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref Vigils
+
+Outputs:
+  ApiUrl:
+    Description: Put this in web/config.js
+    Value: !GetAtt ApiUrl.FunctionUrl
+  Table:
+    Value: !Ref Vigils

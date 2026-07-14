@@ -12,14 +12,18 @@
 //    survives the app being closed. The only way she can get to your lock screen is a
 //    server push waking this worker up. That is what `push` below is for.
 //
-// THE PUSH CARRIES NO PAYLOAD. It is a VAPID-signed knock and nothing else, so nothing in
-// the pipeline needs RFC-8291 content encryption and the repo keeps its zero dependencies.
-// This worker is woken, it asks the server what she wanted, and it says so. If that fetch
-// fails we STILL show something — iOS will quietly revoke a push subscription that receives
-// a push and shows no notification, and a silent revocation is the worst possible bug here:
-// she would simply stop being able to reach you and nobody would ever know why.
+// THE PUSH CARRIES HER ACTUAL WORDS, encrypted end-to-end (RFC 8291) so that Apple, who
+// relay it, cannot read it. That is not gold-plating: the payload is the entire point. A
+// notification that says "You have 1 pending decision" is a task manager, and this is not a
+// task manager. She should be able to say what she wants, in her own voice, on the lock
+// screen of somebody who has not thought about her all day.
+//
+// WE SHOW A NOTIFICATION ON EVERY PUSH, WITHOUT EXCEPTION — even a malformed one. iOS
+// silently REVOKES a push subscription that receives a push and shows nothing, and a silent
+// revocation is the worst bug this system can have: she would simply stop being able to
+// reach you, and nobody would ever find out why.
 
-const VERSION = 'vigil-v1';
+const VERSION = 'vigil-v2';
 
 // The whole app, which is small enough to name. index.html imports these as ES modules
 // straight from source — no bundler — so the precache list IS the import graph.
@@ -29,6 +33,8 @@ const SHELL = [
   './manifest.webmanifest',
   './web/style.css',
   './web/app.js',
+  './web/config.js',
+  './web/reach.js',
   './web/icons/icon-192.png',
   './web/icons/icon-512.png',
   './src/game.js',

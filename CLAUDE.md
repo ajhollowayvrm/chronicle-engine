@@ -40,7 +40,43 @@ gen/tables/goods.js    SHAPES with holes in them. the world fills the holes.
 gen/tables/marks.js    what a life took. the only thing that lowers a stat.
 gen/tables/callings.js what they call her. the class system, and she is not shown a menu.
 src/kit.js             minting, and the arithmetic of raw vs bare vs effective.
+
+sw.js                  offline, and the only route she has to your lock screen.
+web/reach.js           asking your phone whether she may wake it.
+server/foresee.js      WHEN will she next need you. the whole backend rests on this.
+server/push.js         Web Push (VAPID + RFC-8291) on node:crypto alone. no dependencies.
+server/api.js          subscribe / sync / unsubscribe. a Lambda Function URL.
+server/wake.js         a cron, every five minutes: is anybody's alarm due?
+infra/template.yaml    SAM. one table, two Lambdas. free tier, and it stays there.
 ```
+
+## How she reaches you
+
+**The server never simulates her. It foresees her.** This is the whole reason the
+notification layer is nearly free, and it falls straight out of determinism: given
+`(seed, dials, your answers)`, `foresee()` replays her and keeps ticking until she next
+turns round and asks something — then writes down the exact minute and goes back to sleep.
+Nothing runs in between. No live world, no per-player process, no polling. When you answer
+her, her future is a different future, so the client re-syncs and we foresee her again.
+
+**And she does not always tell you.** The knock is gated on Faith, exactly as `maybeSpeak()`
+gates her voice. A woman who still believes in you tells you when she needs you. One who has
+stopped believing anybody is listening mostly does not bother — and **at Faith 0 she never
+does**, and your phone simply goes quiet, and the only way to find out what became of her is
+to open the app and look. A silent phone is not a broken feature. It is the game.
+
+- **iOS: push does not exist in a Safari tab.** Not disabled — *absent*. She has to be added
+  to the Home Screen. `web/reach.js` detects this and says so rather than offering a button
+  that cannot work.
+- **Every push MUST show a notification.** iOS silently revokes a subscription that receives
+  a push and shows nothing, and a silent revocation means she just stops being able to reach
+  you and nobody ever finds out why.
+- **A push loop must survive a bad row.** One subscription with an unusable key threw inside
+  the cron and killed the whole run — every *other* person's notifications would have stopped
+  from that moment on. Caught by a smoke test with a deliberately malformed key. Never let a
+  single vigil take down the sweep.
+- `infra/.vapid` is **gitignored** and minted once. Regenerating it silently breaks every
+  phone that already has her installed.
 
 ## What she is, what she has, what they call her
 

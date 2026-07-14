@@ -15,7 +15,10 @@
     "serve": "node bin/serve.js",
     "grow": "node bin/grow.js",
     "doc": "node bin/doc.js",
-    "icons": "node bin/icons.js"
+    "icons": "node bin/icons.js",
+    "vapid": "node bin/vapid.js",
+    "backend:build": "node bin/backend.js",
+    "backend:deploy": "node bin/deploy.js"
   },
   "keywords": [
     "idle",
