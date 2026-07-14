@@ -21,6 +21,7 @@
 import { worldFromSeed } from '../gen/worldgen.js';
 import { walk, resolve, effective } from '../gen/node.js';
 import { CHRONICLE } from '../gen/tables/chronicle.js';
+import { applyPatch } from '../gen/patch.js';
 
 function mulberry32(a) {
   return function () {
@@ -38,10 +39,30 @@ const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
 const STANDABLE = new Set(['country', 'region', 'city', 'town']);
 
 export class Sim {
-  constructor({ seed = 1, dials = {}, name } = {}) {
+  constructor({ seed = 1, dials = {}, name, patches = [] } = {}) {
     this.seed = seed >>> 0;
     this.rng = mulberry32(this.seed ^ 0x5eed);
     this.world = worldFromSeed(this.seed);
+
+    // GROWTH. A patch is an INPUT, not a generation — authored once by a model that
+    // read her chronicle, then frozen. Applying it here (before day 1) means replay
+    // reproduces the grown world exactly, and nothing is ever called again.
+    //
+    // The grown chronicle lines are merged for THIS RUN ONLY. They must never leak
+    // into the shared CHRONICLE table: they are about HER life, in HER world, and a
+    // line about the water roll at Struck Ford has no business turning up in somebody
+    // else's frozen steppe.
+    this.lines = CHRONICLE;
+    for (const patch of patches) {
+      const { lines, problems } = applyPatch(this.world, patch);
+      if (problems.length) throw new Error(`growth patch rejected: ${problems.join(' · ')}`);
+      if (Object.keys(lines).length) {
+        this.lines = { ...this.lines };
+        for (const [pool, extra] of Object.entries(lines)) {
+          this.lines[pool] = [...(this.lines[pool] ?? []), ...extra];
+        }
+      }
+    }
 
     // every standable place, with the ancestor chain that gives it its law
     this.sites = [...walk(this.world)]
@@ -153,7 +174,7 @@ export class Sim {
 
   line(pool, extra = {}) {
     const v = this.vocab(extra);
-    const t = this.pick(CHRONICLE[pool]);
+    const t = this.pick(this.lines[pool]);
     return t.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
   }
 

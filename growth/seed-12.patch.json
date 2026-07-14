@@ -1,0 +1,197 @@
+{
+  "seed": 12,
+  "worldPrint": "1res276",
+  "grownOn": 251,
+  "note": "Grown from her chronicle. Every addition sits in one of the four places she actually lived in, and every hook collides two facts that were already in the tree. Nothing here is invented; it is what was already true, followed one step further.",
+  "ops": [
+    {
+      "op": "add_child",
+      "parent": "Ottrenmark",
+      "node": {
+        "kind": "place",
+        "scale": "town",
+        "name": "Struck Ford",
+        "merge": "local",
+        "one_line": "A town of people who are not on the roll",
+        "technology": {
+          "tier": 2
+        },
+        "economy": {
+          "resources": "water, unofficially",
+          "who_is_rich": "the man who copies the roll out each spring",
+          "who_pays_for_it": "the people already struck off it, who are struck off it again"
+        },
+        "aesthetic": "dry mud, a dry channel, a queue at a well that does not run",
+        "status": "running out",
+        "divergences": [
+          {
+            "key": "economy.legality",
+            "from": "on the roll",
+            "to": "off it",
+            "why": "the roll is copied by hand every spring, and a name is easier to leave out than to strike"
+          }
+        ]
+      }
+    },
+    {
+      "op": "add_child",
+      "parent": "Struck Ford",
+      "node": {
+        "kind": "figure",
+        "name": "Ovett the Copyist",
+        "center": "in_person",
+        "status": "alive, and very careful",
+        "one_line": "He copies the water roll out by hand each spring",
+        "here": "He has never struck a name. He has, twice, failed to copy one",
+        "known_for": "keeping the only draft, which is not the same as the roll",
+        "wants": "to be asked, once, by somebody who could not make him",
+        "will_do_anything_for": "his own name staying on it"
+      }
+    },
+    {
+      "op": "add_child",
+      "parent": "Ottrenmark",
+      "node": {
+        "kind": "figure",
+        "name": "Sera of the Rendered",
+        "status": "alive, and legally still a man",
+        "one_line": "She has been becoming the fuel for eleven years",
+        "here": "She is warm to the touch in winter and the refineries have made her an offer",
+        "known_for": "reading her own assay report out loud in a public house",
+        "wants": "to be buried, rather than sold"
+      }
+    },
+    {
+      "op": "add_child",
+      "parent": "The Basin of Kell",
+      "node": {
+        "kind": "figure",
+        "name": "Dovic Kell",
+        "status": "alive, and beginning to suspect",
+        "one_line": "He runs a cell that believes it invented its own name",
+        "here": "He has found three orders he did not write, in a hand he half recognises",
+        "known_for": "keeping the orders instead of burning them",
+        "wants": "to know who he has been working for"
+      }
+    },
+    {
+      "op": "add_child",
+      "parent": "The Basin of Kell",
+      "node": {
+        "kind": "place",
+        "scale": "town",
+        "name": "The Intact Works",
+        "merge": "local",
+        "one_line": "The works nobody burned, and everybody wants",
+        "technology": {
+          "tier": 8
+        },
+        "economy": {
+          "resources": "things nobody alive can make",
+          "who_is_rich": "the four crews who hold the doors",
+          "who_pays_for_it": "the crews who go in now, at the rate of one in nine"
+        },
+        "aesthetic": "cold metal in a warm room, and a hum you feel in the jaw",
+        "divergences": [
+          {
+            "key": "technology.tier",
+            "from": 7,
+            "to": 8,
+            "why": "it was never built here and it was never burned, and those are the same sentence"
+          }
+        ]
+      }
+    },
+    {
+      "op": "add_child",
+      "parent": "Vanemark",
+      "node": {
+        "kind": "figure",
+        "name": "Halda Vott",
+        "status": "alive, and paying",
+        "one_line": "She sends the money to a leadership she has disowned",
+        "here": "Estranged from the Company, and eleven years current on her dues",
+        "known_for": "posting the dues herself, in person, so nobody else has to",
+        "wants": "to stop, and to be told she may"
+      }
+    },
+    {
+      "op": "add_era",
+      "at": "Haltford",
+      "era": {
+        "name": "The Vott Holding",
+        "years": "?–before she was born",
+        "status": "dead",
+        "why_it_ended": "the seam under it was godash, and they sold the ground out from beneath the houses",
+        "became": "a refinery, and a name that only one person still uses as a place"
+      }
+    },
+    {
+      "op": "add_hook",
+      "hook": {
+        "facts": [
+          "the Rendered are becoming the fuel, slowly, and legally they are still men",
+          "the economy of Haltford is godash, and the bill is paid by the Waste diggers"
+        ],
+        "where": [
+          "Ottrenmark",
+          "Haltford"
+        ],
+        "collision": "the fuel is people, and the diggers have started to work that out"
+      }
+    },
+    {
+      "op": "add_hook",
+      "hook": {
+        "facts": [
+          "Oren Rook is known for wanting to know what the chord is",
+          "Embercraft costs: the residue attracts attention, and the attention is not human"
+        ],
+        "where": [
+          "Ottrenmark"
+        ],
+        "collision": "the thing he has been listening for has been listening back"
+      }
+    },
+    {
+      "op": "add_hook",
+      "hook": {
+        "facts": [
+          "she told a room the fuel is running out, and one person had done the arithmetic",
+          "The Quiet Office are hunting her, and they hold the only complete copy of the tax roll"
+        ],
+        "where": [
+          "The Basin of Kell",
+          "Ottrenmark"
+        ],
+        "collision": "they are not hunting her for what she did. they are hunting her for what she said."
+      }
+    },
+    {
+      "op": "add_lines",
+      "pool": "work",
+      "lines": [
+        "a week on the well-line at {place} for {coin} coin. she carried water past people who are not allowed to drink it.",
+        "she copied names for a clerk at {place} for {coin} coin, and did not ask what the list was for, and knows.",
+        "{coin} coin at {place} hauling {commodity}. the man beside her was warm to the touch, and did not mention it, and neither did she."
+      ]
+    },
+    {
+      "op": "add_lines",
+      "pool": "road",
+      "lines": [
+        "{place}. she passed the queue at the well and did not look at it, and has been thinking about not looking at it since.",
+        "a day in {place} and the hum in her jaw again, and she has stopped pretending she cannot hear it.",
+        "she walked {place} end to end and counted the houses with no name on the door. she stopped counting at forty."
+      ]
+    },
+    {
+      "op": "add_lines",
+      "pool": "law",
+      "lines": [
+        "they asked for her name at {place} and she gave one, and watched him write it down, and it was not hers.",
+        "her name was on the roll at {place} this spring. she checked. she has started checking."
+      ]
+    }
+  ]
+}

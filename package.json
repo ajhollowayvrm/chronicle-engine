@@ -12,7 +12,9 @@
     "sim": "node bin/run.js",
     "world": "node bin/world.js",
     "test": "node --test test/*.test.js",
-    "serve": "node bin/serve.js"
+    "serve": "node bin/serve.js",
+    "grow": "node bin/grow.js",
+    "doc": "node bin/doc.js"
   },
   "keywords": [
     "idle",

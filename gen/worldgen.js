@@ -113,13 +113,20 @@ function skeleton(seed, mint) {
       prevalence: prev.label,
       rate: prev.rate,
       source: r.pick(T.MAGIC_SOURCES),
-      types: r.some(T.MAGIC_METHODS, r.int(2, 3)).map((method) => ({
+      // effects are drawn WITHOUT replacement. picking each independently gave all
+      // three schools of magic the same one, which reads as a bug because it is one.
+      types: (() => {
+        const methods = r.some(T.MAGIC_METHODS, r.int(2, 3));
+        const effects = r.some(T.MAGIC_EFFECTS, methods.length);
+        const costs = r.some(T.MAGIC_COSTS, methods.length);
+        return methods.map((method, i) => ({
         name: r.pick(P.NAME_PARTS.Place) + r.pick(['work', 'ment', 'craft', 'song', 'binding']),
         method,
-        effects: r.pick(T.MAGIC_EFFECTS),
-        cost: r.pick(T.MAGIC_COSTS),          // FORCED SCARCITY — validated, not hoped for
+        effects: effects[i],
+        cost: costs[i],                       // FORCED SCARCITY — validated, not hoped for
         social: r.pick(T.MAGIC_SOCIAL),
-      })),
+      }));
+      })(),
       limits: r.pick(T.MAGIC_LIMITS),
       governance: r.pick(T.MAGIC_GOVERNANCE),
     },

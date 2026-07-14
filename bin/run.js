@@ -2,13 +2,19 @@
 //
 //   npm run sim 7 200     seed 7, 200 days
 
+import { readFileSync, existsSync } from 'node:fs';
 import { Sim } from '../src/sim.js';
 
 const args = process.argv.slice(2).filter((a) => /^\d+$/.test(a)).map(Number);
 const seed = args[0] ?? 7;
 const days = args[1] ?? 120;
 
-const sim = new Sim({ seed, dials: { reckless: 68, sociable: 74, generous: 50 } });
+// if her life has already grown this world, walk the grown one
+const grownPath = new URL(`../growth/seed-${seed}.patch.json`, import.meta.url);
+const patches = existsSync(grownPath) ? [JSON.parse(readFileSync(grownPath, 'utf8'))] : [];
+
+const sim = new Sim({ seed, dials: { reckless: 68, sociable: 74, generous: 50 }, patches });
+if (patches.length) console.log('[2m(walking the world her last life grew)[0m');
 const w = sim.world;
 
 const D = (s) => `\x1b[2m${s}\x1b[0m`;
