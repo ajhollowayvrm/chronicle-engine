@@ -513,3 +513,41 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
    it is gone the whole row goes cold — because that is what has happened. */
 .stat.faith .fill { background: var(--close); }
 .stat.faith .n { color: var(--close); }
+
+/* ══════════════════════════════════════════════════════════════ THE PEOPLE ══
+   Not a friends list. Every relationship runs on two axes at once — closeness and
+   friction — and the interesting ones have BOTH. So both bars are always shown,
+   even when one of them is empty, because an empty friction bar is information. */
+.person { display: grid; gap: 0.45rem; }
+.person-head { display: flex; align-items: baseline; justify-content: space-between; gap: 0.75rem; }
+.person .kind {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-low);
+  white-space: nowrap;
+}
+.person.lover .kind, .person.lovers-badly .kind { color: var(--close); }
+.person.feud .kind, .person.enemy .kind { color: var(--blood); }
+.person.rival .kind, .person.complicated .kind { color: var(--cold); }
+
+.person .says { font-size: 0.88rem; line-height: 1.5; color: var(--ink-mid); }
+
+.axes { display: grid; gap: 0.25rem; }
+.axis { display: grid; grid-template-columns: 3.6rem 1fr; align-items: center; gap: 0.6rem; }
+.axis-bar { height: 2px; background: var(--rule); }
+.axis-fill { height: 100%; }
+.axis-fill.warm { background: var(--close); }
+.axis-fill.hot { background: var(--blood); }
+
+.person .tagline {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-low);
+}
+.person .tagline.secret { color: var(--close); }
+.person .tagline.bad { color: var(--blood); }
+.person .moment { font-size: 0.8rem; color: var(--ink-low); font-style: italic; line-height: 1.45; }

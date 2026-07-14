@@ -16,6 +16,7 @@ import {
 } from '../src/game.js';
 import { TRAITS } from '../gen/tables/traits.js';
 import { STATS, DOMAINS, STAT_MAX, rankOf } from '../gen/tables/stats.js';
+import { kindOf, describe } from '../src/bonds.js';
 
 const $ = (id) => document.getElementById(id);
 const store = window.localStorage;
@@ -182,7 +183,7 @@ function renderAsking(s) {
   box.hidden = false;
 
   const facts = $('ask-facts');
-  if (j.kind === 'join') {
+  if (j.kind === 'join' || j.kind === 'romance' || j.kind === 'counsel') {
     $('ask-prompt').textContent = j.prompt;
     facts.hidden = true;
   } else {
@@ -194,8 +195,10 @@ function renderAsking(s) {
 
   const opts = $('ask-options');
   opts.replaceChildren();
-  const options = j.kind === 'join'
-    ? { yes: 'Let them walk with her', no: 'She goes on alone' }
+  const options =
+    j.options ? j.options
+    : j.kind === 'join' ? { yes: 'Let them walk with her', no: 'She goes on alone' }
+    : j.kind === 'romance' ? { yes: 'Let her have it', no: 'She has work to do' }
     : { act: 'Act on it', tell: 'Tell someone', keep: 'Say nothing, and keep it' };
 
   for (const [key, label] of Object.entries(options)) {
@@ -321,18 +324,57 @@ const COSTS = {
   alone: 'company has started to feel like a debt',
 };
 
+// EVERYONE WHO MATTERS. Not a friends list — a relationship has closeness AND friction,
+// and the interesting ones have both.
 function renderPeople(s) {
   const host = $('people');
   host.replaceChildren();
-  const with_ = s.companions.filter((c) => c.alive);
-  if (!with_.length) {
-    host.append(el('p', 'quiet small', 'Nobody. She is on her own out there.'));
+
+  const bonds = Object.values(s.bonds)
+    .filter((b) => b.alive && (b.closeness >= 3 || b.friction >= 5))
+    .sort((a, b) => (b.closeness + b.friction) - (a.closeness + a.friction))
+    .slice(0, 8);
+
+  if (!bonds.length) {
+    host.append(el('p', 'quiet small', 'Nobody, yet. She has not let anyone near her.'));
     return;
   }
-  for (const c of with_) {
-    const row = el('div', 'person');
-    row.append(el('b', null, c.name));
-    if (c.wants) row.append(el('span', 'want', `wants ${c.wants}`));
+
+  for (const b of bonds) {
+    const k = kindOf(b);
+    const row = el('div', `person ${k.replace(/[ ,]+/g, '-')}`);
+
+    const head = el('div', 'person-head');
+    head.append(el('b', null, b.who));
+    head.append(el('span', 'kind', k));
+    row.append(head);
+
+    row.append(el('span', 'says', describe(b)));
+
+    // the two axes, shown as two bars, because that is the whole model
+    const axes = el('div', 'axes');
+    for (const [label, v, cls] of [['close', b.closeness, 'warm'], ['friction', b.friction, 'hot']]) {
+      const a = el('div', 'axis');
+      a.append(el('span', 'k', label));
+      const bar = el('div', 'axis-bar');
+      const fill = el('div', `axis-fill ${cls}`);
+      fill.style.width = `${(v / 20) * 100}%`;
+      bar.append(fill);
+      a.append(bar);
+      axes.append(a);
+    }
+    row.append(axes);
+
+    if (b.withHer) row.append(el('span', 'tagline', 'walks with her'));
+    if (b.knows.length) row.append(el('span', 'tagline secret', `knows ${b.knows[0]}`));
+    if (b.owes > 3) row.append(el('span', 'tagline', 'she owes them her life'));
+    if (b.betrayed) row.append(el('span', 'tagline bad', 'sold her'));
+
+    // what actually happened between them. two most recent moments.
+    for (const h of b.history.slice(-2)) {
+      row.append(el('span', 'moment', `day ${h.day} — ${h.what}`));
+    }
+
     host.append(row);
   }
 }
@@ -443,6 +485,7 @@ function renderVitals(s) {
     ['places stood in', `${s.seen.length} of ${sim.sites.length}`],
     ['nights alone', s.lived.nights_alone],
     ['buried', s.lived.buried],
+    ['people she knows', Object.values(s.bonds).filter((b) => b.closeness >= 3).length],
     ['spoke to you', `${s.spoken} times`],
   ];
   for (const [k, v] of rows) {

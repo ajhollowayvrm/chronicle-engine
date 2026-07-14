@@ -307,14 +307,43 @@ function placement(world, seed, mint) {
     });
   }
 
-  // --- mortal figures, scattered. A figure with `in_person` is SOMEWHERE, and can move.
-  for (const p of r.some(places, r.int(1, 3))) {
-    add(p.node, node('figure', personName(mint, r), {
-      center: 'in_person',
-      status: r.pick(['alive, mostly', 'alive, attentive', 'suppressed']),
-      known_for: r.pick(P.FIGURE_KNOWN_FOR),
-      wants: r.pick(P.FIGURE_WANTS),
-    }));
+  // ─────────────────────────────────────────────────────────── THE POPULATION
+  //
+  // A world with four people in it is a cast list, not a society. She has to be able to
+  // walk into a room where everybody else already has history — so the world gets a
+  // POPULATION, and it is entangled ON PURPOSE:
+  //
+  //   FAMILIES  — a surname is reused across two or three people, in different places.
+  //               The web reads a shared surname as kin, so this makes blood.
+  //   RIVALS    — some pairs are handed THE SAME WANT. Two people who want the same
+  //               thing, in the same country, are a rivalry the day they meet, and
+  //               neither of them chose it.
+  //   DEBTS     — somebody once saved somebody, and it has never been squared.
+  //
+  // None of this is prose. It is structure, and the sim makes it hurt.
+  const families = r.some(P.NAME_PARTS.Last, 3);
+  const contested = r.some(P.FIGURE_WANTS, 2);   // the wants two people will fight over
+
+  for (const p of places) {
+    const howMany = p.node.scale === 'country' || p.node.scale === 'region' ? r.int(2, 4) : r.int(0, 2);
+    for (let i = 0; i < howMany; i++) {
+      // a third of everybody belongs to one of the families
+      const kin = r.chance(0.28) ? r.pick(families) : null;
+      const name = kin
+        ? mint([`{First} ${kin}`], r)
+        : personName(mint, r);
+
+      // and some of them are handed a want that somebody else in this world also has
+      const wants = r.chance(0.3) ? r.pick(contested) : r.pick(P.FIGURE_WANTS);
+
+      add(p.node, node('figure', name, {
+        center: 'in_person',
+        status: r.pick(['alive, mostly', 'alive, attentive', 'suppressed', 'alive, and owed']),
+        known_for: r.pick(P.FIGURE_KNOWN_FOR),
+        wants,
+        ...(kin ? { family: kin } : {}),
+      }));
+    }
   }
 
   // --- a language, with its origin. Blank everywhere = everyone understands everyone,

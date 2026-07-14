@@ -149,23 +149,11 @@ export const CHRONICLE = {
     'she slept nine hours and woke furious with herself, and better.',
   ],
 
-  // ---------------------------------------------------------------- the people
-  // A figure is another person with WANTS. Two figures in one place whose wants
-  // overlap is an emergent life event that cost nothing to author.
-  figure_meet: [
-    'she met {figure} at {place}. they want {want}. she has not decided yet whether that is a problem.',
-    '{figure} is at {place}, and known for {known}. she has been careful to be somewhere else.',
-    'she drank with {figure} at {place}, who wants {want}, and who said so out loud, which she found either brave or stupid.',
-    '{figure} bought her a drink at {place} and asked her nothing, and she has been braced ever since.',
-    'she watched {figure} work a room at {place}. they want {want} and they are going to get it.',
-  ],
-
-  figure_clash: [
-    'she and {figure} want the same thing at {place}, and only one of them is going to have it, and neither has said so.',
-    '{figure} got there first at {place}. she is telling herself it does not matter.',
-    'she crossed {figure} at {place}. she did it deliberately. she is not sure why she did it deliberately.',
-    '{figure} knows what she is now, near enough, and has said nothing, and the saying-nothing is the threat.',
-  ],
+  // NOTE: `figure_meet` and `figure_clash` used to live here. They are gone, and the
+  // dead-pool test is what caught them: meeting a person is no longer a generic line
+  // with a name slotted into it. It is written by src/sim.js against the actual state of
+  // the actual relationship — a meeting with a rival is not a meeting with a friend, and
+  // she does not get to choose which.
 
   // --------------------------------------------------------------- the faction
   faction_favour: [

@@ -22,6 +22,8 @@ import { worldFromSeed } from '../gen/worldgen.js';
 import { walk, resolve, effective } from '../gen/node.js';
 import { CHRONICLE } from '../gen/tables/chronicle.js';
 import { applyPatch } from '../gen/patch.js';
+import { newBond, kindOf, describe, shift, cool } from './bonds.js';
+import { webOf, tangledWith, sideEffects, vendetta } from './web-of.js';
 import { VOICE, speaksTo } from '../gen/tables/voice.js';
 import { TRAITS } from '../gen/tables/traits.js';
 import { STATS, STAT_MAX, SKILLS, CONDITIONS, toNext, SHE_NOTICED, HEART, FAITH } from '../gen/tables/stats.js';
@@ -66,6 +68,11 @@ export class Sim {
         }
       }
     }
+
+    // Everyone in this world already knows somebody. They had all of it before she got
+    // here and they will have it after she is dead. She is one more person walking into
+    // a room where everybody else has history.
+    this.web = webOf(this.world);
 
     // every standable place, with the ancestor chain that gives it its law
     this.sites = [...walk(this.world)]
@@ -121,10 +128,14 @@ export class Sim {
       },
       traits: [],          // what she has become. she cannot choose these. neither can you.
 
-      // People from the WORLD who walk with her. Not strangers — figures out of the
-      // tree, with wants of their own and names that appear elsewhere.
-      companions: [],
-      met: {},             // figure name -> how many times she has dealt with them
+      // EVERY PERSON SHE HAS DEALT WITH, and what is between them. Not a friends list —
+      // a bond has closeness AND friction AND trust, independently, because you can love
+      // somebody and be furious with them, and a single number cannot say that.
+      bonds: {},           // name -> bond, for people she has actually MET
+      // What people who have NEVER MET HER already think. Her name gets to a room before
+      // she does — and if she has been drinking with a man's rival, he has made his mind
+      // up about her and she has not said a word yet.
+      predisposed: {},     // name -> friction they will start with
       ghosts: [],
 
       // SHE KNOWS YOU ARE THERE. This is how often she says anything about it, and it
@@ -592,6 +603,50 @@ export class Sim {
 
       case 'danger': {
         if (this.chance(0.3)) this.use('name');   // people talk about the ones who win
+
+        // ── RECONCILIATION. Nothing on earth unmakes a rivalry like the two of you
+        //    coming out the other side of something. People do not forgive each other in
+        //    conversations. They forgive each other in ditches.
+        const enemyHere = this.figuresHere()
+          .map((f) => s.bonds[f.name])
+          .filter((b) => b && b.alive && b.friction >= 7);
+        if (enemyHere.length && this.chance(0.22)) {
+          const b = this.pick(enemyHere);
+          shift(b, { friction: -6, trust: +3, closeness: +2 },
+            `it came for both of them at ${this.here().name}, and they got out, together`, s.day, true);
+          this.say(this.pick([
+            `it came for her and ${b.who} at ${this.here().name}, and they were back to back before either of them thought about it, and neither has mentioned it since.`,
+            `she and ${b.who} came out of it at ${this.here().name} together. they have not spoken about the thing between them. it is smaller than it was.`,
+          ]), 'bond');
+          this.speak(this.pick([
+            `I would have let ${b.who} drown last month. I pulled them out today. I have not worked out what that means.`,
+            `${b.who} and I are not friends. We got out of that together and I do not know what we are.`,
+          ]), 'close');
+          return;
+        }
+
+        // ── A LIFE SAVED IS A DEBT, AND IT IS THE MOST HUMAN THING IN THIS FILE.
+        //
+        // Somebody steps into a blade that had her name on it. Now she owes them, and
+        // owing somebody is not the same as loving them — it can sit alongside friction
+        // and make it worse, because there is nothing that grates like being in debt to a
+        // person you cannot stand. `owes` was in the model from the beginning and nothing
+        // ever set it. This sets it.
+        const with_ = this.withHer();
+        if (with_.length && s.wounds >= 3 && this.chance(0.3)) {
+          const saver = this.pick(with_);
+          s.wounds = Math.max(0, s.wounds - 2);
+          shift(saver, { owes: +6, trust: +3, closeness: +2 },
+            `they stepped into something that had her name on it, at ${this.here().name}`, s.day, true);
+          this.condition('heart', +1, 'saved');
+          this.speak(this.pick([
+            `${saver.who} got in front of it. I did not ask them to. I would not have asked.`,
+            `I am alive because of ${saver.who}. I have not said thank you. I do not know how to start.`,
+          ]), 'close');
+          return this.say(
+            `it went badly at ${this.here().name}, and ${saver.who} took the blade that had her name on it. she is alive. she has not said thank you and does not know how.`,
+            'bond');
+        }
         // EYE: she saw it before it happened. this is the stat that stops a fight
         // being a fight, and it is why a woman with an eye lives longer than one with
         // a hand.
@@ -656,19 +711,25 @@ export class Sim {
       }
 
       case 'figure_meet': {
-        const f = this.pick(ctx.figures);
-        this.use('tongue');
-        s.met[f.name] = (s.met[f.name] ?? 0) + 1;      // this is how a companion begins
         this.drift('sociable', +0.02);
-        return this.say(this.line('figure_meet', { figure: f.name, want: f.wants ?? 'something she cannot get out of them', known: f.known_for ?? 'nothing she can confirm' }), 'event', { id: act });
+        return this.meet(this.pick(ctx.figures));
       }
 
       case 'figure_clash': {
         const f = this.pick(ctx.figures);
+        const b = this.bond(f.name, f);
         s.attention += 1;
-        return this.say(this.line('figure_clash', { figure: f.name }), 'event', { id: act });
+        this.use('nerve');
+        // FRICTION. This is where it comes from — she crossed somebody, and the crossing
+        // sticks. It cools later, slowly, and never all the way back to nothing.
+        shift(b, { friction: +3, trust: -1 }, `she crossed them at ${this.here().name}`, s.day, true);
+        return this.say(this.pick([
+          `she and ${f.name} want the same thing at ${this.here().name}, and only one of them is going to have it, and neither has said so out loud.`,
+          `${f.name} got there first at ${this.here().name}. she is telling herself it does not matter.`,
+          `she crossed ${f.name} at ${this.here().name}. she did it deliberately. she is not sure why she did it deliberately.`,
+          `${f.name} knows what she is now, near enough, and has said nothing, and the saying-nothing is the threat.`,
+        ]), 'event', { id: act });
       }
-
       case 'faction_favour': {
         const f = this.pick(ctx.friends);
         s.coin += this.int(8, 25);
@@ -778,29 +839,427 @@ export class Sim {
     }
   }
 
-  // =============================================================== THE COMPANIONS
+  // ================================================================ THE PEOPLE
   //
-  // Not strangers. FIGURES OUT OF THE TREE — people the world already knows about, who
-  // have a want of their own and a name that turns up elsewhere. When Ovett the Copyist
-  // walks with her, she is walking with a man whose want is now in play, and you are
-  // the one who gets asked whether she helps him get it.
+  // Not a friends list. Every person she has dealt with has a BOND, and a bond runs on
+  // two axes at once — closeness and friction — because you can love somebody and be
+  // furious with them, and a single number cannot say that.
   //
-  // A figure with `in_person` is somewhere, and can move. So when one joins her, the
-  // node MOVES in the tree, and the world stops having them where they were.
-  withHer() { return this.state.companions.filter((c) => c.alive); }
+  // And nobody exists alone. Getting close to one person moves her against everybody
+  // they are tangled with: their kin, their rivals, the people who answer to the same
+  // men they do. A friendship is a POSITION, whether or not she meant it as one, and the
+  // world files her accordingly.
 
+  bond(name, node) {
+    const s = this.state;
+    if (!s.bonds[name]) {
+      const b = newBond(name, node ?? null, s.day);
+      // HER NAME GOT HERE BEFORE SHE DID. Whatever the room already decided about her —
+      // because of who she drinks with, whose cousin she buried, whose rival she took the
+      // side of — is what she is walking into. The bigger her Name, the more of it
+      // reached them. She cannot put that down.
+      const heard = s.predisposed[name] ?? 0;
+      if (heard) {
+        const carried = heard * clamp(0.4 + this.st('name'), 0.3, 1.6);
+        if (carried > 0) b.friction = clamp(carried, 0, 14);
+        else b.closeness = clamp(-carried, 0, 8);
+        b.preceded = true;
+        delete s.predisposed[name];
+      }
+      s.bonds[name] = b;
+    }
+    if (node && !s.bonds[name].node) s.bonds[name].node = node;
+    return s.bonds[name];
+  }
+  bondList() { return Object.values(this.state.bonds); }
+  withHer() { return this.bondList().filter((b) => b.withHer && b.alive); }
+
+  // She got closer to somebody. The room notices.
+  ripple(name, magnitude = 1) {
+    const s = this.state;
+    for (const e of sideEffects(this.web, name)) {
+      // ── SHE HAS NOT MET THEM. She does not have a relationship with a man she has
+      //    never seen — but he has one with her. Her name got there first. It waits, and
+      //    it is the first thing he knows about her when she walks in.
+      if (!s.bonds[e.other]) {
+        s.predisposed[e.other] = (s.predisposed[e.other] ?? 0)
+          + ((e.friction ?? 0) - (e.closeness ?? 0)) * magnitude;
+        continue;
+      }
+      const b = s.bonds[e.other];
+      const was = b.friction;
+      shift(b, {
+        closeness: (e.closeness ?? 0) * magnitude,
+        friction: (e.friction ?? 0) * magnitude,
+      }, e.why, s.day, (e.friction ?? 0) > 0 && was < 4);
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────── meeting people
+  meet(f) {
+    const s = this.state;
+    const first = !s.bonds[f.name];
+    const b = this.bond(f.name, f);
+    const k = kindOf(b);
+    this.use('tongue');
+
+    // her name arrived first, and it had already been read
+    if (first && b.preceded) {
+      this.use('name');
+      return this.say(
+        b.friction > 0
+          ? `${f.name} knew who she was at ${this.here().name} before she said a word, and had already decided. she has stopped being surprised by this and has not stopped minding it.`
+          : `${f.name} had heard of her at ${this.here().name}, and was pleased to, and she cannot work out whether that is worse.`,
+        'event', { id: 'meet' });
+    }
+
+    // What passes between them depends on what is ALREADY between them. A meeting with a
+    // rival is not a meeting with a friend, and she does not get to choose which.
+    if (k === 'enemy' || k === 'feud') {
+      shift(b, { friction: +1 }, null, s.day);
+      this.use('nerve');
+      return this.say(this.pick([
+        `${f.name} was at ${this.here().name}. neither of them left, and neither of them spoke, and the whole room understood.`,
+        `she and ${f.name} were in one room at ${this.here().name} for an hour. she counted every minute of it.`,
+      ]), 'event', { id: 'meet' });
+    }
+
+    if (k === 'rival' || k === 'complicated') {
+      shift(b, {
+        friction: this.chance(0.6) ? +1 : 0,
+        closeness: this.chance(0.3) ? +1 : 0,
+      }, 'they cannot leave each other alone', s.day);
+      return this.say(this.pick([
+        `she drank with ${f.name} at ${this.here().name} and they argued about nothing for three hours, and both enjoyed it, and neither will admit that.`,
+        `${f.name} still wants ${b.node?.wants ?? 'the thing she wants'}. so does she. they were civil about it, and it cost them both.`,
+        `she and ${f.name} were pleasant to each other at ${this.here().name}. it was the most unpleasant hour of her week.`,
+      ]), 'event', { id: 'meet' });
+    }
+
+    // an ordinary meeting. this is how all of it starts.
+    b.lastSeen = s.day;
+    const isNew = b.closeness === 0 && b.friction === 0;
+    shift(b, { closeness: +1, trust: this.chance(0.5) ? +1 : 0 },
+      isNew ? `she met them at ${this.here().name}` : null, s.day, isNew);
+    this.ripple(f.name, 0.5);   // even drinking with somebody is taking a side, a little
+
+    return this.say(this.pick([
+      `she met ${f.name} at ${this.here().name}. they want ${f.wants ?? 'something they would not say'}. she has not decided yet whether that is a problem.`,
+      `she drank with ${f.name} at ${this.here().name}, who said out loud what they wanted, which she found either brave or stupid.`,
+      `${f.name} bought her a drink at ${this.here().name} and asked her nothing, and she has been braced ever since.`,
+      `${f.name} is at ${this.here().name}, known for ${f.known_for ?? 'nothing she can confirm'}. she has been careful to be somewhere else, and today she was not.`,
+    ]), 'event', { id: 'meet' });
+  }
+
+  // ───────────────────────────────────────────────── the day-to-day of having people
+  peopleTick() {
+    const s = this.state;
+
+    // Friction cools if nothing feeds it. People do get over things — slowly, and never
+    // all the way. It floors at a third of its worst, because you do not forget.
+    for (const b of this.bondList()) cool(b, s.day);
+
+    const with_ = this.withHer();
+    if (!with_.length) {
+      s.lived.nights_alone++;
+      if (s.lived.nights_alone % 45 === 0) this.condition('heart', HEART.alone_long, 'alone');
+      return;
+    }
+    s.lived.with_someone++;
+
+    for (const x of with_) x.lastSeen = s.day;   // she is with them. the clock resets.
+    const b = this.pick(with_);
+    if (!this.chance(0.16)) return;
+
+    // ── THEY DIE. And they die WANTING something, which is the whole of it.
+    if (s.wounds >= 3 && this.chance(0.18)) return this.lose(b, 'died');
+
+    // ── THEY LEAVE. Friction does this. So does a woman with nothing left to give.
+    if ((b.friction >= 12 || s.stat.heart <= 3) && this.chance(0.12)) return this.lose(b, 'left');
+
+    // ══════════════════════════════════════════════════════════════ JEALOUSY
+    //
+    // She is with somebody, and somebody else has got close. Nobody in this game is
+    // punished for it and nobody is a villain — but the person she is with is not blind,
+    // and the room is not blind, and the friction is real and it lands on all three of
+    // them.
+    const lover = this.withHer().find((x) => x.romance >= 3 && x !== b);
+    if (lover && b.closeness >= 10 && b.romance === 0 && this.chance(0.12)) {
+      shift(lover, { friction: +4, trust: -2 },
+        `they saw how she is with ${b.who}, and said nothing, which was worse`, s.day, true);
+      shift(b, { friction: +2 }, `${lover.who} saw`, s.day, true);
+      this.speak(this.pick([
+        `${lover.who} has not said anything about ${b.who}. That is how I know.`,
+        `I have not done anything. I want that on the record. I have not done anything and I know exactly what I have done.`,
+      ]), 'cold');
+      return this.say(
+        `${lover.who} watched her with ${b.who} across the fire and said nothing about it, all evening, deliberately.`,
+        'bond');
+    }
+
+    // ── ROMANCE. It does not happen because a bar filled. It happens because two people
+    //    kept turning up, and then one of them noticed. She does not start a second one
+    //    while she is in the first — she is not a saint, but she is not a fool either.
+    if (!lover && b.romance === 0 && b.closeness >= 11 && b.trust >= 9 && s.stat.heart >= 7 && this.chance(0.10)) {
+      b.romance = 1;
+      shift(b, {}, 'she noticed, and wishes she had not', s.day, true);
+      this.speak(this.pick([
+        'Do not say anything. I know what you are going to say and I am not ready to hear it in my own head yet.',
+        'Something has changed and I have not decided whether to let it.',
+      ]), 'close');
+      return this.say(`she caught herself looking at ${b.who}, and neither of them looked away fast enough to pretend.`, 'bond');
+    }
+    if (b.romance === 1 && this.chance(0.12)) {
+      b.romance = 2;
+      return this.say(this.pick([
+        `she and ${b.who} sat past the end of the fire and neither of them stood up.`,
+        `${b.who} reached over to look at a wound that healed weeks ago, and she let them, and neither said anything about it.`,
+      ]), 'bond');
+    }
+    if (b.romance === 2 && this.chance(0.15)) return this.askRomance(b);
+
+    // ══════════════════════════════════════════════════════════ THE ARGUMENT
+    //
+    // THE PEOPLE SHE LOVES HAVE TO BE ABLE TO FIGHT WITH HER.
+    //
+    // Without this the model is broken in the most important place: friction was only
+    // ever landing on strangers and closeness only ever on friends, so they never
+    // coincided — and `complicated` happened twice in forty lives and `feud` never
+    // happened at all. Those are the DEEPEST relationships anybody has. The ones where
+    // both things are true.
+    //
+    // So the people closest to her argue with her, and about real things: what she did
+    // with what she knows, who she has thrown in with, and the fact that she will not
+    // stop walking toward the thing that is going to kill her.
+    if (b.closeness >= 8 && this.chance(0.14)) {
+      const about = this.pick([
+        s.allegiance ? `who she has thrown in with` : `the people she drinks with`,
+        `what she did with the thing she found out`,
+        `the fact that she will not stop, and cannot say what she is walking toward`,
+        `something small, which was not what it was about`,
+        b.node?.wants ? `what they want, which she has stopped pretending to help with` : `the road`,
+      ]);
+      const bad = this.chance(0.4);
+      shift(b, {
+        friction: bad ? +4 : +2,
+        trust: bad ? -2 : 0,
+        closeness: bad ? 0 : +1,   // a good row can bring people closer. it often does.
+      }, `they had it out about ${about}`, s.day, true);
+
+      return this.say(bad
+        ? this.pick([
+            `she and ${b.who} had it out about ${about}. things were said that neither of them is going to take back, and neither of them left.`,
+            `${b.who} told her the truth about herself tonight. she has not spoken to them since and she has not stopped thinking about it.`,
+          ])
+        : this.pick([
+            `she and ${b.who} argued about ${about} for three hours and went to bed angry and got up fine.`,
+            `${b.who} said she was wrong. she was wrong. she has not admitted it and they have not pressed it.`,
+          ]), 'bond');
+    }
+
+    // ══════════════════════════════════════════════════════════════ THE SECRET
+    //
+    // She tells somebody a thing she has told nobody. That is what intimacy IS — not
+    // hours logged, but a piece of herself handed over that she cannot take back.
+    //
+    // And it is a WEAPON she has just given them. `knows` was in the model from the start
+    // and nothing ever put anything in it. It goes in here, and it comes out in a
+    // betrayal, and that is why the betrayal hurts more than the money.
+    if (b.trust >= 12 && b.closeness >= 12 && !b.knows.length && this.chance(0.08)) {
+      const secret = this.pick([
+        'her real name',
+        'what she did before any of this',
+        'what she is walking toward, which she has never said out loud',
+        'the name of the person she is still not over',
+        'that she talks to something, and that it answers',
+      ]);
+      b.knows.push(secret);
+      shift(b, { closeness: +3, trust: +2 }, `she told them ${secret}`, s.day, true);
+      this.speak(this.pick([
+        `I told ${b.who} something I have never told anybody. I have been sick about it all week. I would do it again.`,
+        `They know now. ${b.who}. I handed it to them and they could do anything with it and I gave it to them anyway.`,
+      ]), 'close');
+      return this.say(`she told ${b.who} ${secret}. she has never told anyone. she has been sick about it all week, and she would do it again.`, 'bond');
+    }
+
+    // ── the ordinary hours, which are what a relationship actually is
+    shift(b, { closeness: +1, trust: this.chance(0.4) ? +1 : 0 }, null, s.day);
+    if (this.chance(0.35)) this.condition('heart', HEART.company, 'company');
+
+    const k = kindOf(b);
+    const pool =
+      k === 'lover' ? [
+        `an ordinary evening with ${b.who}, which she has decided is the thing she was missing and could not name.`,
+        `she woke before ${b.who} and did not get up, and lay there, and that is the whole of the entry.`,
+      ] : k === 'lovers, badly' ? [
+        `she and ${b.who} said things tonight that neither of them will take back, and both of them stayed.`,
+        `they are still here. she does not know whether that is love or whether neither of them has anywhere to go.`,
+      ] : k === 'complicated' ? [
+        `${b.who} did something months ago that she has forgiven and not forgotten, and both of those are true at once.`,
+        `she likes ${b.who} and cannot trust them, and has stopped trying to reconcile the two.`,
+      ] : [
+        `a quiet hour with ${b.who}. neither of them said anything worth writing down, and something got said anyway.`,
+        `${b.who} asked her a question she did not answer, and did not leave, and that was the whole conversation.`,
+        `she took the second watch so ${b.who} could sleep, and did not tell them, and ${b.who} knew.`,
+        `${b.who} still wants ${b.node?.wants ?? 'something they will not name'}. she has started to want it for them, which is new and unwelcome.`,
+      ];
+    return this.say(this.pick(pool), 'bond');
+  }
+
+  // ───────────────────────────────────────────────────────────────── losing them
+  lose(b, how) {
+    const s = this.state;
+    b.withHer = false;
+
+    if (how === 'left') {
+      shift(b, { closeness: -3, friction: +2 }, 'they walked out in the night', s.day, true);
+      this.condition('heart', HEART.left, 'left');
+      return this.say(
+        b.romance >= 3
+          ? `${b.who} left in the night. she did not look for tracks. she has not said their name since, and she says it constantly, in her head.`
+          : `${b.who} left in the night. she noticed the missing weight of them before she noticed the empty place by the fire.`,
+        'loss');
+    }
+
+    // THEY DIED, AND THEY DIED WANTING SOMETHING. That is the line that hurts.
+    b.alive = false;
+    if (b.node) b.node.status = `dead — she buried them at ${this.here().name}`;
+    s.ghosts.push({
+      name: b.who,
+      why: 'died',
+      day: s.day,
+      wanted: b.node?.wants ?? null,
+      was: b.romance >= 3 ? 'lover' : kindOf({ ...b, alive: true }),
+    });
+    s.lived.buried++;
+    this.condition('heart', HEART.buried, 'buried');
+
+    // THEIR FAMILY FINDS OUT. This arrives late and uninvited: a man she has never met,
+    // in a country she was only passing through, furious with her for a reason she had
+    // genuinely forgotten. Which is how it works.
+    for (const v of vendetta(this.web, b.who)) {
+      shift(this.bond(v.other), { friction: v.friction, trust: -3 }, v.why, s.day, true);
+    }
+
+    this.say(
+      `${b.who} is dead. she buried them at ${this.here().name}.` +
+      (b.node?.wants ? ` they never got ${b.node.wants}.` : ''),
+      'loss');
+    this.speak(this.fresh(VOICE.grief), 'grief');
+  }
+
+  // ══════════════════════════════════════════════════════════════ THE BETRAYAL
+  //
+  // THE PERSON WHO SELLS YOU DOES NOT HAVE TO BE SLEEPING NEXT TO YOU.
+  //
+  // The first version gated this on `withHer`, so only a travelling companion could
+  // betray her — and in sixty lives it happened ONCE, because the state that makes a
+  // betrayal possible (close, but no longer trusted) almost never coincides with the two
+  // people she happens to be walking with. Which is backwards. The friend in the town who
+  // knows where she sleeps is a far better informer than the woman at her shoulder.
+  //
+  // It needs: CLOSE ENOUGH TO HURT HER, and TRUST THAT HAS FALLEN. That is exactly the
+  // state the two-axis model exists to hold and a single bond number could never reach.
+  betrayalTick() {
+    const s = this.state;
+    if (!this.chance(0.02)) return;
+
+    // Close enough to hurt her — AND one of two things has happened:
+    //
+    //   the trust went out of it, and there is friction; or
+    //   SHE TOLD THEM NO. They needed something, they asked, and she decided they were
+    //   not worth it. That is who sells you. Not the one who drifted — the one who
+    //   watched you weigh them.
+    const able = this.bondList().filter((b) =>
+      b.alive && !b.betrayed && b.closeness >= 9 && (
+        (b.trust <= 6 && b.friction >= 6) ||
+        (b.refused && b.friction >= 4)
+      ));
+    if (!able.length) return;
+
+    const b = this.pick(able);
+    const took = Math.round(s.coin * 0.35) + this.int(20, 60);
+    s.coin = Math.max(0, s.coin - took);
+    s.attention += 3;
+    if (this.chance(0.4)) s.wounds += 1;
+
+    shift(b, { friction: +8, trust: -10, closeness: -2 },
+      `they sold her, at ${this.here().name}, and they did it well`, s.day, true);
+    b.withHer = false;
+    b.betrayed = true;
+    this.condition('heart', -3, 'betrayed');
+    this.condition('faith', -1, 'betrayed');
+
+    // and everybody they are tangled with now has to decide what they think about it
+    this.ripple(b.who, -0.5);
+
+    this.speak(this.pick([
+      `${b.who} sold me. I saw it coming. I let it happen anyway, because the alternative was being alone.`,
+      `I trusted them. That is the whole of it. I do not want to talk about it, and I am telling you, which tells you something.`,
+    ]), 'cold');
+
+    this.say(
+      b.knows.length
+        // she gave them the knife herself
+        ? `${b.who} sold her at ${this.here().name}. they told them ${b.knows[0]} — which she gave them, freely, one night, because she wanted somebody in the world to know it.`
+        : `${b.who} sold her at ${this.here().name} — for ${took} coin, and for ${b.node?.wants ?? 'something she never got out of them'}. she had seen it coming. she had let it happen anyway.`,
+      'loss');
+    if (b.knows.length) {
+      s.attention += 4;   // whatever they told, it travelled
+      this.speak(`They knew ${b.knows[0]}. Because I told them. I want that written down: I told them.`, 'cold');
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════ THE DEAD
+  //
+  // They do not stop when they are buried. They died WANTING something, and the want is
+  // still in the world, and she is still in the world, and she knows exactly where it is.
+  //
+  // A ghost is not a memory. It is a piece of unfinished business with a name on it.
+  ghostTick() {
+    const s = this.state;
+    const unfinished = s.ghosts.filter((g) => g.wanted && !g.settled);
+    if (!unfinished.length || !this.chance(0.03)) return;
+
+    const g = this.pick(unfinished);
+
+    // She can finish it. Nobody asked her to. It does not bring them back and she knows
+    // that, and she does it anyway, and it is the closest thing to grief she permits.
+    if (this.chance(0.35)) {
+      g.settled = s.day;
+      this.condition('heart', +3, 'settled');
+      this.use('name');
+      this.speak(this.pick([
+        `I did the thing ${g.name} wanted. They are still dead. I know that. I did it anyway.`,
+        `It is finished. ${g.name} never saw it. I am not sure who I did it for.`,
+      ]), 'grief');
+      return this.say(
+        `she finished it. ${g.name} wanted ${g.wanted}, and never got it, and now it is done, and they are still dead.`,
+        'bond');
+    }
+
+    return this.say(this.pick([
+      `she dreamed about ${g.name} again. she woke before dawn and walked until it was light.`,
+      `${g.name} wanted ${g.wanted}. she keeps finding herself in a position to get it for them, and keeps not doing it.`,
+      `somebody said ${g.name}'s name at ${this.here().name}, meaning nothing by it, and she had to leave the room.`,
+      `she still has not settled what ${g.name} wanted. she tells herself it is not hers to settle.`,
+    ]), 'loss');
+  }
+
+  // ─────────────────────────────────────────────────── she asks you about them
   offerCompanion() {
     const s = this.state;
     if (this.withHer().length >= 2) return;
-    if (s.pending.some((p) => p.kind === 'join')) return;
+    if (s.pending.some((p) => p.kind === 'join' || p.kind === 'romance')) return;
 
     for (const f of this.figuresHere()) {
       if (f.divine) continue;
-      if (s.companions.some((c) => c.name === f.name)) continue;
-      if ((s.met[f.name] ?? 0) < 2) continue;          // she has to actually know them
-      // HEART: an empty woman cannot let anybody in. Not won't — CAN'T. This is what
-      // burying people does to her, and it is why the companion system has stakes.
-      if (!this.chance(clamp((s.stat.heart / 14) * (0.3 + 0.3 * this.off('sociable')), 0, 0.8))) continue;
+      const b = s.bonds[f.name];
+      if (!b || b.withHer || !b.alive) continue;
+      if (b.closeness < 4) continue;      // she has to actually know them
+      if (b.friction >= 8) continue;      // and not be at war with them
+      // HEART gates this. An empty woman cannot let anybody in. Not won't — CAN'T.
+      if (!this.chance(clamp((s.stat.heart / 14) * (0.28 + 0.3 * this.off('sociable')), 0, 0.8))) continue;
 
       s.pending.push({
         id: `join_${f.name}`,
@@ -809,67 +1268,269 @@ export class Sim {
         wants: f.wants ?? null,
         raisedOn: s.day,
         dueOn: s.day + 4,
-        prompt: `${f.name} wants to come with me. ${f.wants ? `They want ${f.wants}.` : ''} ${this.pick(VOICE.ask)}`,
+        // She tells you what it will cost her. She can see it. She tells you anyway,
+        // because she wants you to be the one who says it is worth it.
+        prompt: `${f.name} wants to come with me. ${f.wants ? `They want ${f.wants}.` : ''} ${this.costOf(f.name)} ${this.pick(VOICE.ask)}`.replace(/\s+/g, ' ').trim(),
       });
       return;
     }
   }
 
-  takeCompanion(name) {
-    const s = this.state;
-    const found = [...walk(this.world)].find(({ node: n }) => n.kind === 'figure' && n.name === name);
-    if (!found) return;
-    const { node: f, path } = found;
-
-    // the figure LEAVES the world where they were. they are with her now.
-    const parent = path[path.length - 1];
-    parent.children = parent.children.filter((c) => c !== f);
-    f.with_her = true;
-
-    s.companions.push({ name: f.name, node: f, bond: 3, alive: true, joined: s.day, wants: f.wants ?? null });
-    this.say(`${f.name} is walking with her now. ${f.one_line ?? ''}`.trim(), 'join');
+  costOf(name) {
+    const hurt = sideEffects(this.web, name).filter((e) => (e.friction ?? 0) > 0);
+    if (!hurt.length) return '';
+    const who = [...new Set(hurt.map((e) => e.other))].slice(0, 2).join(' and ');
+    return `${who} will not forgive me for it.`;
   }
 
-  companionTick() {
+  askRomance(b) {
     const s = this.state;
-    const with_ = this.withHer();
-    if (!with_.length) {
-      s.lived.nights_alone++;
-      // being alone is not neutral. it costs her, slowly, and she does not notice until
-      // she cannot do the other thing any more.
-      if (s.lived.nights_alone % 45 === 0) this.condition('heart', HEART.alone_long, 'alone');
+    if (s.pending.some((p) => p.kind === 'romance')) return;
+    s.pending.push({
+      id: `romance_${b.who}`,
+      kind: 'romance',
+      who: b.who,
+      raisedOn: s.day,
+      dueOn: s.day + 4,
+      prompt: `It is ${b.who}. You know it is ${b.who}. I can have this, or I can stay as I am, and I have been as I am for a very long time.`,
+    });
+  }
+
+  resolveRomance(j, key, by) {
+    const s = this.state;
+    const b = this.bond(j.who);
+    if (key === 'yes') {
+      b.romance = 3;
+      shift(b, { closeness: +5, trust: +3 }, 'she let herself have it', s.day, true);
+      this.condition('heart', +2, 'love');
+      this.ripple(j.who, 1.5);   // everybody knows. it is a position, and a loud one.
+      this.say(`she and ${b.who} stopped pretending. nobody was surprised, which stung, and then stopped stinging.`, 'bond');
+      this.speak(this.pick([
+        'I have something to lose now. I can feel the weight of it in every fight, and I am not giving it up.',
+        'I let it happen. I am more careful now and I am furious about that.',
+      ]), 'close');
+    } else {
+      b.romance = 0;
+      b.romanceOneSided = true;
+      shift(b, { closeness: -2, friction: +3, trust: -1 }, 'she let the moment go past, and they understood', s.day, true);
+      this.say(`she said nothing and let the moment go past. ${b.who} understood, which was worse.`, 'bond');
+      this.speak(this.pick([
+        'I have work to do. I said that out loud and heard exactly how it sounded.',
+        'I turned it down. I have not slept well since, and I would tell you the two things are unrelated.',
+      ]), 'cold');
+    }
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id,
+      text: key === 'yes'
+        ? `she let herself have ${b.who}. [${by === 'you' ? 'you' : 'she'} decided]`
+        : `she let ${b.who} go. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
+  }
+
+  takeCompanion(name) {
+    const s = this.state;
+    const b = this.bond(name);
+    const found = [...walk(this.world)].find(({ node: n }) => n.kind === 'figure' && n.name === name);
+    if (found) {
+      const { node: f, path } = found;
+      const parent = path[path.length - 1];
+      parent.children = parent.children.filter((c) => c !== f);
+      f.with_her = true;
+      b.node = f;
+    }
+    b.withHer = true;
+    shift(b, { closeness: +2, trust: +2 }, `they threw in together at ${this.here().name}`, s.day, true);
+
+    // SHE TOOK A SIDE. The room finds out, and the room has opinions.
+    this.ripple(name, 1);
+
+    this.say(`${name} is walking with her now.` + (b.node?.one_line ? ` ${b.node.one_line}.` : ''), 'join');
+  }
+
+  // ══════════════════════════════════════════════════════ SHE ASKS YOU ABOUT THEM
+  //
+  // The biggest hole in the whole design, and it was hiding in plain sight: she had a
+  // rich life full of people and NEVER ONCE ASKED YOU ABOUT ANY OF THEM. You are her
+  // angel. The single most human thing she can do is turn to the thing she believes is
+  // listening and say: what do I do about him.
+  //
+  // These are not event cards. Every one of them is generated out of the actual state of
+  // an actual relationship — she only asks whether to trust somebody when she is closer
+  // to them than she trusts them, and she only asks about forgiveness when there is
+  // something to forgive.
+  counsel() {
+    const s = this.state;
+    if (s.pending.some((p) => p.kind === 'counsel')) return;
+    if (!this.chance(0.05 + 0.05 * (s.stat.faith / 20))) return;   // she asks more if she believes in you
+
+    const ask = (id, who, prompt, options) => {
+      s.pending.push({ id, kind: 'counsel', who, prompt, options, raisedOn: s.day, dueOn: s.day + 5 });
+    };
+
+    // ── she is closer to somebody than she trusts them, and it is eating her
+    const uneasy = this.bondList().find(
+      (b) => b.alive && b.closeness >= 10 && b.trust <= 6 && !b.asked?.trust);
+    if (uneasy) {
+      (uneasy.asked ??= {}).trust = true;
+      return ask(`trust_${uneasy.who}`, uneasy.who,
+        `I am closer to ${uneasy.who} than I trust them. I know how that sounds. Do I let them all the way in, or do I keep the door where it is?`,
+        { open: 'Let them in', keep: 'Keep the door where it is' });
+    }
+
+    // ── somebody she loves wants something, and she has been pretending to help
+    // Some wants cannot be fetched. "I could get them nothing, and this is what frightens
+    // people" is not a sentence, and it shipped.
+    const gettable = (w) => w && !/^nothing/.test(w) && !/left alone/.test(w);
+    const wanting = this.withHer().find(
+      (b) => gettable(b.node?.wants) && b.closeness >= 9 && !b.asked?.want);
+    if (wanting) {
+      (wanting.asked ??= {}).want = true;
+      return ask(`want_${wanting.who}`, wanting.who,
+        `${wanting.who} wants ${wanting.node.wants}. They have never asked me for it. I could get it for them and it would cost me, and I have been pretending not to notice for a month.`,
+        { help: 'Get it for them', no: 'It is not hers to give' });
+    }
+
+    // ── somebody sold her, and they are still breathing
+    const traitor = this.bondList().find((b) => b.betrayed && !b.asked?.forgive);
+    if (traitor) {
+      (traitor.asked ??= {}).forgive = true;
+      return ask(`forgive_${traitor.who}`, traitor.who,
+        `${traitor.who} sold me. They are in the same town as me tonight and they know I know. I can settle it or I can let it go, and I have never once let anything go.`,
+        { settle: 'Settle it', forgive: 'Let it go' });
+    }
+
+    // ── two people she cares about, and only one thing between them
+    const rivals = this.web.links.find((l) =>
+      l.kind === 'rivals'
+      && s.bonds[l.a]?.closeness >= 7 && s.bonds[l.b]?.closeness >= 7
+      && s.bonds[l.a]?.alive && s.bonds[l.b]?.alive
+      && !s.asked?.[`side_${l.a}_${l.b}`]);
+    if (rivals) {
+      (s.asked ??= {})[`side_${rivals.a}_${rivals.b}`] = true;
+      return ask(`side_${rivals.a}_${rivals.b}`, rivals.a,
+        `${rivals.a} and ${rivals.b} both want the same thing and there is only the one of it. They have both been good to me. They are both waiting to see which of them I am.`,
+        { a: `Stand with ${rivals.a}`, b: `Stand with ${rivals.b}`, out: 'Stay out of it' });
+    }
+
+    // ── the dead are still asking
+    const owed = s.ghosts.find((g) => g.wanted && !g.settled && !g.asked);
+    if (owed) {
+      owed.asked = true;
+      return ask(`ghost_${owed.name}`, owed.name,
+        `${owed.name} wanted ${owed.wanted} and died without it. I am in a position to finish it. It will not bring them back. I know it will not bring them back.`,
+        { finish: 'Finish it', leave: 'Leave it. They are dead.' });
+    }
+  }
+
+  resolveCounsel(j, key, by) {
+    const s = this.state;
+    const b = s.bonds[j.who];
+    const said = (text) => s.log.push({ day: s.day, kind: 'judgment', by, id: j.id, text: `${text} [${by === 'you' ? 'you' : 'she'} decided]` });
+
+    // ── trust
+    if (j.id.startsWith('trust_')) {
+      if (key === 'open') {
+        shift(b, { trust: +6, closeness: +2 }, 'she let them all the way in', s.day, true);
+        this.speak('I told them. All of it. I have not done that since I was a child and I am not sure I have stopped shaking.', 'close');
+        said(`she let ${j.who} all the way in`);
+      } else {
+        shift(b, { trust: -1, friction: +2 }, 'she kept the door where it was', s.day, true);
+        this.speak('I kept the door where it is. They noticed. Of course they noticed.', 'cold');
+        said(`she kept ${j.who} at the door`);
+      }
       return;
     }
-    s.lived.with_someone++;
 
-    const c = this.pick(with_);
-    if (!this.chance(0.12)) return;
-
-    // they die. they are figures, so the WORLD loses them too — and it remembers,
-    // because a figure who is dead is a figure with a status, not a figure who is gone.
-    if (s.wounds >= 3 && this.chance(0.2)) {
-      c.alive = false;
-      c.node.status = `dead — she buried them at ${this.here().name}`;
-      s.ghosts.push({ name: c.name, why: 'died', day: s.day, wanted: c.wants });
-      s.lived.buried++;
-      this.condition('heart', HEART.buried, 'buried');   // this is what burying somebody costs
-      this.say(
-        `${c.name} is dead. she buried them at ${this.here().name}.` +
-        (c.wants ? ` they never got ${c.wants}.` : ''),
-        'loss'
-      );
-      this.speak(this.fresh(VOICE.grief), 'grief');
+    // ── their want
+    if (j.id.startsWith('want_')) {
+      if (key === 'help') {
+        const cost = this.int(60, 180);
+        s.coin = Math.max(0, s.coin - cost);
+        s.attention += 2;
+        shift(b, { closeness: +4, trust: +4, owes: -6 }, `she got them ${b.node.wants}. it cost her ${cost} coin and she has never mentioned it`, s.day, true);
+        this.condition('heart', +2, 'gave');
+        this.ripple(j.who, 1);   // helping somebody get what they want is a very loud position
+        this.say(`she got ${j.who} what they wanted. it cost her ${cost} coin and she has not mentioned it, and will not.`, 'bond');
+        said(`she got ${j.who} what they wanted`);
+      } else {
+        // SHE SAID NO TO SOMEBODY WHO NEEDED SOMETHING. Remember it. This is the single
+        // best predictor of who eventually sells her, and it is the correct one: the
+        // person who informs on you is almost never the one who drifted away. It is the
+        // one who came to you needing something and watched you decide they were not
+        // worth it.
+        b.refused = s.day;
+        shift(b, { friction: +4, trust: -2 }, 'she could have helped, and did not, and they know', s.day, true);
+        this.say(`she could have got ${j.who} what they wanted. she did not. they have not asked why, which is worse than asking.`, 'bond');
+        said(`she did not help ${j.who}`);
+      }
       return;
     }
 
-    c.bond = Math.min(20, c.bond + 1);
-    if (this.chance(0.35)) this.condition('heart', HEART.company, 'company');  // it comes back, slowly
-    this.say(this.pick([
-      `a quiet hour with ${c.name}. neither of them said anything worth writing down, and something got said anyway.`,
-      `${c.name} asked her a question she did not answer, and did not leave, and that was the whole conversation.`,
-      `${c.name} still wants ${c.wants ?? 'something they will not name'}. she has started to want it for them, which is new and unwelcome.`,
-      `she took the second watch so ${c.name} could sleep, and did not tell them, and ${c.name} knew.`,
-    ]), 'bond');
+    // ── the betrayal
+    if (j.id.startsWith('forgive_')) {
+      if (key === 'settle') {
+        s.wounds += this.chance(0.5) ? 1 : 0;
+        s.attention += 2;
+        this.use('hand');
+        shift(b, { friction: +6, closeness: -4, trust: -4 }, 'she settled it, at ${this.here().name}', s.day, true);
+        b.alive = this.chance(0.4) ? false : b.alive;
+        if (!b.alive) {
+          s.ghosts.push({ name: b.who, why: 'she killed them', day: s.day, wanted: b.node?.wants ?? null, was: 'betrayer' });
+          for (const v of vendetta(this.web, b.who)) shift(this.bond(v.other), { friction: v.friction, trust: -3 }, v.why, s.day, true);
+          this.speak('It is settled. I do not feel any better. I was told I would feel better.', 'cold');
+        }
+        this.say(`she settled it with ${j.who} at ${this.here().name}.${b.alive ? ' they are still breathing. neither of them is sure why.' : ' they are not breathing.'}`, 'loss');
+        said(`she settled it with ${j.who}`);
+      } else {
+        // FORGIVENESS IS THE HARDEST THING IN THE GAME AND IT COSTS THE MOST.
+        shift(b, { friction: -6, trust: +1 }, 'she let it go, which nobody who knows her believed she would', s.day, true);
+        this.condition('heart', +2, 'forgave');
+        this.speak(this.pick([
+          'I let it go. I want to be clear that I did not forgive them. I let it go. There is a difference and it is the only thing I have.',
+          'I did not settle it. Everyone is waiting for me to and I am not going to and I cannot explain why to them or to you.',
+        ]), 'close');
+        this.say(`she let it go with ${j.who}. nobody who knows her believed she would. she is not sure she has.`, 'bond');
+        said(`she let it go with ${j.who}`);
+      }
+      return;
+    }
+
+    // ── the two of them
+    if (j.id.startsWith('side_')) {
+      const [, A, B] = j.id.split('_');
+      if (key === 'out') {
+        for (const n of [A, B]) shift(this.bond(n), { friction: +3, trust: -1 }, 'she would not choose, and both of them counted that as an answer', s.day, true);
+        this.say(`she would not take a side between ${A} and ${B}. both of them counted that as an answer.`, 'bond');
+        said(`she stayed out of it between ${A} and ${B}`);
+      } else {
+        const chose = key === 'a' ? A : B, lost = key === 'a' ? B : A;
+        shift(this.bond(chose), { closeness: +4, trust: +3 }, `she stood with them, and everybody saw it`, s.day, true);
+        shift(this.bond(lost), { friction: +9, trust: -6, closeness: -3 }, `she stood with ${chose}. in front of them.`, s.day, true);
+        this.ripple(chose, 1);
+        this.say(`she stood with ${chose}, in front of ${lost}, in front of everybody. it is done now and it cannot be undone.`, 'bond');
+        said(`she stood with ${chose} against ${lost}`);
+      }
+      return;
+    }
+
+    // ── the dead
+    if (j.id.startsWith('ghost_')) {
+      const g = s.ghosts.find((x) => x.name === j.who);
+      if (key === 'finish' && g) {
+        g.settled = s.day;
+        s.coin = Math.max(0, s.coin - this.int(40, 120));
+        this.condition('heart', +3, 'settled');
+        this.speak('It is done. They are still dead. I knew they would still be dead.', 'grief');
+        this.say(`she finished what ${g.name} started. it cost her, and it changed nothing, and she would do it again.`, 'bond');
+        said(`she finished what ${g.name} wanted`);
+      } else if (g) {
+        g.settled = -1;
+        this.condition('heart', -1, 'left it');
+        this.say(`she left it. ${g.name} wanted ${g.wanted}, and did not get it, and is not going to.`, 'loss');
+        said(`she left ${g.name}'s business unfinished`);
+      }
+      return;
+    }
   }
 
   // ================================================================= THE HOOKS
@@ -935,6 +1596,8 @@ export class Sim {
     this.condition('faith', FAITH.answered, 'answered');
     s.lastAnswered = s.day;
     if (j.kind === 'join') this.resolveJoin(j, key, 'you');
+    else if (j.kind === 'romance') this.resolveRomance(j, key, 'you');
+    else if (j.kind === 'counsel') this.resolveCounsel(j, key, 'you');
     else this.resolveHook(j, key, 'you');
     return j;
   }
@@ -973,11 +1636,28 @@ export class Sim {
     // off the number that decides whether she ever asks you again.
     this.condition('faith', FAITH.absent, 'absent');
     if (j.kind === 'join') {
-      // she waited. you did not come. she decides, weighted by how alone she is willing
-      // to be — and then she tells you about it.
       const yes = this.chance(0.4 + 0.45 * this.off('sociable'));
       this.speak(this.fresh(VOICE.absent), 'absent');
       return this.resolveJoin(j, yes ? 'yes' : 'no', 'her');
+    }
+    if (j.kind === 'counsel') {
+      // SHE ASKED YOU ABOUT A PERSON AND YOU DID NOT COME. She decides alone, and a woman
+      // who is alone and has stopped believing anybody is listening decides the closed way
+      // — she keeps the door where it is, she does not help, she settles it. Neglect does
+      // not just cost her a judgment. It makes her a harder person.
+      const keys = Object.keys(j.options);
+      const closed = this.state.stat.faith < 8 || this.state.stat.heart < 7;
+      const pickKey = closed ? keys[keys.length - 1] : this.pick(keys);
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveCounsel(j, pickKey, 'her');
+    }
+    if (j.kind === 'romance') {
+      // SHE ASKED YOU ABOUT LOVE AND YOU DID NOT COME. She decides — and a woman who has
+      // stopped believing anybody is listening is far likelier to let it go past. This is
+      // the cruellest thing Faith does, and it is the correct thing for it to do.
+      const yes = this.chance(clamp(0.25 + 0.4 * this.off('sociable') + this.state.stat.faith / 40, 0, 0.85));
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveRomance(j, yes ? 'yes' : 'no', 'her');
     }
     const w = {
       act: 0.3 + 0.5 * this.off('reckless'),
@@ -1048,7 +1728,10 @@ export class Sim {
 
     this.worldTick();      // the world moves, with or without her
     this.herTick();        // she does something, where she is
-    this.companionTick();  // and whoever is walking with her lives, or does not
+    this.peopleTick();     // and the people in her life live, or leave, or sell her
+    this.betrayalTick();   // and somebody close enough to hurt her sometimes does
+    this.ghostTick();      // and the dead keep asking for what they never got
+    this.counsel();        // and sometimes she turns to you and asks what to do about a person
     this.raiseHooks();     // and sometimes puts two things together
     this.offerCompanion(); // and sometimes asks you about somebody
     this.earnTraits();     // and slowly becomes someone she did not choose to be
