@@ -22,6 +22,8 @@ import { worldFromSeed } from '../gen/worldgen.js';
 import { walk, resolve, effective } from '../gen/node.js';
 import { CHRONICLE } from '../gen/tables/chronicle.js';
 import { applyPatch } from '../gen/patch.js';
+import { VOICE, speaksTo } from '../gen/tables/voice.js';
+import { TRAITS } from '../gen/tables/traits.js';
 
 function mulberry32(a) {
   return function () {
@@ -93,6 +95,25 @@ export class Sim {
       pending: [],         // hooks awaiting the player
       log: [],
       eras: 0,             // eras the world has written since she started walking
+
+      // THE LEDGER. Everything she has actually done. Traits are earned off this and
+      // nothing else — she cannot buy what she has not lived.
+      lived: {
+        hurt_badly: 0, travelled: 0, worked: 0, defied: 0, paid: 0,
+        buried: 0, nights_alone: 0, with_someone: 0, fights: 0,
+      },
+      traits: [],          // what she has become. she cannot choose these. neither can you.
+
+      // People from the WORLD who walk with her. Not strangers — figures out of the
+      // tree, with wants of their own and names that appear elsewhere.
+      companions: [],
+      met: {},             // figure name -> how many times she has dealt with them
+      ghosts: [],
+
+      // SHE KNOWS YOU ARE THERE. This is how often she says anything about it, and it
+      // decays with heeds() — a woman who has stopped listening stops talking.
+      spoken: 0,
+      lastSpoke: 0,
     };
     this.state.seen.push(this.state.at);
   }
@@ -126,12 +147,47 @@ export class Sim {
   factionsHere() {
     return this.here().children.filter((c) => c.kind === 'faction');
   }
+  // People she could run into. NOT just the children of the exact node she is standing
+  // in — a figure who lives "in Ottrenmark" is somebody you can meet in Ottrenmark's
+  // towns, because you are in their country. Requiring an exact node match meant she
+  // met a person once in three hundred days, and walked the whole world alone.
   figuresHere() {
-    return this.here().children.filter((c) => c.kind === 'figure');
+    const site = this.site();
+    const scope = [site.node, ...site.path.filter((p) => p.kind === 'place' && p.scale !== 'planet')];
+    const out = [];
+    for (const n of scope) {
+      for (const c of n.children) {
+        if (c.kind === 'figure' && !c.divine && !c.with_her) out.push(c);
+      }
+    }
+    return out;
   }
+  // what her traits give her. earned, and every one of them cost something.
+  trait(key) {
+    let v = 0;
+    for (const t of this.state.traits) {
+      const T = TRAITS[t];
+      v += (T.gives?.[key] ?? 0) + (T.costs?.[key] ?? 0);
+    }
+    return v;
+  }
+  has(t) { return this.state.traits.includes(t); }
+
+  // Check the ledger. A trait is not announced by the UI — SHE notices it, and says so.
+  earnTraits() {
+    for (const [key, T] of Object.entries(TRAITS)) {
+      if (this.state.traits.includes(key)) continue;
+      if (!T.when(this.state.lived, this.state)) continue;
+      this.state.traits.push(key);
+      this.say(T.line, 'became', { trait: key });
+      this.speak(T.she, 'became');
+    }
+  }
+
   standing(name) { return this.state.standing[name] ?? 0; }
   nudge(name, d) {
-    this.state.standing[name] = clamp(this.standing(name) + d, -20, 20);
+    const speed = 1 + this.trait('standing_speed');
+    this.state.standing[name] = clamp(this.standing(name) + d * speed, -20, 20);
   }
 
   // How steep the exception is where she is standing. A tier-7 city in a tier-3
@@ -180,6 +236,52 @@ export class Sim {
 
   say(text, kind = 'event', meta = {}) {
     this.state.log.push({ day: this.state.day, kind, text, ...meta });
+  }
+
+  // ------------------------------------------------------------------ HER VOICE
+  // She knows you are there. This is her talking to you, and it is the only channel
+  // in the game that is not the world's account of things.
+  speak(text, why = 'close') {
+    this.state.spoken++;
+    this.state.lastSpoke = this.state.day;
+    (this.state.said ??= []).unshift(text);
+    this.state.said = this.state.said.slice(0, 6);
+    this.state.log.push({ day: this.state.day, kind: 'her', why, text });
+  }
+
+  // she does not say the same thing to you twice in a fortnight. the chronicle has had
+  // pity suppression since the beginning; her voice did not, and it showed.
+  fresh(pool) {
+    const said = this.state.said ?? [];
+    const open = pool.filter((t) => !said.includes(t));
+    return this.pick(open.length ? open : pool);
+  }
+
+  // Whether she says anything unprompted today. She talks to you LESS the further she
+  // has drifted from you — and when she does talk, it is colder. That is the reveal,
+  // and it is never printed at you. It is her going quiet.
+  maybeSpeak() {
+    const h = this.heeds();
+    if (!this.state.spoken) {
+      // the first time. she has known for a while and has been deciding whether to say so.
+      if (this.state.day > 6 && this.chance(0.3)) this.speak(this.fresh(VOICE.first), 'first');
+      return;
+    }
+    if (this.state.day - this.state.lastSpoke < 4) return;
+    if (!this.chance(speaksTo(h))) return;
+
+    if (this.state.wounds >= 4) return this.speak(this.fresh(VOICE.hurt), 'hurt');
+    if (this.state.attention >= 16 && this.chance(0.4)) return this.speak(this.fresh(VOICE.afraid), 'afraid');
+    // NOT A SWITCH. She does not go cold on you on a Tuesday because a number crossed
+    // a line — she goes cold by degrees, and the odds of any given thing she says to
+    // you being a cold one rise as she drifts. You will feel it long before you can
+    // point at it, which is exactly how it happens to people.
+    // ^1.7, not linear. A linear (1 - heeds) meant a woman who still heeds you 90% got
+    // a cold line one time in ten, and over a long life she was snapping at you
+    // constantly while nominally devoted. Warmth has to be STABLE while she is
+    // listening, and coldness has to ramp — otherwise the drift reads as noise.
+    const cold = this.chance(Math.pow(1 - h, 1.7));
+    this.speak(this.fresh(cold ? VOICE.cold : VOICE.close), cold ? 'cold' : 'close');
   }
 
   // ============================================================== THE WORLD TICK
@@ -332,11 +434,11 @@ export class Sim {
       defy: 3 + 6 * this.off('reckless'),
       find: 5 + 4 * this.off('reckless') + (this.here().status ? 4 : 0),
       relic: 2 + 2 * this.off('reckless'),
-      danger: (4 + 8 * this.off('reckless') + unrest) * (1 - 0.7 * hurt),
+      danger: (4 + 8 * this.off('reckless') + unrest) * (1 - 0.7 * hurt) * (1 + this.trait('danger_weight')),
       unrest: unrest * 1.5,
       sick: 3,
       travel: 5 + 3 * this.off('reckless'),
-      figure_meet: figures.length ? 5 + 6 * this.off('sociable') : 0,
+      figure_meet: figures.length ? 9 + 8 * this.off('sociable') : 0,
       figure_clash: figures.length ? 2 + 4 * this.off('reckless') : 0,
       faction_favour: friends.length ? 5 : 0,
       faction_shelter: friends.length ? 3 + 6 * hurt : 0,
@@ -366,7 +468,8 @@ export class Sim {
         return this.say(this.line('road'), 'event', { id: act });
 
       case 'work': {
-        const pay = Math.round(this.int(18, 40) * wealth);
+        s.lived.worked++;
+        const pay = Math.round(this.int(18, 40) * wealth * (1 + this.trait('earn')));
         s.coin += pay;
         s.wounds = Math.max(0, s.wounds - 1);
         // working is how the country's own factions learn who she is
@@ -379,6 +482,7 @@ export class Sim {
         return this.say(this.line('rest'), 'event', { id: act });
 
       case 'law': {
+        s.lived.paid++;
         const toll = Math.round(this.int(10, 40) * (0.5 + tier / 6) * (1 + (econ.pressure ?? 0) * 0.4));
         const paid = Math.min(s.coin, toll);
         s.coin -= paid;
@@ -388,7 +492,8 @@ export class Sim {
       }
 
       case 'defy':
-        s.attention += 2;
+        s.lived.defied++;
+        s.attention += 2 + this.trait('attention_rate');
         if (this.chance(0.45)) s.wounds += 1;
         this.drift('reckless', +0.03);
         for (const f of ctx.factions) this.nudge(f.name, f.kind === 'crime' ? 1.6 : -1.2);
@@ -405,9 +510,12 @@ export class Sim {
         return this.say(this.line('relic'), 'event', { id: act });
 
       case 'danger': {
-        const swing = this.rng() * 2 - 1 + 0.4 * this.off('reckless');
+        s.lived.fights++;
+        // her traits are here, and only here, and she paid for every one of them
+        const swing = this.rng() * 2 - 1 + 0.4 * this.off('reckless') + this.trait('swing');
         if (swing < -0.45) {
           s.wounds += 2;
+          s.lived.hurt_badly++;
           s.coin = Math.max(0, s.coin - this.int(10, 50));
           this.drift('reckless', -0.05);
         } else {
@@ -449,6 +557,7 @@ export class Sim {
 
       case 'figure_meet': {
         const f = this.pick(ctx.figures);
+        s.met[f.name] = (s.met[f.name] ?? 0) + 1;      // this is how a companion begins
         this.drift('sociable', +0.02);
         return this.say(this.line('figure_meet', { figure: f.name, want: f.wants ?? 'something she cannot get out of them', known: f.known_for ?? 'nothing she can confirm' }), 'event', { id: act });
       }
@@ -509,8 +618,9 @@ export class Sim {
 
     this.state.at = to.i;
     if (!this.state.seen.includes(to.i)) this.state.seen.push(to.i);
-    this.state.coin = Math.max(0, this.state.coin - this.int(5, 18));
-    if (this.chance(0.15)) this.state.wounds += 1;
+    this.state.lived.travelled++;
+    this.state.coin = Math.max(0, this.state.coin - Math.round(this.int(5, 18) * (1 + this.trait('travel_cost'))));
+    if (this.chance(Math.max(0.02, 0.15 * (1 + this.trait('travel_wound'))))) this.state.wounds += 1;
 
     // the arrival is rendered from where she now IS, so the vocabulary (commodity,
     // who pays, the law) is already the new country's before the sentence is written
@@ -525,15 +635,113 @@ export class Sim {
     return clamp(1 - gap / 22, 0.1, 1);
   }
 
+  // what happens to her changes her. this is the only thing that does.
   drift(dial, d) {
-    this.state.true[dial] = clamp(this.state.true[dial] + d * 10, 0, 100);
+    this.state.true[dial] = clamp(this.state.true[dial] + d * 22, 0, 100);
   }
 
+  // the half of a trait she did not want. Haunted makes her reckless; Alone closes her.
+  applyTraitDrift() {
+    const r = this.trait('reckless_drift');
+    const so = this.trait('sociable_drift');
+    if (r) this.drift('reckless', r * 0.02);
+    if (so) this.drift('sociable', so * 0.02);
+  }
+
+  // The slider is a REQUEST. This is the weak hand pulling her back toward it — and it
+  // has to be weak, or she can never become anyone. At 0.012 it dragged her back to
+  // your dials every single day, she never drifted more than a point or two, and the
+  // game's best card was never dealt: after three hundred days she still heeded you at
+  // 99%, and the cold voice was mathematically unreachable.
   applyIntentPull() {
     for (const d of ['reckless', 'sociable', 'generous']) {
       const gap = this.state.intent[d] - this.state.true[d];
-      this.state.true[d] = clamp(this.state.true[d] + gap * 0.012, 0, 100);
+      this.state.true[d] = clamp(this.state.true[d] + gap * 0.003, 0, 100);
     }
+  }
+
+  // =============================================================== THE COMPANIONS
+  //
+  // Not strangers. FIGURES OUT OF THE TREE — people the world already knows about, who
+  // have a want of their own and a name that turns up elsewhere. When Ovett the Copyist
+  // walks with her, she is walking with a man whose want is now in play, and you are
+  // the one who gets asked whether she helps him get it.
+  //
+  // A figure with `in_person` is somewhere, and can move. So when one joins her, the
+  // node MOVES in the tree, and the world stops having them where they were.
+  withHer() { return this.state.companions.filter((c) => c.alive); }
+
+  offerCompanion() {
+    const s = this.state;
+    if (this.withHer().length >= 2) return;
+    if (s.pending.some((p) => p.kind === 'join')) return;
+
+    for (const f of this.figuresHere()) {
+      if (f.divine) continue;
+      if (s.companions.some((c) => c.name === f.name)) continue;
+      if ((s.met[f.name] ?? 0) < 2) continue;          // she has to actually know them
+      if (!this.chance(0.25 + 0.3 * this.off('sociable'))) continue;
+
+      s.pending.push({
+        id: `join_${f.name}`,
+        kind: 'join',
+        who: f.name,
+        wants: f.wants ?? null,
+        raisedOn: s.day,
+        dueOn: s.day + 4,
+        prompt: `${f.name} wants to come with me. ${f.wants ? `They want ${f.wants}.` : ''} ${this.pick(VOICE.ask)}`,
+      });
+      return;
+    }
+  }
+
+  takeCompanion(name) {
+    const s = this.state;
+    const found = [...walk(this.world)].find(({ node: n }) => n.kind === 'figure' && n.name === name);
+    if (!found) return;
+    const { node: f, path } = found;
+
+    // the figure LEAVES the world where they were. they are with her now.
+    const parent = path[path.length - 1];
+    parent.children = parent.children.filter((c) => c !== f);
+    f.with_her = true;
+
+    s.companions.push({ name: f.name, node: f, bond: 3, alive: true, joined: s.day, wants: f.wants ?? null });
+    this.say(`${f.name} is walking with her now. ${f.one_line ?? ''}`.trim(), 'join');
+  }
+
+  companionTick() {
+    const s = this.state;
+    const with_ = this.withHer();
+    if (!with_.length) { s.lived.nights_alone++; return; }
+    s.lived.with_someone++;
+
+    const c = this.pick(with_);
+    if (!this.chance(0.12)) return;
+
+    // they die. they are figures, so the WORLD loses them too — and it remembers,
+    // because a figure who is dead is a figure with a status, not a figure who is gone.
+    if (s.wounds >= 3 && this.chance(0.2)) {
+      c.alive = false;
+      c.node.status = `dead — she buried them at ${this.here().name}`;
+      s.ghosts.push({ name: c.name, why: 'died', day: s.day, wanted: c.wants });
+      s.lived.buried++;
+      this.say(
+        `${c.name} is dead. she buried them at ${this.here().name}.` +
+        (c.wants ? ` they never got ${c.wants}.` : ''),
+        'loss'
+      );
+      this.speak(this.fresh(VOICE.grief), 'grief');
+      return;
+    }
+
+    c.bond = Math.min(20, c.bond + 1);
+    this.say(this.pick([
+      `a quiet hour with ${c.name}. neither of them said anything worth writing down, and something got said anyway.`,
+      `${c.name} asked her a question she did not answer, and did not leave, and that was the whole conversation.`,
+      `${c.name} still wants ${c.wants ?? 'something they will not name'}. she has started to want it for them, which is new and unwelcome.`,
+      `she took the second watch so ${c.name} could sleep, and did not tell them, and ${c.name} knew.`,
+    ]), 'bond');
   }
 
   // ================================================================= THE HOOKS
@@ -594,8 +802,34 @@ export class Sim {
     const i = s.pending.findIndex((p) => p.id === id);
     if (i < 0) return null;
     const j = s.pending.splice(i, 1)[0];
-    this.resolveHook(j, key, 'you');
+    if (j.kind === 'join') this.resolveJoin(j, key, 'you');
+    else this.resolveHook(j, key, 'you');
     return j;
+  }
+
+  // She asked you whether to let somebody walk with her. That is not a hook and it does
+  // not resolve like one.
+  resolveJoin(j, key, by) {
+    if (key === 'yes') {
+      this.takeCompanion(j.who);
+      this.drift('sociable', +0.04);
+      if (by === 'you') this.speak(this.pick([
+        `You said yes. I hope you know what you have done. I hope one of us does.`,
+        `All right. They are coming. If this goes badly I am going to remember that you said yes.`,
+      ]), 'close');
+    } else {
+      this.drift('sociable', -0.05);
+      this.say(`she sent ${j.who} back. she did not explain, and they did not ask, and that was worse.`, 'event');
+      if (by === 'you') this.speak(this.pick([
+        `You said no. Fine. It is easier alone and we both know that is not why you said it.`,
+        `No, then. I did not want them anyway. Write that down as a lie if you are writing.`,
+      ]), 'close');
+    }
+    this.state.log.push({
+      day: this.state.day, kind: 'judgment', by, id: j.id,
+      text: key === 'yes' ? `${j.who} walks with her now. [${by === 'you' ? 'you' : 'she'} decided]`
+                          : `${j.who} does not. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
   }
 
   // Unanswered judgments resolve THEMSELVES, weighted by who she has become. This is
@@ -603,6 +837,13 @@ export class Sim {
   // check in, it makes her a person rather than a puppet, and it makes neglect a
   // legitimate playstyle with a legitimate cost.
   autoResolve(j) {
+    if (j.kind === 'join') {
+      // she waited. you did not come. she decides, weighted by how alone she is willing
+      // to be — and then she tells you about it.
+      const yes = this.chance(0.4 + 0.45 * this.off('sociable'));
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveJoin(j, yes ? 'yes' : 'no', 'her');
+    }
     const w = {
       act: 0.3 + 0.5 * this.off('reckless'),
       tell: 0.3 + 0.5 * this.off('sociable'),
@@ -660,7 +901,9 @@ export class Sim {
 
     s.day++;
 
-    // judgments she never answered decide themselves, weighted by who she has become
+    // Judgments she never answered decide themselves, weighted by who she has become.
+    // She waited, you were not there, and she will tell you so. This is the cost of
+    // being an angel who does not turn up.
     for (const j of [...s.pending]) {
       if (s.day >= j.dueOn) {
         s.pending = s.pending.filter((p) => p !== j);
@@ -668,15 +911,20 @@ export class Sim {
       }
     }
 
-    this.worldTick();     // the world moves, with or without her
-    this.herTick();       // she does something, where she is
-    this.raiseHooks();    // and sometimes puts two things together
+    this.worldTick();      // the world moves, with or without her
+    this.herTick();        // she does something, where she is
+    this.companionTick();  // and whoever is walking with her lives, or does not
+    this.raiseHooks();     // and sometimes puts two things together
+    this.offerCompanion(); // and sometimes asks you about somebody
+    this.earnTraits();     // and slowly becomes someone she did not choose to be
+    this.maybeSpeak();     // and talks to you, less and less
 
     const learned = this.lens();   // and finds out — witnessed, or late and secondhand
     if (learned) this.say(learned.text, learned.kind);
 
     // upkeep
-    if (s.wounds > 0 && this.chance(0.12)) s.wounds--;
+    if (s.wounds > 0 && this.chance(0.12 + this.trait('heal'))) s.wounds--;
+    this.applyTraitDrift();
     this.applyIntentPull();
 
     if (s.wounds >= 6) {
