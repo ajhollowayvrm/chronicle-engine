@@ -4,7 +4,7 @@
   "private": true,
   "description": "An idle RPG where the adventurer lives her own life between check-ins, in a world that is different every time.",
   "type": "module",
-  "main": "src/engine.js",
+  "main": "src/sim.js",
   "engines": {
     "node": ">=18"
   },

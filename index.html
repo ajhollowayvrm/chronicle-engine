@@ -2,219 +2,149 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chronicle — she walks the world without you</title>
-<meta name="description" content="An idle RPG where the adventurer lives her own life between your check-ins. If you don't answer, she decides for herself. Every world is generated: new names, new gods, new prose.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🗡️</text></svg>">
-<meta name="theme-color" content="#12100e">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14120f">
+<title>She knows you are there</title>
+<meta name="description" content="You are assigned to one woman. She walks a world you can watch and cannot touch. She knows you are there, and she talks to you — less, and colder, the further she drifts.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🕯</text></svg>">
 <link rel="stylesheet" href="./web/style.css">
-<link rel="stylesheet" href="./web/mobile.css">
 </head>
 <body>
 
+<!-- ─────────────────────────────────────────────────────────── the assignment -->
 <div id="boot" class="boot">
   <div class="boot-inner">
-    <h1>Chronicle</h1>
+    <p class="eyebrow">You are assigned to one person</p>
+    <h1>She knows<br>you are there.</h1>
+
     <p class="lede">
-      She walks the world on her own. You are not her — you are a voice she hears
-      between chapters. Look in every few hours, read what happened while you were
-      gone, make a judgment call or two, and let her go again.
+      She walks a world you can watch and cannot touch. You cannot move her, or save
+      her, or make her do anything. You can answer, when she asks.
     </p>
-    <p class="lede dim">
-      If you do not answer, <strong>she decides for herself</strong> — and becomes
-      whoever those decisions make her. When she dies, she stays dead, and the next
-      world is not this one.
+    <p class="lede quiet">
+      She does not know what you are. She has stopped asking. And the further she
+      drifts from what you wanted for her, the less she says to you.
     </p>
 
     <div class="boot-form">
-      <label>World
-        <select id="boot-world"></select>
-        <span id="boot-premise" class="premise"></span>
+      <label class="field">
+        <span class="k">Her world</span>
+        <input id="boot-seed" type="number" value="12" min="0" step="1">
+        <span class="hint">A number. It builds a whole world — its countries, its gods, its dead.</span>
       </label>
 
-      <label>Seed <span class="hint">the life she gets</span>
-        <input id="boot-seed" type="number" value="7" min="0" step="1">
-      </label>
-
-      <label>Pace <span class="hint">how fast a day passes</span>
+      <label class="field">
+        <span class="k">How fast a day passes</span>
         <select id="boot-speed">
-          <option value="brisk">Brisk — a day every minute</option>
-          <option value="normal" selected>Normal — a day every 15 minutes</option>
-          <option value="slow">Slow — a day every hour</option>
+          <option value="brisk">A day every minute</option>
+          <option value="normal" selected>A day every fifteen minutes</option>
+          <option value="slow">A day every hour</option>
         </select>
       </label>
 
-      <fieldset class="boot-dials">
-        <legend>Standing orders <span class="hint">what you ask of her</span></legend>
-        <label>cautious ↔ reckless <input id="boot-reckless" type="range" min="0" max="100" value="68"><output>68</output></label>
-        <label>solitary ↔ sociable <input id="boot-sociable" type="range" min="0" max="100" value="74"><output>74</output></label>
-        <label>hoard ↔ give freely <input id="boot-generous" type="range" min="0" max="100" value="50"><output>50</output></label>
+      <fieldset class="dials boot-dials">
+        <legend>What you want for her <span class="hint">She will not always agree</span></legend>
+        <label><span>careful — reckless</span><input id="boot-reckless" type="range" min="0" max="100" value="55"><output>55</output></label>
+        <label><span>alone — with people</span><input id="boot-sociable" type="range" min="0" max="100" value="70"><output>70</output></label>
+        <label><span>keeps — gives</span><input id="boot-generous" type="range" min="0" max="100" value="50"><output>50</output></label>
       </fieldset>
 
-      <button id="boot-go" class="primary">Send her out</button>
-    </div>
-
-    <div id="boot-graves" class="graves" hidden>
-      <h2>Those who did not come back</h2>
-      <ul id="boot-graves-list"></ul>
+      <button id="boot-go" class="primary">Begin watching</button>
     </div>
   </div>
 </div>
 
+<!-- ─────────────────────────────────────────────────────────────── the vigil -->
 <main id="game" hidden>
 
-  <!-- Sticky. On a phone this is the only thing always on screen, so it carries
-       the four numbers that decide whether you need to act: who, where, how hurt,
-       how much is being watched. -->
   <header class="topbar">
-    <div class="who">
+    <div>
       <h1 id="her-name">—</h1>
-      <div class="sub">
-        <span id="her-day"></span> ·
-        <span id="her-where" class="where"></span>
-        <span id="her-law" class="law-chip"></span>
-      </div>
+      <p class="whereabouts">
+        <span id="her-day"></span>
+        <span id="her-where"></span>
+      </p>
     </div>
-    <div class="topstats">
-      <div class="tstat"><b id="t-coin">0</b><span>coin</span></div>
-      <div class="tstat" id="t-wounds-wrap"><b id="t-wounds">0</b><span>wounds</span></div>
-      <div class="tstat" id="t-eye-wrap"><b id="t-eye">0</b><span id="t-eye-label">seen</span></div>
-    </div>
+    <button id="nav-toggle" class="ghost tiny" aria-expanded="false">Her state</button>
   </header>
 
-  <div id="alerts"></div>
-
-  <section id="away" class="card away" hidden>
-    <h2>While you were away</h2>
-    <div id="away-log" class="log"></div>
-    <button id="away-dismiss" class="ghost">Read</button>
+  <!-- HER VOICE. The hero, and the only warm thing on the page. It goes cold as
+       she drifts — the colour IS the mechanic, and you feel it before you read it. -->
+  <section id="voice" class="voice">
+    <blockquote id="voice-text">—</blockquote>
+    <p id="voice-when" class="voice-when"></p>
   </section>
 
-  <section id="death" class="card death" hidden>
-    <h2 id="death-line">She is dead.</h2>
-    <p class="dim">
-      There is no cycle. Nothing she earned, nothing she carried, and nobody she
-      buried goes anywhere from here. What comes next is not her, and not this
-      world.
+  <section id="asking" class="asking" hidden>
+    <p class="eyebrow warm">She is asking you</p>
+    <p id="ask-prompt" class="ask-prompt"></p>
+    <p id="ask-facts" class="ask-facts"></p>
+    <div id="ask-options" class="ask-options"></div>
+    <p id="ask-due" class="ask-due"></p>
+  </section>
+
+  <section id="death" class="death" hidden>
+    <p class="eyebrow blood">She is dead</p>
+    <p id="death-line" class="death-line"></p>
+    <p class="quiet small">
+      Nothing carries over. Not what she earned, not who she buried, not what she
+      became. Whoever you are assigned to next is not her.
     </p>
-    <button id="new-world" class="primary">Walk a new world</button>
+    <button id="new-life" class="primary">Take another assignment</button>
   </section>
 
-  <!-- Judgments sit ABOVE the tabs, always visible, on every tab. They are the
-       only thing in this game that expires. -->
-  <section id="judgments"></section>
+  <!-- THE RECORD. Ruled, tabular, counted — the world's account of her, which is
+       not the same thing as her. -->
+  <section class="ledger">
+    <div class="ledger-head">
+      <p class="eyebrow">The record</p>
+      <span id="next-day" class="tick"></span>
+    </div>
+    <div id="log" class="log"></div>
+  </section>
 
-  <!-- ------------------------------------------------------------- CHRONICLE -->
-  <div class="pane" id="pane-chronicle">
-    <section class="card">
-      <div class="card-head">
-        <h2>The chronicle</h2>
-        <div id="next-day" class="next-day">—</div>
-      </div>
-      <div id="log" class="log"></div>
-    </section>
-  </div>
+  <!-- Her state. Collapsed on a phone, because it is context, not the point. -->
+  <div id="panel" class="panel" hidden>
 
-  <!-- ------------------------------------------------------------------- HER -->
-  <div class="pane" id="pane-her" hidden>
-    <section class="card">
-      <h2>Her state</h2>
-      <div id="vitals" class="vitals"></div>
+    <section class="block">
+      <p class="eyebrow">What she has become</p>
+      <p class="quiet small">Earned, never chosen. Every one of them cost her something.</p>
+      <div id="traits" class="traits"></div>
     </section>
 
-    <section class="card">
-      <div class="card-head">
-        <h2>What she has been taught</h2>
-        <span class="dim small">coin is for this</span>
-      </div>
-      <div id="skills" class="skills"></div>
-      <p class="dim small" id="skills-note"></p>
-    </section>
-
-    <section class="card">
-      <h2>The living</h2>
+    <section class="block">
+      <p class="eyebrow">Who walks with her</p>
       <div id="people" class="people"></div>
     </section>
 
-    <section class="card">
-      <h2>The dead and the gone</h2>
+    <section class="block">
+      <p class="eyebrow">Struck off</p>
       <div id="ghosts" class="ghosts"></div>
     </section>
-  </div>
 
-  <!-- ----------------------------------------------------------------- WORLD -->
-  <div class="pane" id="pane-world" hidden>
-    <section class="card">
-      <div class="card-head">
-        <h2>The map</h2>
-        <span class="dim small">tap a region to suggest it</span>
-      </div>
+    <section class="block">
+      <p class="eyebrow">Where she is</p>
+      <p class="quiet small">You cannot send her anywhere. You can tell her where you would rather she was.</p>
       <div id="map" class="map"></div>
-      <p class="dim small" id="suggest-note"></p>
     </section>
 
-    <section class="card">
-      <h2>Countries</h2>
-      <p class="dim small">Law is a fact about where she is standing. It changes when she crosses.</p>
-      <div id="polities" class="polities"></div>
-    </section>
-
-    <section class="card">
-      <h2>Who is keeping score</h2>
-      <p class="dim small">She never picks a side. They score her on what she actually does.</p>
-      <div id="factions" class="factions"></div>
-    </section>
-
-    <section class="card">
-      <h2>Schools</h2>
-      <div id="schools" class="schools"></div>
-    </section>
-  </div>
-
-  <!-- ---------------------------------------------------------------- ORDERS -->
-  <div class="pane" id="pane-orders" hidden>
-    <section class="card">
-      <h2>Standing orders</h2>
-      <p class="dim small">
-        The slider is a <em>request</em>. The mark beneath it is who she has actually
-        become. She drifts. Given long enough, she stops listening.
-      </p>
+    <section class="block">
+      <p class="eyebrow">What you want for her</p>
       <div id="dials" class="dials"></div>
-      <div id="drift-note" class="drift-note" hidden></div>
-    </section>
-
-    <section class="card">
-      <div class="card-head">
-        <h2>How much she listens</h2>
-        <b id="heeds-pct">100%</b>
+      <div class="heeds">
+        <div class="heeds-head"><span class="k">How much she still listens</span><b id="heeds-pct">—</b></div>
+        <div class="meter"><div id="heeds-bar"></div></div>
+        <p id="heeds-note" class="quiet small"></p>
       </div>
-      <div class="meter"><div id="heeds-bar" class="meter-fill"></div></div>
-      <p class="dim small">
-        How much of a suggestion survives contact with the woman she has become. It
-        falls as she drifts from the orders you set. You cannot move her; you can
-        only ask.
-      </p>
     </section>
 
-    <section class="card">
-      <h2>The world she is in</h2>
-      <dl id="worldinfo" class="worldinfo"></dl>
+    <section class="block">
+      <p class="eyebrow">The ledger of her</p>
+      <dl id="vitals" class="vitals"></dl>
+      <button id="abandon" class="ghost tiny">Abandon her</button>
     </section>
 
-    <footer class="footer">
-      <span id="save-note" class="dim small"></span>
-      <button id="abandon" class="ghost small">Abandon her</button>
-    </footer>
   </div>
-
-  <!-- Bottom nav: thumb-reachable, which is the whole reason it is at the bottom. -->
-  <nav class="tabs" id="tabs">
-    <button data-pane="chronicle" class="on"><span>Chronicle</span></button>
-    <button data-pane="her"><span>Her</span></button>
-    <button data-pane="world"><span>World</span></button>
-    <button data-pane="orders"><span>Orders</span></button>
-  </nav>
-
 </main>
 
 <script type="module" src="./web/app.js"></script>
