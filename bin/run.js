@@ -1,59 +1,45 @@
-// Simulate N days in one world and print the chronicle.
+// Play a world and print the chronicle.
 //
-//   node bin/run.js [seed] [days] [world] [reckless] [sociable] [generous]
-//
-//   node bin/run.js                          # seed 7, 120 days, world by seed
-//   node bin/run.js 12 300 world-03 20 10 90 # cautious, solitary, generous
-//   node bin/run.js 4 300 - 95 90 20         # "-" = pick the world from the seed
+//   npm run sim 7 200     seed 7, 200 days
 
-import { Engine } from '../src/engine.js';
-import { loadPack, packForSeed } from './packs.js';
+import { Sim } from '../src/sim.js';
 
-const [, , seedArg, daysArg, worldArg, r, o, g] = process.argv;
+const args = process.argv.slice(2).filter((a) => /^\d+$/.test(a)).map(Number);
+const seed = args[0] ?? 7;
+const days = args[1] ?? 120;
 
-const seed = Number(seedArg ?? 7);
-const days = Number(daysArg ?? 120);
-const world = worldArg && worldArg !== '-' ? worldArg : null;
+const sim = new Sim({ seed, dials: { reckless: 68, sociable: 74, generous: 50 } });
+const w = sim.world;
 
-const lore = world ? await loadPack(world) : await packForSeed(seed);
+const D = (s) => `\x1b[2m${s}\x1b[0m`;
+const B = (s) => `\x1b[1m${s}\x1b[0m`;
+const I = (s) => `\x1b[3m${s}\x1b[0m`;
 
-const eng = new Engine({
-  seed,
-  lore,
-  dials: {
-    reckless: Number(r ?? 68),
-    sociable: Number(o ?? 74),
-    generous: Number(g ?? 50),
-  },
-});
+console.log(`\n${B(w.name)}  ${D(`· seed ${seed} · ${w.era.name}, ${w.era.year}`)}`);
+console.log(I(w.aesthetic));
+console.log(D(`tier ${w.technology.tier} · ${w.magic.prevalence} magic · who pays: ${w.economy.who_pays_for_it}`));
+console.log(D(`she can stand in: ${sim.sites.map((s) => s.node.name).join(' · ')}`));
+console.log('─'.repeat(78));
+console.log(`${B(sim.state.name)} · ${days} days · starts at ${sim.here().name}\n`);
 
-const s0 = eng.state;
-const d = s0.intent;
+sim.run(days);
 
-console.log(`\n${lore.title}  ·  ${lore.id}`);
-if (lore.premise) console.log(lore.premise);
-console.log(`\n${s0.name} · seed ${seed} · ${days} days · dials  reckless ${d.reckless}  sociable ${d.sociable}  generous ${d.generous}`);
-console.log('-'.repeat(78));
-
-eng.run(days);
-const s = eng.state;
-
-for (const l of s.log) {
-  const tag = l.kind === 'judgment' ? (l.by === 'her' ? ' [she decided]' : ' [you decided]')
-    : l.kind === 'death' ? ' [death]' : '';
-  console.log(`day ${String(l.day).padStart(3)}  ${l.text}${tag}`);
+for (const l of sim.state.log) {
+  const tag =
+    l.kind === 'rumour' ? '\x1b[36m' :
+    l.kind === 'travel' ? '\x1b[33m' :
+    l.kind === 'death' ? '\x1b[31m' : '';
+  const reset = tag ? '\x1b[0m' : '';
+  console.log(`${D(`day ${String(l.day).padStart(3)}`)}  ${tag}${l.text}${reset}`);
 }
 
-console.log('-'.repeat(78));
-console.log(`alive: ${s.alive}   coin ${Math.round(s.coin)}   wounds ${s.wounds}   renown ${s.renown}   relics ${s.relics}   threads ${s.threads}`);
-console.log(`companions: ${s.companions.filter((c) => c.alive).map((c) => `${c.name}(bond ${c.bond}${c.beloved ? ', beloved' : ''})`).join(', ') || 'none'}`);
-console.log(`buried:     ${s.ghosts.map((x) => `${x.name} (${x.why}, day ${x.day})`).join(', ') || 'none'}`);
-console.log(`${lore.power.name} is watching: ${s.watch.attention}`);
-console.log('');
-console.log('DIAL DRIFT  (what you asked for -> who she became)');
-for (const k of ['reckless', 'sociable', 'generous']) {
-  const gap = Math.round(s.true[k] - s.intent[k]);
-  const arrow = gap === 0 ? '  =  ' : gap > 0 ? '  ->+' : '  ->-';
-  console.log(`  ${k.padEnd(9)} intent ${String(s.intent[k]).padStart(3)}   true ${String(Math.round(s.true[k])).padStart(3)}${arrow}${gap === 0 ? '' : Math.abs(gap)}`);
-}
+const s = sim.state;
+console.log('\n' + '─'.repeat(78));
+console.log(
+  `${s.alive ? 'still walking' : 'DEAD'} on day ${s.day} · ${Math.round(s.coin)} coin · ${s.wounds} wounds · watched ${s.attention}`
+);
+console.log(`stood in ${s.seen.length} of ${sim.sites.length} places · the world wrote ${s.eras} new era${s.eras === 1 ? '' : 's'} while she walked`);
+const st = Object.entries(s.standing).filter(([, v]) => Math.abs(v) >= 1);
+if (st.length) console.log('standing: ' + st.map(([k, v]) => `${k} ${v > 0 ? '+' : ''}${v.toFixed(1)}`).join(' · '));
+if (s.news.length) console.log(D(`${s.news.length} thing${s.news.length === 1 ? '' : 's'} happened that she never found out about`));
 console.log('');

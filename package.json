@@ -10,10 +10,8 @@
   },
   "scripts": {
     "sim": "node bin/run.js",
-    "balance": "node bin/balance.js",
-    "lore": "node bin/lore.js",
     "world": "node bin/world.js",
-    "test": "node bin/lore.js && node --test test/*.test.js",
+    "test": "node --test test/*.test.js",
     "serve": "node bin/serve.js"
   },
   "keywords": [

@@ -142,7 +142,7 @@ function skeleton(seed, mint) {
   // the place tree. depth and breadth roll; this is the idle game's expansion spine
   // (village -> city -> country -> continent -> planet) and it is not lore structure,
   // it is progression.
-  const continents = r.int(1, 2);
+  const continents = r.int(2, 3);
   for (let c = 0; c < continents; c++) {
     const cr = roller(derive(seed, 100 + c));
     const cont = add(world, node('place', placeName(mint, 'continent', cr), {
@@ -150,7 +150,7 @@ function skeleton(seed, mint) {
       aesthetic: cr.pick(T.AESTHETICS),      // everything else blank: it inherits wholesale
     }));
 
-    const countries = cr.int(2, 3);
+    const countries = cr.int(2, 4);
     for (let k = 0; k < countries; k++) {
       // BLIND: this country's stream knows nothing of its siblings'
       const kr = roller(derive(derive(seed, 100 + c), 200 + k));
@@ -172,7 +172,7 @@ function skeleton(seed, mint) {
         ...(kr.chance(0.4) ? { magic: { governance: kr.pick(T.MAGIC_GOVERNANCE) } } : {}),
       }));
 
-      const cities = kr.int(0, 2);
+      const cities = kr.int(1, 3);
       for (let s = 0; s < cities; s++) {
         const sr = roller(derive(derive(derive(seed, 100 + c), 200 + k), 300 + s));
         const isCity = sr.chance(0.5);
@@ -377,7 +377,7 @@ export function worldFromSeed(seed, { strict = true } = {}) {
   world = placement(world, s, mint);    // PASS 3 — the spine: who is where, who is the head
                                         // PASS 4 — shading: table-driven, done inline above
   world = history(world, s, mint);      // PASS 5 — what was here before
-  world.hooks = findHooks(world, s);   // PASS 6 — two-fact collisions, code-scored
+  world.hooks = findHooks(world, s, 8);   // PASS 6 — two-fact collisions, code-scored
 
   world.seed = s;
 

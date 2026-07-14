@@ -14,8 +14,8 @@
 //   which is precisely the mechanic the game is built on.
 //
 // So we persist the INPUTS instead of the OUTPUT. The engine is deterministic by
-// invariant — same seed, same lore pack, same inputs, same run, always — so the
-// full state is a pure function of (seed, loreId, dials, the things the player
+// invariant — same seed, same inputs, same run, always — so the full state is a
+// pure function of (seed, dials, the things the player
 // did, how many days passed). We store that short list and replay it from day 1
 // on load. The save file stays tiny, no function is ever serialized, and
 // determinism stops being a nice property of the engine and starts being the
@@ -28,7 +28,7 @@
 // THERE IS NO CYCLE. She dies once. Nothing carries forward, there is no prestige
 // reset, and the next life is a different world with a different name for the sky.
 
-import { Engine } from './engine.js';
+import { Sim } from './sim.js';
 
 export const SPEEDS = {
   brisk: 60 * 1000,           // 1 day per real minute — for tasting the thing
@@ -50,8 +50,9 @@ const MAX_ELAPSED = 20000;
 export const HEADSTART_DAYS = 5;
 
 export function newJournal({
-  seed,
-  loreId,
+  seed,                    // the world AND the life. worldFromSeed(seed) rebuilds the
+                           // whole tree, so there is no pack to record and no file to
+                           // go missing — the seed is the world.
   name,                    // omit and the world names her itself
   dials = {},
   speed = DEFAULT_SPEED,
@@ -60,9 +61,8 @@ export function newJournal({
 }) {
   const per = SPEEDS[speed] ?? SPEEDS[DEFAULT_SPEED];
   return {
-    v: 2,
+    v: 3,
     seed,
-    loreId,
     name: name ?? null,
     speed,
     dials: { reckless: 50, sociable: 50, generous: 50, ...dials },
@@ -95,12 +95,11 @@ export function msUntilNextDay(journal, now) {
 //
 // `elapsed` is our own day counter, and it keeps running after she dies — a dead
 // tick is a no-op, so over-ticking a corpse is harmless.
-export function replay(journal, toElapsed, pack) {
-  const eng = new Engine({
+export function replay(journal, toElapsed) {
+  const eng = new Sim({
     seed: journal.seed,
     name: journal.name ?? undefined,
     dials: journal.dials,
-    lore: pack,
   });
 
   const byDay = new Map();
@@ -121,11 +120,11 @@ export function replay(journal, toElapsed, pack) {
       } else if (entry.type === 'dials') {
         Object.assign(eng.state.intent, entry.dials);
       } else if (entry.type === 'suggest') {
-        // Where the player would LIKE her to go. It is not an order — the engine
-        // weighs it by `heeds()`, which decays as she drifts away from them. A
-        // suggestion is an input like any other, so it belongs in the journal and
+        // Where the player would LIKE her to go — an index into sim.sites. It is not
+        // an order: `heeds()` weighs it, and that decays as she drifts away from them.
+        // A suggestion is an input like any other, so it lives in the journal and
         // replays with everything else. `null` withdraws it.
-        eng.state.suggested = entry.region ?? null;
+        eng.state.suggested = entry.at ?? null;
       }
     }
     // Mark where the player's attention stopped, so we can show them the gap.
@@ -160,7 +159,7 @@ export function load(storage) {
   if (!raw) return null;
   try {
     const j = JSON.parse(raw);
-    if (j && j.v === 2 && typeof j.seed === 'number' && j.loreId && Array.isArray(j.entries)) return j;
+    if (j && j.v === 3 && typeof j.seed === 'number' && Array.isArray(j.entries)) return j;
     return null;
   } catch {
     return null;   // a corrupt save should start a new life, not a white screen
