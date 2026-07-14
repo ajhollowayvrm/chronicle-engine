@@ -493,3 +493,23 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 .stat .rank { font-size: 0.85rem; color: var(--ink-mid); line-height: 1.45; }
 
 @media (prefers-reduced-motion: reduce) { .bar .fill { transition: none; } }
+
+/* domains. and CONDITION reads differently from a skill, because it can be SPENT —
+   a low Heart is not a woman who has not trained. It is a woman who has paid. */
+.domain { margin-bottom: 1.75rem; }
+.domain-head { display: flex; align-items: baseline; gap: 0.6rem; margin-bottom: 0.85rem; }
+.domain-blurb { font-size: 0.8rem; color: var(--ink-low); }
+
+.stat.condition .fill { background: var(--close); }
+.stat.condition .rank { color: var(--ink); }
+.stat .n .down {
+  font-style: normal;
+  margin-left: 0.4rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  color: var(--blood);
+}
+/* Faith is the only number you are responsible for. It gets the warm colour, and when
+   it is gone the whole row goes cold — because that is what has happened. */
+.stat.faith .fill { background: var(--close); }
+.stat.faith .n { color: var(--close); }

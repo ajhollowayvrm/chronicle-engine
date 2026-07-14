@@ -15,7 +15,7 @@ import {
   SAVE_KEY, SPEEDS, DEFAULT_SPEED,
 } from '../src/game.js';
 import { TRAITS } from '../gen/tables/traits.js';
-import { STATS, STAT_MAX, rankOf } from '../gen/tables/stats.js';
+import { STATS, DOMAINS, STAT_MAX, rankOf } from '../gen/tables/stats.js';
 
 const $ = (id) => document.getElementById(id);
 const store = window.localStorage;
@@ -238,36 +238,49 @@ function renderStats(s) {
   const host = $('stats');
   host.replaceChildren();
 
-  for (const [k, S] of Object.entries(STATS)) {
-    const v = s.stat[k];
-    const grew = before ? v - before[k] : 0;
+  for (const [dom, D] of Object.entries(DOMAINS)) {
+    const group = el('div', 'domain');
+    const h = el('div', 'domain-head');
+    h.append(el('span', 'k', D.name));
+    h.append(el('span', 'domain-blurb', D.blurb));
+    group.append(h);
 
-    const row = el('div', 'stat');
+    for (const [k, S] of Object.entries(STATS)) {
+      if (S.domain !== dom) continue;
+      const v = s.stat[k];
+      const grew = before ? v - before[k] : 0;
+      const cond = S.kind === 'condition';
 
-    const head = el('div', 'stat-head');
-    head.append(el('b', null, S.name));
-    const n = el('span', 'n', String(v));
-    if (grew > 0) n.append(el('i', 'up', `+${grew}`));   // what the time did to her
-    head.append(n);
-    row.append(head);
+      const row = el('div', `stat ${cond ? 'condition' : ''} ${k === 'faith' ? 'faith' : ''}`);
 
-    const bar = el('div', 'bar');
-    const fill = el('div', 'fill');
-    fill.style.width = `${(v / STAT_MAX) * 100}%`;
-    bar.append(fill);
-    if (grew > 0) {
-      const was = el('div', 'was');
-      was.style.left = `${(before[k] / STAT_MAX) * 100}%`;
-      bar.append(was);
+      const head = el('div', 'stat-head');
+      head.append(el('b', null, S.name));
+      const n = el('span', 'n', String(v));
+      // What the time did to her while you were not looking. A condition can go DOWN,
+      // and when it has, that is the most important thing on this screen.
+      if (grew > 0) n.append(el('i', 'up', `+${grew}`));
+      if (grew < 0) n.append(el('i', 'down', String(grew)));
+      head.append(n);
+      row.append(head);
+
+      const bar = el('div', 'bar');
+      const fill = el('div', 'fill');
+      fill.style.width = `${(v / STAT_MAX) * 100}%`;
+      bar.append(fill);
+      if (grew !== 0 && before) {
+        const was = el('div', 'was');
+        was.style.left = `${(before[k] / STAT_MAX) * 100}%`;
+        bar.append(was);
+      }
+      row.append(bar);
+
+      row.append(el('span', 'rank', rankOf(k, v)));
+      group.append(row);
     }
-    row.append(bar);
-
-    row.append(el('span', 'rank', rankOf(k, v)));
-    host.append(row);
+    host.append(group);
   }
 
-  const kill = sim.killedAt();
-  $('kill').textContent = `It takes ${kill} wounds to kill her. She is carrying ${s.wounds}.`;
+  $('kill').textContent = `It takes ${sim.killedAt()} wounds to kill her. She is carrying ${s.wounds}.`;
 }
 
 // ─────────────────────────────────────────────── what she has become, and its cost

@@ -24,7 +24,7 @@ import { CHRONICLE } from '../gen/tables/chronicle.js';
 import { applyPatch } from '../gen/patch.js';
 import { VOICE, speaksTo } from '../gen/tables/voice.js';
 import { TRAITS } from '../gen/tables/traits.js';
-import { STATS, STAT_MAX, toNext, SHE_NOTICED } from '../gen/tables/stats.js';
+import { STATS, STAT_MAX, SKILLS, CONDITIONS, toNext, SHE_NOTICED, HEART, FAITH } from '../gen/tables/stats.js';
 
 function mulberry32(a) {
   return function () {
@@ -101,10 +101,17 @@ export class Sim {
       // particular person before she has done anything — and then moved by USE, and only
       // by use. She gets better at what she actually does and at nothing else.
       stat: {
-        body:   this.int(3, 7), hand:   this.int(3, 7), foot:   this.int(3, 7),
-        eye:    this.int(3, 7), tongue: this.int(3, 7), nerve:  this.int(3, 7),
+        // SKILLS — rolled low, grown by use, never lost
+        body: this.int(3, 7), hand: this.int(3, 7), foot: this.int(3, 7),
+        eye: this.int(3, 7), tongue: this.int(3, 7), nerve: this.int(3, 7),
+        name: this.int(1, 3),          // nobody has heard of her yet. that is the safest thing she owns.
+
+        // CONDITION — how much of her is left. These go DOWN, and they are the only
+        // numbers in this game that hurt.
+        heart: this.int(11, 15),       // she starts open. the world has not got to her yet.
+        faith: 10,                     // she knows something is there. she is not sure it helps.
       },
-      practice: { body: 0, hand: 0, foot: 0, eye: 0, tongue: 0, nerve: 0 },
+      practice: { body: 0, hand: 0, foot: 0, eye: 0, tongue: 0, nerve: 0, name: 0 },
 
       // THE LEDGER. Everything she has actually done. Traits are earned off this and
       // nothing else — she cannot buy what she has not lived.
@@ -201,6 +208,23 @@ export class Sim {
     if (this.chance(0.5)) this.speak(this.fresh(SHE_NOTICED[k]), 'became');
   }
 
+  // ───────────────────────────────────────────────────────────────── condition
+  // Heart and Faith are not skills. They move both ways, and she says so when they do.
+  // A skill that only rises is a treadmill; a condition that can be spent is a person.
+  condition(k, d, why) {
+    const s = this.state;
+    const was = s.stat[k];
+    s.stat[k] = clamp(s.stat[k] + d, 0, STAT_MAX);
+    const now = s.stat[k];
+    if (now === was) return;
+
+    const T = k === 'heart' ? HEART : FAITH;
+    if (now === 0 && was > 0) return this.speak(this.pick(T.empty), 'cold');
+    // she does not remark on every point. she remarks when it has gone somewhere.
+    if (d <= -2 && this.chance(0.6)) this.speak(this.fresh(T.lost), k === 'faith' ? 'cold' : 'grief');
+    else if (d >= 2 && this.chance(0.5)) this.speak(this.fresh(T.gained), 'close');
+  }
+
   // How many wounds it takes to kill her. NOT a constant — a woman who has been broken
   // and set can take more than one who has not, and that is the entire point of Body.
   killedAt() { return 5 + Math.floor(this.state.stat.body / 4); }
@@ -229,7 +253,10 @@ export class Sim {
 
   standing(name) { return this.state.standing[name] ?? 0; }
   nudge(name, d) {
-    const speed = 1 + this.trait('standing_speed') + this.st('tongue') * 0.5;
+    // NAME: how fast people take sides about her. A woman nobody has heard of is judged
+    // slowly; a woman whose name reaches a room before she does is judged the moment
+    // she walks in — for and against.
+    const speed = 1 + this.trait('standing_speed') + this.st('tongue') * 0.3 + this.st('name') * 0.9;
     this.state.standing[name] = clamp(this.standing(name) + d * speed, -20, 20);
   }
 
@@ -541,6 +568,7 @@ export class Sim {
         s.lived.defied++;
         this.use('tongue', 2);
         this.use('nerve', 2);
+        this.use('name', 2);      // word of it travels. that is what a name IS.
         // NERVE decides how loud she is to the thing that is counting. a woman who does
         // not shake is a woman it takes longer to find.
         s.attention += Math.max(1, Math.round((2 + this.trait('attention_rate')) * (1 - this.st('nerve') * 0.55)));
@@ -563,6 +591,7 @@ export class Sim {
         return this.say(this.line('relic'), 'event', { id: act });
 
       case 'danger': {
+        if (this.chance(0.3)) this.use('name');   // people talk about the ones who win
         // EYE: she saw it before it happened. this is the stat that stops a fight
         // being a fight, and it is why a woman with an eye lives longer than one with
         // a hand.
@@ -655,6 +684,7 @@ export class Sim {
       }
 
       case 'faction_hunted': {
+        this.use('name');
         const f = this.pick(ctx.enemies);
         s.wounds += this.chance(0.4) ? 2 : 1;
         s.coin = Math.max(0, s.coin - this.int(10, 40));
@@ -703,10 +733,24 @@ export class Sim {
 
   // how much of the player's suggestion survives contact with the woman she has
   // become. falls as `true` drifts from `intent`.
+  // How much of your word she takes. TWO THINGS DECIDE IT, and they are different
+  // questions:
+  //
+  //   FAITH — does she believe you are there, and that it helps? This one is YOURS. It
+  //           rises when you answer her and falls when she asks and you do not come.
+  //   DRIFT — is she still the woman you asked for? This one is the WORLD'S. It moves
+  //           whether you show up or not.
+  //
+  // A woman can believe in you completely and still have become someone who cannot do
+  // what you want. And a woman can be exactly who you asked for and have stopped
+  // believing anyone is listening. Those are sad in different ways and the game should
+  // be able to tell them apart.
   heeds() {
     const gap = ['reckless', 'sociable', 'generous']
       .reduce((m, d) => m + Math.abs(this.state.true[d] - this.state.intent[d]), 0) / 3;
-    return clamp(1 - gap / 22, 0.1, 1);
+    const drift = clamp(1 - gap / 26, 0.15, 1);
+    const faith = clamp(this.state.stat.faith / 14, 0.08, 1);
+    return clamp(drift * faith, 0.04, 1);
   }
 
   // what happens to her changes her. this is the only thing that does.
@@ -754,7 +798,9 @@ export class Sim {
       if (f.divine) continue;
       if (s.companions.some((c) => c.name === f.name)) continue;
       if ((s.met[f.name] ?? 0) < 2) continue;          // she has to actually know them
-      if (!this.chance(0.25 + 0.3 * this.off('sociable'))) continue;
+      // HEART: an empty woman cannot let anybody in. Not won't — CAN'T. This is what
+      // burying people does to her, and it is why the companion system has stakes.
+      if (!this.chance(clamp((s.stat.heart / 14) * (0.3 + 0.3 * this.off('sociable')), 0, 0.8))) continue;
 
       s.pending.push({
         id: `join_${f.name}`,
@@ -787,7 +833,13 @@ export class Sim {
   companionTick() {
     const s = this.state;
     const with_ = this.withHer();
-    if (!with_.length) { s.lived.nights_alone++; return; }
+    if (!with_.length) {
+      s.lived.nights_alone++;
+      // being alone is not neutral. it costs her, slowly, and she does not notice until
+      // she cannot do the other thing any more.
+      if (s.lived.nights_alone % 45 === 0) this.condition('heart', HEART.alone_long, 'alone');
+      return;
+    }
     s.lived.with_someone++;
 
     const c = this.pick(with_);
@@ -800,6 +852,7 @@ export class Sim {
       c.node.status = `dead — she buried them at ${this.here().name}`;
       s.ghosts.push({ name: c.name, why: 'died', day: s.day, wanted: c.wants });
       s.lived.buried++;
+      this.condition('heart', HEART.buried, 'buried');   // this is what burying somebody costs
       this.say(
         `${c.name} is dead. she buried them at ${this.here().name}.` +
         (c.wants ? ` they never got ${c.wants}.` : ''),
@@ -810,6 +863,7 @@ export class Sim {
     }
 
     c.bond = Math.min(20, c.bond + 1);
+    if (this.chance(0.35)) this.condition('heart', HEART.company, 'company');  // it comes back, slowly
     this.say(this.pick([
       `a quiet hour with ${c.name}. neither of them said anything worth writing down, and something got said anyway.`,
       `${c.name} asked her a question she did not answer, and did not leave, and that was the whole conversation.`,
@@ -876,6 +930,10 @@ export class Sim {
     const i = s.pending.findIndex((p) => p.id === id);
     if (i < 0) return null;
     const j = s.pending.splice(i, 1)[0];
+    // YOU CAME. This is the only number in the game the player is directly responsible
+    // for, and it is the one that can be lost.
+    this.condition('faith', FAITH.answered, 'answered');
+    s.lastAnswered = s.day;
     if (j.kind === 'join') this.resolveJoin(j, key, 'you');
     else this.resolveHook(j, key, 'you');
     return j;
@@ -911,6 +969,9 @@ export class Sim {
   // check in, it makes her a person rather than a puppet, and it makes neglect a
   // legitimate playstyle with a legitimate cost.
   autoResolve(j) {
+    // SHE ASKED, AND YOU WERE NOT THERE. Not a scolding line in the UI — three points
+    // off the number that decides whether she ever asks you again.
+    this.condition('faith', FAITH.absent, 'absent');
     if (j.kind === 'join') {
       // she waited. you did not come. she decides, weighted by how alone she is willing
       // to be — and then she tells you about it.
@@ -996,8 +1057,19 @@ export class Sim {
     const learned = this.lens();   // and finds out — witnessed, or late and secondhand
     if (learned) this.say(learned.text, learned.kind);
 
+    // She is badly hurt and has been asking into the dark for a fortnight. That costs
+    // her something, and it is not a fortnight of nothing.
+    if (s.wounds >= 4 && s.day - (s.lastAnswered ?? 0) > 60 && s.day % 30 === 0) {
+      this.condition('faith', FAITH.neglect, 'neglect');
+    }
+
     // upkeep
     if (s.wounds > 0 && this.chance(0.12 + this.trait('heal') + this.st('body') * 0.10)) s.wounds--;
+
+    // A NAME IS A LIABILITY. The watching power finds a famous woman faster than a
+    // quiet one, and there is nothing she can do about it — she cannot put a name down
+    // once she has picked it up. This is the cost, and it is not optional.
+    if (this.chance(Math.max(0, this.st('name')) * 0.10)) s.attention++;
     this.applyTraitDrift();
     this.applyIntentPull();
 
