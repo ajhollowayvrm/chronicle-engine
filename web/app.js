@@ -17,6 +17,10 @@ import {
 import { TRAITS } from '../gen/tables/traits.js';
 import { STATS, DOMAINS, STAT_MAX, rankOf } from '../gen/tables/stats.js';
 import { kindOf, describe } from '../src/bonds.js';
+import { MARKS } from '../gen/tables/marks.js';
+import { CALLINGS } from '../gen/tables/callings.js';
+import { SHAPES } from '../gen/tables/goods.js';
+import { usable, underAsk, unsworn } from '../src/kit.js';
 
 const $ = (id) => document.getElementById(id);
 const store = window.localStorage;
@@ -127,7 +131,9 @@ function suggest(i) {
 function render() {
   const s = sim.state;
 
-  $('her-name').textContent = s.name;
+  // Her name, and the one the world gave her. She wears the second one whether she likes
+  // it or not, so it belongs next to the first.
+  $('her-name').textContent = s.calling ? `${s.name}, ${CALLINGS[s.calling].name}` : s.name;
   $('her-day').textContent = `day ${s.day}`;
   $('her-where').textContent = sim.here().name;
 
@@ -136,6 +142,9 @@ function render() {
   renderDeath(s);
   renderLog(s);
   renderStats(s);
+  renderCalling(s);
+  renderKit(s);
+  renderMarks(s);
   renderTraits(s);
   renderPeople(s);
   renderGhosts(s);
@@ -183,7 +192,9 @@ function renderAsking(s) {
   box.hidden = false;
 
   const facts = $('ask-facts');
-  if (j.kind === 'join' || j.kind === 'romance' || j.kind === 'counsel') {
+  // A calling carries a `prompt` and no `facts` — read it as a hook and the screen throws
+  // on `j.facts[0]` the first time the world offers her a name.
+  if (j.kind === 'join' || j.kind === 'romance' || j.kind === 'counsel' || j.kind === 'calling') {
     $('ask-prompt').textContent = j.prompt;
     facts.hidden = true;
   } else {
@@ -250,7 +261,8 @@ function renderStats(s) {
 
     for (const [k, S] of Object.entries(STATS)) {
       if (S.domain !== dom) continue;
-      const v = s.stat[k];
+      const v = s.stat[k];                 // what she KNOWS. never falls.
+      const can = sim.eff(k);              // what she can DO with it today.
       const grew = before ? v - before[k] : 0;
       const cond = S.kind === 'condition';
 
@@ -258,7 +270,7 @@ function renderStats(s) {
 
       const head = el('div', 'stat-head');
       head.append(el('b', null, S.name));
-      const n = el('span', 'n', String(v));
+      const n = el('span', 'n', String(can));
       // What the time did to her while you were not looking. A condition can go DOWN,
       // and when it has, that is the most important thing on this screen.
       if (grew > 0) n.append(el('i', 'up', `+${grew}`));
@@ -267,8 +279,14 @@ function renderStats(s) {
       row.append(head);
 
       const bar = el('div', 'bar');
+      // THE GAP IS THE CHARACTER. The pale bar is everything she has learned; the solid
+      // one is how much of it she can still reach. A ruined hand does not un-learn the
+      // knife — it leaves her staring at the part of herself she cannot get to.
+      const knew = el('div', 'knew');
+      knew.style.width = `${(Math.max(v, can) / STAT_MAX) * 100}%`;
+      bar.append(knew);
       const fill = el('div', 'fill');
-      fill.style.width = `${(v / STAT_MAX) * 100}%`;
+      fill.style.width = `${(can / STAT_MAX) * 100}%`;
       bar.append(fill);
       if (grew !== 0 && before) {
         const was = el('div', 'was');
@@ -277,13 +295,156 @@ function renderStats(s) {
       }
       row.append(bar);
 
-      row.append(el('span', 'rank', rankOf(k, v)));
+      if (can !== v) {
+        row.append(el('span', can < v ? 'gap short' : 'gap over',
+          can < v
+            ? `she knows ${v}. she can reach ${can} of it.`
+            : `she knows ${v}. what she is carrying makes it ${can}.`));
+      }
+
+      row.append(el('span', 'rank', rankOf(k, can)));
       group.append(row);
     }
     host.append(group);
   }
 
   $('kill').textContent = `It takes ${sim.killedAt()} wounds to kill her. She is carrying ${s.wounds}.`;
+}
+
+// ══════════════════════════════════════════════════════════════ WHAT THEY CALL HER
+// Not a class you picked. A name the world started using, that she asked you about, and
+// that she cannot put back down.
+function renderCalling(s) {
+  const host = $('calling');
+  host.replaceChildren();
+
+  if (!s.calling) {
+    const refused = s.called.filter((c) => !c.took);
+    host.append(el('p', 'quiet small',
+      refused.length
+        ? `She has been offered ${refused.length === 1 ? 'a name' : `${refused.length} names`} and would not answer to ${refused.length === 1 ? 'it' : 'any of them'}. She is nobody, and it is the safest thing she owns.`
+        : 'Nothing yet. Nobody has decided what she is.'));
+    for (const c of refused) {
+      host.append(el('span', 'moment', `day ${c.day} — they offered her ${CALLINGS[c.key].name}. she refused it.`));
+    }
+    return;
+  }
+
+  const C = CALLINGS[s.calling];
+  const row = el('div', 'calling-now');
+  row.append(el('b', null, C.name));
+  row.append(el('span', 'says', C.world));
+
+  const does = el('div', 'calling-does');
+  for (const [k, v] of Object.entries(C.mods ?? {})) {
+    does.append(el('span', `tagline ${v > 0 ? '' : 'bad'}`,
+      `${STATS[k].name.toLowerCase()} ${v > 0 ? 'up' : 'down'}`));
+  }
+  if (C.attention) does.append(el('span', 'tagline bad', 'the watching thing finds her faster'));
+  if (C.opens?.length) does.append(el('span', 'tagline', 'she may carry what only her kind may carry'));
+  row.append(does);
+
+  // the ladder she climbed to get here
+  for (const c of s.called.filter((x) => x.took)) {
+    row.append(el('span', 'moment', `day ${c.day} — she answered to ${CALLINGS[c.key].name}.`));
+  }
+  host.append(row);
+}
+
+// ══════════════════════════════════════════════════════════════════ WHAT SHE CARRIES
+// Objects, with provenance. This list is not an inventory screen — every line says where
+// the thing came from, because that is the only reason it hurts to lose it.
+function renderKit(s) {
+  const host = $('kit');
+  host.replaceChildren();
+
+  if (!s.kit.length) {
+    host.append(el('p', 'quiet small', 'What she stands up in. Nothing else.'));
+    return;
+  }
+
+  for (const it of s.kit) {
+    const dead = !usable(it, s);
+    const row = el('div', `item ${dead ? 'dead' : ''}`);
+    row.append(el('b', null, it.name));
+    row.append(el('span', 'from', it.from));
+
+    if (unsworn(it, s)) {
+      row.append(el('span', 'tagline bad', 'she has no right to carry it, and every room can see'));
+    } else if (underAsk(it, s)) {
+      const [stat, need] = Object.entries(it.asks)[0];
+      row.append(el('span', 'tagline bad',
+        `it needs ${STATS[stat].name.toLowerCase()} ${need}. she has ${sim.bare(stat)}. it is using her.`));
+    } else {
+      row.append(el('span', 'tagline', WHAT_IT_DOES[it.shape] ?? 'it does its job'));
+    }
+
+    if (it.given_by) row.append(el('span', 'tagline warm', `${it.given_by} gave it to her`));
+    if (it.cost) row.append(el('span', 'moment', `it takes its price: ${it.cost}`));
+    host.append(row);
+  }
+
+  // and what she has put into somebody else's hands
+  for (const b of Object.values(s.bonds)) {
+    if (!b.carries || !b.alive) continue;
+    const row = el('div', 'item lent');
+    row.append(el('b', null, b.carries.name));
+    row.append(el('span', 'from', `she gave it to ${b.who}, and told them not to make a thing of it`));
+    host.append(row);
+  }
+}
+
+const WHAT_IT_DOES = {
+  blade: 'she is worse to fight',
+  coat: 'it takes the wounds that would have taken her',
+  boot: 'the road costs her less',
+  glass: 'she finds what other people walked over',
+  token: 'the law is cheaper where this seal is good',
+  relic: 'it works, and it charges',
+};
+
+// ══════════════════════════════════════════════════════════════ WHAT IT LEFT ON HER
+// The only thing in this game that takes a number away — and it still does not touch what
+// she knows. She keeps the knowing. She loses the use.
+function renderMarks(s) {
+  const host = $('marks');
+  host.replaceChildren();
+
+  if (!s.marks.length) {
+    host.append(el('p', 'quiet small', 'Nothing has stuck to her yet.'));
+    return;
+  }
+
+  for (const m of s.marks) {
+    const M = MARKS[m.key];
+    const row = el('div', 'mark');
+    row.append(el('b', null, M.name));
+    row.append(el('span', 'says', M.line));
+
+    const does = el('div', 'calling-does');
+    const took = [];
+    for (const [k, v] of Object.entries(M.mods ?? {})) {
+      does.append(el('span', `tagline ${v > 0 ? '' : 'bad'}`, `${STATS[k].name.toLowerCase()} ${v > 0 ? 'up' : 'down'}`));
+      // ONLY THE SKILLS. "She has not forgotten a thing" is a sentence about the gap
+      // between knowing and doing, and Heart is not a thing you know — it is how much of
+      // her is left. Saying she "still has the heart she earned, but cannot reach it" is
+      // both wrong and cruel in a way the game does not mean.
+      if (v < 0 && STATS[k].kind === 'skill') took.push(STATS[k].name.toLowerCase());
+    }
+    row.append(does);
+
+    // SAID ONCE, NOT ONCE PER STAT. This is the sentence the whole system exists for and
+    // it does not survive being repeated three times in a row in small caps.
+    if (took.length) {
+      row.append(el('span', 'moment',
+        `She has not forgotten a thing. Her ${took.join(' and ')} ${took.length > 1 ? 'are' : 'is'} exactly what she earned. She simply cannot reach all of it any more.`));
+    }
+
+    row.append(el('span', 'moment',
+      M.mends ? `day ${m.since} — it may still mend` : `day ${m.since} — she carries this to the grave`));
+    if (m.why) row.append(el('span', 'moment', m.why));
+    host.append(row);
+  }
 }
 
 // ─────────────────────────────────────────────── what she has become, and its cost

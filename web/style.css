@@ -551,3 +551,72 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 .person .tagline.secret { color: var(--close); }
 .person .tagline.bad { color: var(--blood); }
 .person .moment { font-size: 0.8rem; color: var(--ink-low); font-style: italic; line-height: 1.45; }
+
+/* ═══════════════════════════════════════════════════════ WHAT SHE HAS, AND WHAT SHE IS
+   Three additions, and one of them is the point of the whole sheet.
+
+   THE GAP. `.bar .knew` is everything she has LEARNED; `.bar .fill` is how much of it
+   she can still reach today. When a mark takes a hand, the pale bar stays where it was
+   and the solid one retreats — so the sheet shows you, without a word, a woman standing
+   next to the part of herself she cannot get to. That gap IS the character, and it is
+   the only thing on this page I would refuse to remove. */
+.bar .knew {
+  position: absolute;
+  top: 0; left: 0; height: 100%;
+  background: var(--rule);
+  border-right: 1px solid var(--ink-low);
+  transition: width 0.8s ease;
+}
+.bar .fill { position: relative; z-index: 1; }
+.stat .gap { font-size: 0.78rem; font-style: italic; line-height: 1.45; }
+.stat .gap.short { color: var(--blood); }
+.stat .gap.over { color: var(--close); }
+
+/* the shared vocabulary of a small card: a name, a sentence, and some cold small print */
+.item, .mark, .calling-now {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+}
+.kit, .marks, .calling { display: grid; gap: 0.6rem; margin-top: 1rem; }
+
+.item b, .mark b, .calling-now b { font-weight: 400; font-size: 1rem; }
+.item .from {
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--ink-low);
+}
+.mark .says, .calling-now .says { font-size: 0.88rem; line-height: 1.5; color: var(--ink-mid); }
+
+.item .tagline, .mark .tagline, .calling-now .tagline {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-low);
+}
+.item .tagline.bad, .mark .tagline.bad, .calling-now .tagline.bad { color: var(--blood); }
+.item .tagline.warm { color: var(--close); }
+.item .moment, .mark .moment, .calling .moment {
+  font-size: 0.8rem;
+  color: var(--ink-low);
+  font-style: italic;
+  line-height: 1.45;
+}
+.calling-does { display: flex; flex-wrap: wrap; gap: 0.5rem 0.9rem; }
+
+/* A THING SHE CANNOT USE. It is still hers, it is still in the pack, and it is doing
+   nothing for her — so it is struck back, the way the dead are struck off the roll. */
+.item.dead { border-style: dashed; }
+.item.dead b { color: var(--ink-low); }
+
+/* and the one she gave away, which is not hers and is not gone */
+.item.lent { background: transparent; border-style: dotted; }
+.item.lent b { color: var(--ink-mid); }
+
+/* THE NAME SHE ANSWERS TO. The only warm-bordered thing in the panel: she chose it,
+   out loud, in front of people, and she cannot put it back down. */
+.calling-now { border-left: 2px solid var(--close); }
