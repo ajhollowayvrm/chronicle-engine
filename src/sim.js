@@ -27,6 +27,13 @@ import { webOf, tangledWith, sideEffects, vendetta } from './web-of.js';
 import { VOICE, speaksTo } from '../gen/tables/voice.js';
 import { TRAITS } from '../gen/tables/traits.js';
 import { STATS, STAT_MAX, SKILLS, CONDITIONS, toNext, SHE_NOTICED, HEART, FAITH } from '../gen/tables/stats.js';
+import { SHAPES, OF_KIT, FROM } from '../gen/tables/goods.js';
+import { MARKS } from '../gen/tables/marks.js';
+import { CALLINGS, CALLING_KEYS, qualifies } from '../gen/tables/callings.js';
+import {
+  mint, bare, eff, usable, underAsk, unsworn, wielded,
+  kitBonus, callingBonus, straining, best, worst,
+} from './kit.js';
 
 function mulberry32(a) {
   return function () {
@@ -124,9 +131,23 @@ export class Sim {
       // nothing else — she cannot buy what she has not lived.
       lived: {
         hurt_badly: 0, travelled: 0, worked: 0, defied: 0, paid: 0,
-        buried: 0, nights_alone: 0, with_someone: 0, fights: 0,
+        buried: 0, nights_alone: 0, with_someone: 0, fights: 0, found: 0,
       },
       traits: [],          // what she has become. she cannot choose these. neither can you.
+
+      // WHAT SHE CARRIES. Not a build. A blade she bought, a coat somebody dead put on
+      // her, a writ that is worthless one country over. All of it can be lost, and that
+      // is the only reason any of it means anything.
+      kit: [],
+
+      // WHAT IT LEFT ON HER. Marks move the EFFECTIVE stat and never the raw one: she
+      // keeps everything she ever learned, and a ruined hand cannot use it.
+      marks: [],
+
+      // WHAT THEY CALL HER. She does not pick this off a menu — the world starts saying
+      // it, and she asks you whether to answer to it.
+      calling: null,
+      called: [],          // every name she was ever offered, and what she did about it
 
       // EVERY PERSON SHE HAS DEALT WITH, and what is between them. Not a friends list —
       // a bond has closeness AND friction AND trust, independently, because you can love
@@ -200,7 +221,23 @@ export class Sim {
   // good eye got nothing for it, and the numbers proved it (she did not live any longer
   // than a blind one). Centre it where she actually starts, and being born quick means
   // being quick.
-  st(k) { return (this.state.stat[k] - 6) / 12; }
+  st(k) { return (this.eff(k) - 6) / 12; }
+
+  // THREE NUMBERS, AND THEY ARE NOT THE SAME NUMBER.
+  //
+  //   raw   what she has learned. `use()` writes it, and only ever upward.
+  //   bare  raw + her marks. THE WOMAN — what is left of what she learned.
+  //   eff   bare + the kit she can actually use + the name she answers to. TODAY.
+  //
+  // Everything in the sim reads `eff`. Nothing but `use()` and `condition()` writes raw.
+  // The demand an object makes is measured against BARE, never against EFF, because a
+  // woman does not become strong enough for a blade BY PICKING UP THE BLADE.
+  bare(k) { return bare(this.state, k); }
+  eff(k) { return eff(this.state, k); }
+
+  // What she has become, what she is carrying, and what she answers to — summed. Traits
+  // were the only source of these once; there are three now, and they read as one.
+  bonus(key) { return this.trait(key) + kitBonus(this.state, key) + callingBonus(this.state, key); }
 
   // USE IS GROWTH. She practises a thing by doing it, and the next point costs more
   // than the last — so early growth is visible and late growth is earned, which is the
@@ -238,7 +275,7 @@ export class Sim {
 
   // How many wounds it takes to kill her. NOT a constant — a woman who has been broken
   // and set can take more than one who has not, and that is the entire point of Body.
-  killedAt() { return 5 + Math.floor(this.state.stat.body / 4); }
+  killedAt() { return 5 + Math.floor(this.eff('body') / 4); }
 
   // what her traits give her. earned, and every one of them cost something.
   trait(key) {
@@ -262,12 +299,138 @@ export class Sim {
     }
   }
 
+  // ══════════════════════════════════════════════════════════════════ THE MARKS
+  //
+  // A mark is what a life took, and it is the ONLY thing in the game that can lower a
+  // stat — and it still does not touch the raw number. She keeps every point she ever
+  // earned. She just cannot get at some of them any more.
+  //
+  // This is also where the player's answers finally land. Before marks, you told her to
+  // settle it, she settled it, a friction number moved, and it cooled off by the spring.
+  // Now she is a woman who settles it, and she is that woman in every room she walks into
+  // for the rest of her life.
+  mark(key, why) {
+    const s = this.state;
+    if (!MARKS[key] || s.marks.some((m) => m.key === key)) return;
+    s.marks.push({ key, since: s.day, why: why ?? null });
+    this.say(MARKS[key].line, 'mark', { mark: key });
+    this.speak(MARKS[key].she, 'became');
+  }
+
+  // Some of it mends. Not all of it, and she cannot tell which is which at the time.
+  markTick() {
+    const s = this.state;
+    for (const m of [...s.marks]) {
+      const M = MARKS[m.key];
+      if (!M.mends || s.day - m.since < M.mends) continue;
+      s.marks = s.marks.filter((x) => x !== m);
+      this.say(`the ${M.name.toLowerCase().replace(/^(a|the)\s+/, '')} has gone. she had stopped expecting it to.`, 'mark');
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════════════ THE KIT
+  //
+  // Everything she owns came from somewhere and can be taken. `from` is the whole reason
+  // objects are in this game: the coat is not +1 Body, it is the coat, and the chronicle
+  // knows who put it on her.
+  gain(item, from, givenBy = null) {
+    const s = this.state;
+    if (!item) return null;
+    item.from = from;
+    item.given_by = givenBy;
+    item.since = s.day;
+
+    // A THING SHE HAS NO RIGHT TO CARRY IS MOSTLY A THING SHE SELLS. It is dead in her
+    // hands and every room can see her holding it, and a woman with any sense turns that
+    // into money — unless she is exactly the kind of woman who would keep it, which is what
+    // `reckless` has always meant. Without this, four lives in five ended up hauling around
+    // a sworn blade they could not draw, and the gate stopped meaning anything.
+    if (unsworn(item, s) && !this.chance(0.15 + 0.25 * Math.max(0, this.off('reckless')))) {
+      s.coin += Math.round(item.worth * 0.5);
+      this.say(`she came by ${item.name} and sold it on. it was never going to be hers to carry.`, 'kit');
+      return null;
+    }
+
+    // She carries one of each. A woman has one good knife, not four — and if the new one
+    // is worse than the one she has, she does not take it.
+    const had = wielded(s, item.shape);
+    if (had) {
+      if (had.worth >= item.worth) return null;
+      s.kit = s.kit.filter((i) => i !== had);
+      // she does not throw away a thing somebody gave her. she keeps it and says nothing.
+      s.coin += had.given_by ? 0 : Math.round(had.worth * 0.4);
+    }
+    s.kit.push(item);
+    return item;
+  }
+
+  // The thing she is holding that is over her head. It does not stop her. It costs her,
+  // and she is the one who says so.
+  strain(act) {
+    const it = straining(this.state, act);
+    if (it && this.chance(0.06)) this.speak(this.fresh(OF_KIT.strains), 'cold');
+    return it ? 1 : 0;
+  }
+
+  // SHE HAS CAUGHT UP TO IT. A knife she could not use a year ago, and can now — which is
+  // the soft gate paying off: the thing did not unlock. She got better.
+  kitTick() {
+    const s = this.state;
+    for (const i of s.kit) {
+      if (i.caught || !i.overOnce) continue;
+      if (underAsk(i, s)) continue;
+      i.caught = true;
+      this.speak(this.fresh(OF_KIT.caught_up), 'close');
+      this.say(`the ${SHAPES[i.shape].noun} does not fight her any more. it took a year, and she noticed the day it stopped.`, 'kit');
+    }
+    for (const i of s.kit) if (underAsk(i, s)) i.overOnce = true;
+
+    // CARRYING A THING SHE HAS NO RIGHT TO. The room can see it. So can the thing that is
+    // counting.
+    if (s.kit.some((i) => unsworn(i, s)) && this.chance(0.05)) {
+      s.attention += 1;
+      if (this.chance(0.3)) this.speak(this.fresh(OF_KIT.unsworn), 'cold');
+    }
+
+    // THE WORKING CHARGES WHAT IT SAYS IT CHARGES. The seed wrote the price into the world
+    // and the validator forced it to. Nothing has ever made anybody pay it. This does.
+    const relic = wielded(s, 'relic');
+    if (relic && relic.cost && usable(relic, s) && this.chance(0.012)) {
+      this.say(`she used the ${relic.name.replace(/^an? /, '')}. it took what it takes: ${relic.cost}.`, 'kit');
+      this.mark('the_cost', relic.cost);
+    }
+  }
+
+  // AN OBJECT IS ROLLED OUT OF THE GROUND SHE IS STANDING ON, and there is no catalogue
+  // anywhere in this repo. The material is the seam under the town; the seal is a faction
+  // that actually operates here (placement IS scope, so `factionsHere` is already the
+  // answer); the price is what the tier can afford; and a working is one of THIS world's
+  // magics, charging THIS world's price, in the words the seed wrote for it.
+  //
+  // A relic is never rolled at random — she has to go looking.
+  mintHere(shape) {
+    const roll = {
+      pick: (a) => this.pick(a),
+      int: (lo, hi) => this.int(lo, hi),
+      chance: (p) => this.chance(p),
+    };
+    const ordinary = Object.keys(SHAPES).filter((k) => !SHAPES[k].magical);
+    return mint(roll, {
+      shape: shape ?? this.pick(ordinary),
+      econ: this.law('economy') ?? {},
+      tech: this.law('technology') ?? {},
+      magic: this.law('magic') ?? {},
+      factions: this.factionsHere(),
+      where: this.here().name,
+    });
+  }
+
   standing(name) { return this.state.standing[name] ?? 0; }
   nudge(name, d) {
     // NAME: how fast people take sides about her. A woman nobody has heard of is judged
     // slowly; a woman whose name reaches a room before she does is judged the moment
     // she walks in — for and against.
-    const speed = 1 + this.trait('standing_speed') + this.st('tongue') * 0.3 + this.st('name') * 0.9;
+    const speed = 1 + this.bonus('standing_speed') + this.st('tongue') * 0.3 + this.st('name') * 0.9;
     this.state.standing[name] = clamp(this.standing(name) + d * speed, -20, 20);
   }
 
@@ -504,6 +667,7 @@ export class Sim {
     const friends = factions.filter((f) => this.standing(f.name) >= 6);
     const enemies = factions.filter((f) => this.standing(f.name) <= -8);
     const figures = this.figuresHere();
+    const market = this.here().scale === 'city' || this.here().scale === 'town';
 
     // weights. a hurt woman does not go looking for a fight; a rich country has more
     // law in it; a steep divergence has more violence in it.
@@ -515,10 +679,13 @@ export class Sim {
       defy: 3 + 6 * this.off('reckless'),
       find: 5 + 4 * this.off('reckless') + (this.here().status ? 4 : 0),
       relic: 2 + 2 * this.off('reckless'),
-      danger: (4 + 8 * this.off('reckless') + unrest) * (1 - 0.7 * hurt) * (1 + this.trait('danger_weight')),
+      danger: (4 + 8 * this.off('reckless') + unrest) * (1 - 0.7 * hurt) * (1 + this.bonus('danger_weight')),
       unrest: unrest * 1.5,
       sick: 3,
       travel: 5 + 3 * this.off('reckless'),
+      // There is a market here and she has money in her pocket. That is the whole of the
+      // condition — she does not go shopping on a mountain.
+      buy: market && s.coin >= 70 ? 3 + Math.min(4, s.coin / 220) : 0,
       figure_meet: figures.length ? 9 + 8 * this.off('sociable') : 0,
       figure_clash: figures.length ? 2 + 4 * this.off('reckless') : 0,
       faction_favour: friends.length ? 5 : 0,
@@ -527,6 +694,21 @@ export class Sim {
       // the more the watching power has noticed, the likelier it is to do something
       power: Math.max(0, (s.attention - 8) * 0.7),
     };
+
+    // THE NAME CHANGES WHAT THE DAYS ARE MADE OF. This is the real weight of a calling and
+    // it is not a stat bonus: a Toll-Breaker is not merely better at defying, she is
+    // OFFERED more of it — the gate-houses know her, and the men who want her found have
+    // her description. She cannot go back to being a woman who works and rests.
+    //
+    // A CALLING CANNOT CONJURE AN ACT WHOSE PRECONDITION IS NOT THERE. A weight of zero
+    // above is not "unlikely" — it is IMPOSSIBLE: there are no enemies in this town, there
+    // is no market on this mountain, there is nobody here to meet. A Toll-Breaker is hunted
+    // more by the people who want her, and she is not hunted by nobody. (This shipped as a
+    // crash for exactly ten minutes: `faction_hunted` lifted off zero, and then `do()` went
+    // looking for an enemy to be hunted by, in an empty list.)
+    for (const [k, d] of Object.entries(CALLINGS[s.calling]?.weights ?? {})) {
+      if (w[k] > 0) w[k] = Math.max(0, w[k] + d);
+    }
 
     const keys = Object.keys(w).filter((k) => w[k] > 0);
     const total = keys.reduce((a, k) => a + w[k], 0);
@@ -551,7 +733,7 @@ export class Sim {
       case 'work': {
         s.lived.worked++;
         this.use('body');
-        const pay = Math.round(this.int(18, 40) * wealth * (1 + this.trait('earn')));
+        const pay = Math.round(this.int(18, 40) * wealth * (1 + this.bonus('earn')));
         s.coin += pay;
         s.wounds = Math.max(0, s.wounds - 1);
         // working is how the country's own factions learn who she is
@@ -566,13 +748,67 @@ export class Sim {
       case 'law': {
         s.lived.paid++;
         this.use('tongue');
-        // a tongue is worth money. she argues the figure down, and they let her.
-        const toll = Math.round(this.int(10, 40) * (0.5 + tier / 6) * (1 + (econ.pressure ?? 0) * 0.4) * (1 - this.st('tongue') * 0.45));
+        // A tongue is worth money — and so is a piece of paper with the right seal on it,
+        // in the country that seal is good in. A writ she cannot read is worse than none:
+        // presenting a document you do not understand is how people get arrested.
+        this.strain('law');
+        const toll = Math.round(
+          this.int(10, 40) * (0.5 + tier / 6) * (1 + (econ.pressure ?? 0) * 0.4)
+          * Math.max(0.1, 1 + this.bonus('toll') - this.st('tongue') * 0.45));
+
+        // SHE CANNOT PAY IT. So they take something, and they take the good one, and this
+        // is why an object in this game has to be losable to be worth having.
+        if (toll > s.coin && s.kit.length && this.chance(0.5)) {
+          const took = best(s.kit);
+          s.kit = s.kit.filter((i) => i !== took);
+          s.attention += 1;
+          this.speak(this.fresh(OF_KIT.sold), 'cold');
+          return this.say(
+            `she could not pay at ${this.here().name}, so they took ${took.name} instead. it was ${took.from}.`,
+            'kit', { id: act });
+        }
+
         const paid = Math.min(s.coin, toll);
         s.coin -= paid;
         s.attention += 1;
         for (const f of ctx.factions) this.nudge(f.name, 0.5);   // compliance is noticed
         return this.say(this.line('law', { coin: paid }), 'event', { id: act });
+      }
+
+      // ─────────────────────────────────────────────────────────────────── SHE BUYS
+      // There is a market here and money in her pocket. What is on the stall came out of
+      // the ground under it — she cannot buy a bone-glass knife in a country with no seam.
+      case 'buy': {
+        const it = this.mintHere();
+        if (!it) return this.say(this.line('road'), 'event', { id: 'road' });
+
+        // SHE IS NOT AN IDIOT. She mostly walks past the thing she cannot use — mostly,
+        // because people do buy the coat they intend to grow into, and a reckless woman
+        // does it more. Without this she spent five hundred coin on a lens she could not
+        // focus, twice, in a fortnight.
+        if (underAsk(it, s) && !this.chance(0.12 + 0.18 * Math.max(0, this.off('reckless')))) {
+          return this.say(
+            `she priced ${it.name} at ${this.here().name} and put it back. it is more than she can handle and she knows exactly by how much.`,
+            'kit', { id: act });
+        }
+
+        const price = Math.round(it.worth * (1.1 - this.st('tongue') * 0.3));
+        if (price > s.coin) {
+          return this.say(
+            `she priced ${it.name} at ${this.here().name} and walked away from it, and has thought about it every day since.`,
+            'kit', { id: act });
+        }
+        this.use('tongue');
+        s.coin -= price;
+        if (!this.gain(it, FROM.bought(this.here().name))) {
+          s.coin += price;   // she already had better. she put it back.
+          return this.say(`she looked at ${it.name} at ${this.here().name} and decided that what she has is better.`, 'kit', { id: act });
+        }
+        if (this.chance(0.4)) this.speak(this.fresh(OF_KIT.bought), 'close');
+        return this.say(
+          `she bought ${it.name} at ${this.here().name}, for ${price} coin.` +
+          (underAsk(it, s) ? ' it is more than she can handle, and she knew that when she paid for it.' : ''),
+          'kit', { id: act });
       }
 
       case 'defy':
@@ -582,7 +818,7 @@ export class Sim {
         this.use('name', 2);      // word of it travels. that is what a name IS.
         // NERVE decides how loud she is to the thing that is counting. a woman who does
         // not shake is a woman it takes longer to find.
-        s.attention += Math.max(1, Math.round((2 + this.trait('attention_rate')) * (1 - this.st('nerve') * 0.55)));
+        s.attention += Math.max(1, Math.round((2 + this.bonus('attention_rate')) * (1 - this.st('nerve') * 0.55)));
         // and a tongue talks her out of the beating
         if (this.chance(Math.max(0.05, 0.45 - this.st('tongue') * 0.5))) s.wounds += 1;
         this.drift('reckless', +0.03);
@@ -591,15 +827,37 @@ export class Sim {
 
       case 'find': {
         this.use('eye', 3);
-        const take = Math.round(this.int(20, 90) * wealth * (1 + this.st('eye') * 0.6));
+        s.lived.found++;
+        this.strain('find');
+        // SOMETIMES IT IS NOT COIN. It is a thing, in the ground, where the last person to
+        // hold it left it.
+        if (this.chance(0.22 + this.st('eye') * 0.2)) {
+          // things, not paperwork. nobody buries a writ.
+          const it = this.mintHere(this.pick(['blade', 'coat', 'boot', 'glass']));
+          if (it && this.gain(it, FROM.found(this.here().name))) {
+            return this.say(`she dug ${it.name} out of the ground at ${this.here().name}. somebody put it there, and did not come back for it.`, 'kit', { id: act });
+          }
+        }
+        const take = Math.round(this.int(20, 90) * wealth * (1 + this.st('eye') * 0.6 + this.bonus('find')));
         s.coin += take;
         return this.say(this.line('find', { coin: take }), 'event', { id: act });
       }
 
-      case 'relic':
+      case 'relic': {
         this.use('eye');
-        s.attention += Math.max(1, Math.round(2 * (1 - this.st('nerve') * 0.5)));
+        s.lived.found++;
+        s.attention += Math.max(1, Math.round((2 + this.bonus('attention_rate')) * (1 - this.st('nerve') * 0.5)));
+        // THE WORLD'S OWN MAGIC, WITH THE WORLD'S OWN PRICE WRITTEN ON THE SIDE OF IT.
+        if (this.chance(0.18)) {
+          const it = this.mintHere('relic');
+          if (it && this.gain(it, FROM.found(this.here().name))) {
+            return this.say(
+              `she came away from ${this.here().name} with ${it.name}. she knows what it costs — it does not hide what it costs — and she took it anyway.`,
+              'kit', { id: act });
+          }
+        }
         return this.say(this.line('relic'), 'event', { id: act });
+      }
 
       case 'danger': {
         if (this.chance(0.3)) this.use('name');   // people talk about the ones who win
@@ -633,7 +891,10 @@ export class Sim {
         // person you cannot stand. `owes` was in the model from the beginning and nothing
         // ever set it. This sets it.
         const with_ = this.withHer();
-        if (with_.length && s.wounds >= 3 && this.chance(0.3)) {
+        // AND THE ONE SHE ARMED IS THE ONE WHO CAN REACH HER IN TIME. That is what the
+        // spare knife was for. She did not know that when she handed it over.
+        const armed = with_.filter((x) => x.carries).length;
+        if (with_.length && s.wounds >= 3 && this.chance(0.3 + 0.15 * armed)) {
           const saver = this.pick(with_);
           s.wounds = Math.max(0, s.wounds - 2);
           shift(saver, { owes: +6, trust: +3, closeness: +2 },
@@ -661,19 +922,46 @@ export class Sim {
         s.lived.fights++;
         this.use('hand', 3);
         this.use('nerve', 2);
-        // her traits and her hand are here, and only here, and she paid for both
-        const swing = this.rng() * 2 - 1 + 0.4 * this.off('reckless') + this.trait('swing')
+
+        // A BLADE SHE CANNOT HANDLE IS WORSE THAN NO BLADE. It is not a locked slot and it
+        // is not a warning tooltip — it is a real, negative number, in the only place that
+        // has ever mattered, and she has been telling you about it for weeks.
+        const over = this.strain('danger') * 0.5;
+
+        // her traits, her name, her kit and her hand are here, and only here, and she paid
+        // for every one of them
+        const swing = this.rng() * 2 - 1 + 0.4 * this.off('reckless') + this.bonus('swing') - over
           + this.st('hand') * 0.9 + this.st('nerve') * 0.45;
+
+        // a coat is not a stat. it is two of the wounds that would have killed her.
+        const soak = this.bonus('soak');
+
         if (swing < -0.45) {
-          s.wounds += 2;
+          s.wounds += this.chance(soak) ? 1 : 2;
           s.lived.hurt_badly++;
           this.use('body', 3);   // she was hurt, and got up. that is how a body is made.
           s.coin = Math.max(0, s.coin - this.int(10, 50));
           this.drift('reckless', -0.05);
+
+          // ── AND SOMETIMES IT DOES NOT HEAL. This is where the only downward pressure in
+          //    the game comes from, and it still does not touch what she knows: her Hand is
+          //    the same number it was this morning. The hand is not.
+          if (this.chance(0.14 - soak * 0.2)) {
+            this.mark(this.pick(['ruined_hand', 'limp', 'bad_eye', 'scarred']), `it went badly at ${this.here().name}`);
+          }
         } else {
           s.wounds += 1;
           s.coin += this.int(10, 40);
           this.drift('reckless', +0.02);
+
+          // SHE WON, AND THE OTHER ONE HAD A KNIFE. It is hers now, and the chronicle will
+          // say where it came from for as long as she carries it.
+          if (this.chance(0.16)) {
+            const it = this.mintHere(this.chance(0.7) ? 'blade' : undefined);
+            if (it && this.gain(it, FROM.taken(this.here().name))) {
+              return this.say(`it went her way at ${this.here().name}. she came out of it with ${it.name}, off somebody who did not need it any more.`, 'kit', { id: act });
+            }
+          }
         }
         return this.say(this.line('danger'), 'event', { id: act });
       }
@@ -732,8 +1020,17 @@ export class Sim {
       }
       case 'faction_favour': {
         const f = this.pick(ctx.friends);
-        s.coin += this.int(8, 25);
         this.nudge(f.name, 0.5);
+        // A WRIT UNDER THEIR SEAL. Worth a great deal in the countries they operate in, and
+        // exactly nothing one border over — which is the whole nature of a faction, and the
+        // tree has always known where they operate, because placement IS scope.
+        if (this.chance(0.25)) {
+          const it = this.mintHere('token');
+          if (it && this.gain(it, FROM.favour(f.name, this.here().name))) {
+            return this.say(`${f.name} put ${it.name} into her hand at ${this.here().name}. it is worth a great deal here. it is worth nothing at all one country over.`, 'kit', { id: act });
+          }
+        }
+        s.coin += this.int(8, 25);
         return this.say(this.line('faction_favour', { faction: f.name }), 'event', { id: act });
       }
 
@@ -784,8 +1081,11 @@ export class Sim {
     this.state.lived.travelled++;
     this.use('foot', 3);
     const foot = this.st('foot');
-    this.state.coin = Math.max(0, this.state.coin - Math.round(this.int(5, 18) * (1 + this.trait('travel_cost') - foot * 0.4)));
-    if (this.chance(Math.max(0.02, (0.15 - foot * 0.09) * (1 + this.trait('travel_wound'))))) this.state.wounds += 1;
+    // a coat she cannot carry is a punishment on the road, and boots she cannot fill are
+    // the same punishment twice
+    const heavy = this.strain('travel') * 0.35;
+    this.state.coin = Math.max(0, this.state.coin - Math.round(this.int(5, 18) * Math.max(0.15, 1 + this.bonus('travel_cost') + heavy - foot * 0.4)));
+    if (this.chance(Math.max(0.02, (0.15 - foot * 0.09) * (1 + this.bonus('travel_wound') + heavy)))) this.state.wounds += 1;
 
     // the arrival is rendered from where she now IS, so the vocabulary (commodity,
     // who pays, the law) is already the new country's before the sentence is written
@@ -810,7 +1110,7 @@ export class Sim {
     const gap = ['reckless', 'sociable', 'generous']
       .reduce((m, d) => m + Math.abs(this.state.true[d] - this.state.intent[d]), 0) / 3;
     const drift = clamp(1 - gap / 26, 0.15, 1);
-    const faith = clamp(this.state.stat.faith / 14, 0.08, 1);
+    const faith = clamp(this.eff('faith') / 14, 0.08, 1);
     return clamp(drift * faith, 0.04, 1);
   }
 
@@ -975,7 +1275,7 @@ export class Sim {
     if (s.wounds >= 3 && this.chance(0.18)) return this.lose(b, 'died');
 
     // ── THEY LEAVE. Friction does this. So does a woman with nothing left to give.
-    if ((b.friction >= 12 || s.stat.heart <= 3) && this.chance(0.12)) return this.lose(b, 'left');
+    if ((b.friction >= 12 || this.eff('heart') <= 3) && this.chance(0.12)) return this.lose(b, 'left');
 
     // ══════════════════════════════════════════════════════════════ JEALOUSY
     //
@@ -997,10 +1297,46 @@ export class Sim {
         'bond');
     }
 
+    // ══════════════════════════════════════════════════════════ THEY GIVE HER THINGS
+    //
+    // Not loot. A thing of theirs, that was theirs, that they wanted her to have — and the
+    // chronicle names them every single time she uses it, which is the entire reason
+    // objects in this game carry their provenance around with them.
+    if (b.closeness >= 12 && b.trust >= 8 && !b.gave && this.chance(0.10)) {
+      const it = this.mintHere();
+      if (it && this.gain(it, FROM.given(b.who, this.here().name), b.who)) {
+        b.gave = s.day;
+        shift(b, { closeness: +2 }, `they gave her ${it.name}`, s.day, true);
+        this.speak(this.fresh(OF_KIT.given), 'close');
+        return this.say(
+          `${b.who} gave her ${it.name} at ${this.here().name}. they did not make anything of it. she has not once stopped noticing it.`,
+          'bond');
+      }
+    }
+
+    // ═══════════════════════════════════════════ SHE ARMS THE PERSON WALKING BESIDE HER
+    //
+    // "Others can wield them" is not a stat-sharing feature. It is this: she hands the
+    // spare knife to the person at her shoulder, tells them not to make a thing of it, and
+    // months later it is the reason they get to her in time — and then she owes them, and
+    // owing somebody is its own kind of hell, and the game already knows how to do that.
+    if (!b.carries && s.kit.length >= 2 && this.chance(0.06 + 0.10 * Math.max(0, this.off('generous')))) {
+      const spare = worst(s.kit);
+      if (spare) {
+        s.kit = s.kit.filter((i) => i !== spare);
+        b.carries = spare;
+        shift(b, { closeness: +2, trust: +1 }, `she gave them ${spare.name}`, s.day, true);
+        this.condition('heart', HEART.kindness, 'gave');
+        return this.say(
+          `she put ${spare.name} into ${b.who}'s hands at ${this.here().name} and told them not to make a thing of it.`,
+          'bond');
+      }
+    }
+
     // ── ROMANCE. It does not happen because a bar filled. It happens because two people
     //    kept turning up, and then one of them noticed. She does not start a second one
     //    while she is in the first — she is not a saint, but she is not a fool either.
-    if (!lover && b.romance === 0 && b.closeness >= 11 && b.trust >= 9 && s.stat.heart >= 7 && this.chance(0.10)) {
+    if (!lover && b.romance === 0 && b.closeness >= 11 && b.trust >= 9 && this.eff('heart') >= 7 && this.chance(0.10)) {
       b.romance = 1;
       shift(b, {}, 'she noticed, and wishes she had not', s.day, true);
       this.speak(this.pick([
@@ -1128,6 +1464,9 @@ export class Sim {
       name: b.who,
       why: 'died',
       day: s.day,
+      // THEY DIED HOLDING THE THING SHE GAVE THEM. It is in her hands again and she cannot
+      // make herself look at it.
+      carried: b.carries ?? null,
       wanted: b.node?.wants ?? null,
       was: b.romance >= 3 ? 'lover' : kindOf({ ...b, alive: true }),
     });
@@ -1182,6 +1521,18 @@ export class Sim {
     s.coin = Math.max(0, s.coin - took);
     s.attention += 3;
     if (this.chance(0.4)) s.wounds += 1;
+
+    // AND THEY TOOK THE BEST THING SHE OWNED. Of everything they could have taken. They
+    // knew which one it was, because she told them where it came from.
+    const prize = best(s.kit);
+    if (prize && this.chance(0.6)) {
+      s.kit = s.kit.filter((i) => i !== prize);
+      this.speak(this.fresh(OF_KIT.lost), 'cold');
+      this.say(
+        `${b.who} took ${prize.name} when they went. it was ${prize.from}.` +
+        (prize.given_by ? ` ${prize.given_by} gave it to her.` : ''),
+        'loss');
+    }
 
     shift(b, { friction: +8, trust: -10, closeness: -2 },
       `they sold her, at ${this.here().name}, and they did it well`, s.day, true);
@@ -1258,9 +1609,15 @@ export class Sim {
       if (!b || b.withHer || !b.alive) continue;
       if (b.closeness < 4) continue;      // she has to actually know them
       if (b.friction >= 8) continue;      // and not be at war with them
+      // SHE ALREADY SAID NO TO THEM. A man who has been turned down does not ask again on
+      // Thursday. This had no memory at all, so a refused companion re-asked every few days
+      // for the rest of her life, and the chronicle read `Wren Mourn does not` nine times
+      // in a fortnight — which is not a person, it is a stuck valve.
+      if (b.joinAsked && s.day - b.joinAsked < 90) continue;
       // HEART gates this. An empty woman cannot let anybody in. Not won't — CAN'T.
-      if (!this.chance(clamp((s.stat.heart / 14) * (0.28 + 0.3 * this.off('sociable')), 0, 0.8))) continue;
+      if (!this.chance(clamp((this.eff('heart') / 14) * (0.28 + 0.3 * this.off('sociable')), 0, 0.8))) continue;
 
+      b.joinAsked = s.day;
       s.pending.push({
         id: `join_${f.name}`,
         kind: 'join',
@@ -1361,7 +1718,7 @@ export class Sim {
   counsel() {
     const s = this.state;
     if (s.pending.some((p) => p.kind === 'counsel')) return;
-    if (!this.chance(0.05 + 0.05 * (s.stat.faith / 20))) return;   // she asks more if she believes in you
+    if (!this.chance(0.05 + 0.05 * (this.eff('faith') / 20))) return;   // she asks more if she believes in you
 
     const ask = (id, who, prompt, options) => {
       s.pending.push({ id, kind: 'counsel', who, prompt, options, raisedOn: s.day, dueOn: s.day + 5 });
@@ -1412,6 +1769,16 @@ export class Sim {
         { a: `Stand with ${rivals.a}`, b: `Stand with ${rivals.b}`, out: 'Stay out of it' });
     }
 
+    // ── THEY DIED WITH HER KNIFE IN THEIR HAND. It came back to her, and it is the most
+    //    ordinary object in the world, and she cannot make herself pick it up.
+    const holding = s.ghosts.find((g) => g.carried && !g.askedKit);
+    if (holding) {
+      holding.askedKit = true;
+      return ask(`kit_${holding.name}`, holding.name,
+        `${holding.name} was carrying ${holding.carried.name} when they died. I gave it to them. I put it in their hands myself and told them not to make a thing of it. It is back in my pack and I have not been able to look at it for a week.`,
+        { keep: 'Use it. They would want you to', bury: 'Put it in the ground with them' });
+    }
+
     // ── the dead are still asking
     const owed = s.ghosts.find((g) => g.wanted && !g.settled && !g.asked);
     if (owed) {
@@ -1460,6 +1827,7 @@ export class Sim {
         // worth it.
         b.refused = s.day;
         shift(b, { friction: +4, trust: -2 }, 'she could have helped, and did not, and they know', s.day, true);
+        this.mark('said_no', `${j.who} asked, and she decided they were not worth it`);
         this.say(`she could have got ${j.who} what they wanted. she did not. they have not asked why, which is worse than asking.`, 'bond');
         said(`she did not help ${j.who}`);
       }
@@ -1479,6 +1847,7 @@ export class Sim {
           for (const v of vendetta(this.web, b.who)) shift(this.bond(v.other), { friction: v.friction, trust: -3 }, v.why, s.day, true);
           this.speak('It is settled. I do not feel any better. I was told I would feel better.', 'cold');
         }
+        this.mark('blood_answer', `she settled it with ${j.who}`);
         this.say(`she settled it with ${j.who} at ${this.here().name}.${b.alive ? ' they are still breathing. neither of them is sure why.' : ' they are not breathing.'}`, 'loss');
         said(`she settled it with ${j.who}`);
       } else {
@@ -1489,6 +1858,7 @@ export class Sim {
           'I let it go. I want to be clear that I did not forgive them. I let it go. There is a difference and it is the only thing I have.',
           'I did not settle it. Everyone is waiting for me to and I am not going to and I cannot explain why to them or to you.',
         ]), 'close');
+        this.mark('let_it_go', `she let it go with ${j.who}`);
         this.say(`she let it go with ${j.who}. nobody who knows her believed she would. she is not sure she has.`, 'bond');
         said(`she let it go with ${j.who}`);
       }
@@ -1513,6 +1883,31 @@ export class Sim {
       return;
     }
 
+    // ── the thing they died holding
+    if (j.id.startsWith('kit_')) {
+      const g = s.ghosts.find((x) => x.name === j.who);
+      if (!g?.carried) return;
+      const it = g.carried;
+      g.carried = null;
+
+      if (key === 'keep') {
+        this.gain(it, FROM.buried(g.name), g.name);
+        this.condition('heart', -1, 'kept it');
+        this.speak(this.pick([
+          `I am using it. They would want me to use it. I have told myself that in those words about forty times now.`,
+          `I kept it. I do not know whether that is love or whether I am just a person who does not waste a good knife.`,
+        ]), 'grief');
+        this.say(`she kept ${it.name}. it was ${g.name}'s. she uses it, and she does not talk about it, and she thinks about it every time.`, 'bond');
+        said(`she kept what ${g.name} was carrying`);
+      } else {
+        this.condition('heart', +2, 'buried it');
+        this.speak(`It went in the ground with them. It was worth more than everything else I own. I have not regretted it and I have thought about it every day, and those are both true.`, 'grief');
+        this.say(`she put ${it.name} in the ground with ${g.name}. it was worth more than everything else she owns.`, 'loss');
+        said(`she buried ${g.name} with what she gave them`);
+      }
+      return;
+    }
+
     // ── the dead
     if (j.id.startsWith('ghost_')) {
       const g = s.ghosts.find((x) => x.name === j.who);
@@ -1531,6 +1926,87 @@ export class Sim {
       }
       return;
     }
+  }
+
+  // ══════════════════════════════════════════════════════════ WHAT THEY CALL HER
+  //
+  // THE CLASS SYSTEM, AND SHE DOES NOT PICK IT OFF A MENU.
+  //
+  // A calling is a name the world has started using for her, and it arrives the way a
+  // reputation actually arrives: she finds out that other people have been saying it for a
+  // while. `qualifies()` will not offer her a name her stats and her ledger do not already
+  // support — which is what "the class has to fit her stats" means when it is ENFORCED
+  // instead of advised. There is never a menu of nine things she is not. There is one name,
+  // it is true, and the only question left is whether she answers to it.
+  //
+  // Then she turns to you and asks. It is a judgment like any other, so it goes through
+  // `answer()`, so it is an input in the journal, so the save and the replay work with no
+  // changes at all — and if you do not come, she decides alone, weighted by who she has
+  // become. Which is the mechanic the whole game rests on, and it did not need touching.
+  offerCalling() {
+    const s = this.state;
+    if (s.pending.some((p) => p.kind === 'calling')) return;
+    if (!this.chance(0.12)) return;
+
+    const ready = CALLING_KEYS.filter((k) => qualifies(k, this));
+    if (!ready.length) return;
+
+    const key = this.pick(ready);
+    const c = CALLINGS[key];
+
+    this.say(c.world, 'calling', { calling: key });
+    s.pending.push({
+      id: `calling_${key}`,
+      kind: 'calling',
+      key,
+      who: c.name,
+      raisedOn: s.day,
+      dueOn: s.day + 6,
+      prompt: c.prompt,
+      options: { take: 'Answer to it', refuse: 'Refuse the name' },
+    });
+  }
+
+  resolveCalling(j, key, by) {
+    const s = this.state;
+    const c = CALLINGS[j.key];
+
+    if (key === 'take') {
+      s.calling = j.key;
+      s.called.push({ key: j.key, day: s.day, took: true });
+
+      // A NAME IS A LIABILITY, AND THE GAME HAS ALWAYS KNOWN THAT. The thing that is
+      // counting finds a famous woman faster than a quiet one, and this is the single
+      // largest voluntary step she can take toward being found.
+      s.attention += c.attention ?? 0;
+      this.use('name', 4);
+      if (c.mark) this.mark(c.mark, 'she said the words out loud, in front of witnesses');
+
+      // and the room decides about her the day she takes it
+      for (const f of this.factionsHere()) {
+        const d = c.factions?.[f.kind];
+        if (d) this.nudge(f.name, d);
+      }
+
+      this.speak(c.took, 'became');
+      this.say(
+        `she answers to ${c.name} now. she cannot put it back down, and she knew that when she said yes.`,
+        'calling', { calling: j.key });
+    } else {
+      // Refusing is not free either — it is quieter, which is worth a great deal, and the
+      // offer does not come round twice. `qualifies()` will never raise this name again.
+      s.called.push({ key: j.key, day: s.day, took: false });
+      s.attention = Math.max(0, s.attention - 2);
+      this.speak(c.refused, 'cold');
+      this.say(`they offered her ${c.name}, and she would not answer to it. nobody is going to ask her twice.`, 'calling');
+    }
+
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id,
+      text: key === 'take'
+        ? `she is ${c.name} now. [${by === 'you' ? 'you' : 'she'} decided]`
+        : `she refused ${c.name}. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
   }
 
   // ================================================================= THE HOOKS
@@ -1598,6 +2074,7 @@ export class Sim {
     if (j.kind === 'join') this.resolveJoin(j, key, 'you');
     else if (j.kind === 'romance') this.resolveRomance(j, key, 'you');
     else if (j.kind === 'counsel') this.resolveCounsel(j, key, 'you');
+    else if (j.kind === 'calling') this.resolveCalling(j, key, 'you');
     else this.resolveHook(j, key, 'you');
     return j;
   }
@@ -1646,10 +2123,22 @@ export class Sim {
       // — she keeps the door where it is, she does not help, she settles it. Neglect does
       // not just cost her a judgment. It makes her a harder person.
       const keys = Object.keys(j.options);
-      const closed = this.state.stat.faith < 8 || this.state.stat.heart < 7;
+      const closed = this.eff('faith') < 8 || this.eff('heart') < 7;
       const pickKey = closed ? keys[keys.length - 1] : this.pick(keys);
       this.speak(this.fresh(VOICE.absent), 'absent');
       return this.resolveCounsel(j, pickKey, 'her');
+    }
+    if (j.kind === 'calling') {
+      // SHE ASKED YOU WHO SHE IS AND YOU DID NOT COME.
+      //
+      // A woman whose name already precedes her takes it — it is hers whether she agrees to
+      // it or not, and she knows that. A woman who has stopped believing anybody is
+      // listening goes quiet instead: taking a name is an act of belief that somebody is
+      // watching you take it.
+      const yes = this.chance(clamp(
+        0.15 + 0.35 * this.off('sociable') + this.st('name') * 0.5 + this.eff('faith') / 40, 0, 0.9));
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveCalling(j, yes ? 'take' : 'refuse', 'her');
     }
     if (j.kind === 'romance') {
       // SHE ASKED YOU ABOUT LOVE AND YOU DID NOT COME. She decides — and a woman who has
@@ -1700,6 +2189,9 @@ export class Sim {
       ]);
     } else {
       this.drift('sociable', -0.04);
+      // KEEPING A THING IS NOT FREE. It sharpens her and it closes her, and the mark says
+      // both at once, which is the only honest way to say it.
+      if (this.chance(0.5)) this.mark('kept_it', j.collision);
       text = this.pick([
         `she said nothing, and kept it. ${j.collision}. she is the only person she knows who knows.`,
         `she has told nobody. ${j.collision}. she takes it out and looks at it some nights, the way you check a wound.`,
@@ -1734,6 +2226,7 @@ export class Sim {
     this.counsel();        // and sometimes she turns to you and asks what to do about a person
     this.raiseHooks();     // and sometimes puts two things together
     this.offerCompanion(); // and sometimes asks you about somebody
+    this.offerCalling();   // and sometimes the world tells her what it has decided she is
     this.earnTraits();     // and slowly becomes someone she did not choose to be
     this.maybeSpeak();     // and talks to you, less and less
 
@@ -1747,7 +2240,9 @@ export class Sim {
     }
 
     // upkeep
-    if (s.wounds > 0 && this.chance(0.12 + this.trait('heal') + this.st('body') * 0.10)) s.wounds--;
+    if (s.wounds > 0 && this.chance(0.12 + this.bonus('heal') + this.st('body') * 0.10)) s.wounds--;
+    this.kitTick();        // what she is carrying, what it costs her, what she has grown into
+    this.markTick();       // and some of what it took, it gives back. not all of it.
 
     // A NAME IS A LIABILITY. The watching power finds a famous woman faster than a
     // quiet one, and there is nothing she can do about it — she cannot put a name down

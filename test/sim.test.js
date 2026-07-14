@@ -5,6 +5,10 @@ import { worldFromSeed } from '../gen/worldgen.js';
 import { walk } from '../gen/node.js';
 import { validate } from '../gen/validate.js';
 import { CHRONICLE } from '../gen/tables/chronicle.js';
+import { SKILLS } from '../gen/tables/stats.js';
+import { CALLINGS } from '../gen/tables/callings.js';
+import { usable, straining } from '../src/kit.js';
+import { newJournal, replay } from '../src/game.js';
 
 const run = (seed, days = 200, dials = {}) => {
   const s = new Sim({ seed, dials });
@@ -186,6 +190,112 @@ test('a suggestion is a request, not an order — and she stops taking it', () =
   assert.ok(asked > ignored * 1.4, `a suggestion must pull her (${ignored.toFixed(3)} -> ${asked.toFixed(3)})`);
   assert.ok(asked < 0.95, 'she must not be a puppet');
   assert.ok(drifted < asked, `a woman who has drifted must take the suggestion LESS (${asked.toFixed(3)} -> ${drifted.toFixed(3)})`);
+});
+
+// ------------------------------------------------------- what she has, and what she is
+//
+// The three systems added last, and the three rules they are not allowed to break.
+
+test('a skill she has learned is never taken away — only the use of it', () => {
+  // THE ONE THAT MATTERS. Marks are the only downward pressure in the game and they must
+  // never touch the raw number: a woman who has walked four hundred miles has feet, and no
+  // bad week takes that away from her. A ruined hand does not un-learn the knife. She knows
+  // exactly what to do and she cannot do it, and the difference between those two sentences
+  // is the difference between this game and a levelling curve.
+  for (let seed = 1; seed <= 40; seed++) {
+    const s = new Sim({ seed, dials: { reckless: 90, sociable: 70 } });
+    const high = { ...s.state.stat };
+    let sawTheGap = false;
+    for (let i = 0; i < 400 && s.state.alive; i++) {
+      s.tick();
+      for (const j of [...s.state.pending]) s.answer(j.id, Object.keys(j.options ?? { act: 1 })[0]);
+      for (const k of SKILLS) {
+        assert.ok(s.state.stat[k] >= high[k], `seed ${seed}: raw ${k} FELL — a mark reached the thing she knows`);
+        high[k] = s.state.stat[k];
+        if (s.eff(k) < s.state.stat[k]) sawTheGap = true;
+      }
+    }
+    if (sawTheGap) return;   // at least one life showed the knowing outrunning the doing
+  }
+  assert.fail('no life anywhere ever had a mark cost her the use of a skill — the marks are cosmetic');
+});
+
+test('the demand is measured against the woman, and a blade does not hand her the arm to swing it', () => {
+  // Check the demand against the EFFECTIVE stat and an item can satisfy its own ask: the
+  // sword grants the Hand that qualifies her to hold the sword. The gate then means nothing
+  // and every object in the game is free.
+  const s = new Sim({ seed: 5 });
+  s.state.stat.hand = 8;
+  s.state.marks = [];
+  s.state.kit = [{
+    shape: 'blade', slot: 'blade', name: 'a wicked test blade',
+    asks: { hand: 12 }, gives: { swing: +0.5 }, mods: { hand: +6 }, strains: 'danger', worth: 100,
+  }];
+  assert.strictEqual(usable(s.state.kit[0], s.state), false, 'the blade qualified itself');
+  assert.strictEqual(s.eff('hand'), 8, 'an unusable blade still handed her its bonus');
+  assert.ok(straining(s.state, 'danger'), 'a blade she cannot handle must cost her in a fight');
+
+  // and when she has actually earned it, it gives what it gives
+  s.state.stat.hand = 12;
+  assert.strictEqual(usable(s.state.kit[0], s.state), true);
+  assert.strictEqual(s.eff('hand'), 18, 'she earned it, and now it works');
+  assert.strictEqual(straining(s.state, 'danger'), null);
+});
+
+test('she is never called a name her life does not support', () => {
+  // "The class has to fit her stats" — enforced, not advised. There is never a menu of nine
+  // things she is not. And the requirement reads the WOMAN, not her kit.
+  for (let seed = 1; seed <= 50; seed++) {
+    const s = new Sim({ seed, dials: { reckless: 75, sociable: 75 } });
+    for (let i = 0; i < 400 && s.state.alive; i++) {
+      s.tick();
+      for (const j of [...s.state.pending]) s.answer(j.id, Object.keys(j.options ?? { act: 1 })[0]);
+    }
+    for (const c of s.state.called) {
+      const C = CALLINGS[c.key];
+      // the ledger only ever grows, so a requirement true on the day it was offered is
+      // still true now
+      for (const [k, v] of Object.entries(C.lived ?? {})) {
+        assert.ok((s.state.lived[k] ?? 0) >= v,
+          `seed ${seed}: she was offered ${C.name} with ${k}=${s.state.lived[k] ?? 0}, and it needs ${v}`);
+      }
+      // raw skill only ever grows, and `qualifies` reads raw+marks — so raw must clear it
+      for (const [k, v] of Object.entries(C.needs ?? {})) {
+        assert.ok(s.state.stat[k] >= v,
+          `seed ${seed}: she was offered ${C.name} with a raw ${k} of ${s.state.stat[k]}, and it needs ${v}`);
+      }
+    }
+    // and the ladder holds: a second name is a promotion from the first, or the Counted
+    const took = s.state.called.filter((c) => c.took);
+    for (let i = 1; i < took.length; i++) {
+      const after = CALLINGS[took[i].key].after;
+      assert.ok(after === '*' || after === took[i - 1].key,
+        `seed ${seed}: she went from ${took[i - 1].key} to ${took[i].key}, which is not a ladder`);
+    }
+  }
+});
+
+test('a life with a name, a kit and a scar replays from the journal exactly', () => {
+  // The save is a journal of INPUTS. Everything added here — what she bought, what it took
+  // out of her, the name she answered to — has to be a pure function of (seed, answers), or
+  // the save silently stops being able to reproduce her.
+  const journal = newJournal({ seed: 12, dials: { reckless: 70, sociable: 70 }, now: 0, headstartDays: 0 });
+  const live = new Sim({ seed: 12, dials: { reckless: 70, sociable: 70 } });
+
+  for (let day = 1; day < 300; day++) {
+    live.tick();
+    for (const j of [...live.state.pending]) {
+      const key = Object.keys(j.options ?? { act: 1 })[0];
+      live.answer(j.id, key);
+      journal.entries.push({ elapsed: live.state.day, type: 'answer', id: j.id, key });
+    }
+  }
+
+  const { state } = replay(journal, live.state.day);
+  assert.deepStrictEqual(state.kit.map((i) => i.name), live.state.kit.map((i) => i.name), 'the kit did not survive the replay');
+  assert.deepStrictEqual(state.marks.map((m) => m.key), live.state.marks.map((m) => m.key), 'the marks did not survive the replay');
+  assert.strictEqual(state.calling, live.state.calling, 'she came back from the save as somebody else');
+  assert.deepStrictEqual(state.log.map((l) => l.text), live.state.log.map((l) => l.text));
 });
 
 // ------------------------------------------------------------------ the prose
