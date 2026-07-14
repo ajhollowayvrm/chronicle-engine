@@ -684,6 +684,25 @@ $('abandon').addEventListener('click', () => {
   location.reload();
 });
 
+// ══════════════════════════════════════════════════════════ SHE RUNS WITH THE LIGHTS OFF
+//
+// The game is a deterministic function of (seed, inputs) and has no backend, so once the
+// worker has cached it, the whole thing runs on a plane with the wifi off — forever. For an
+// idle game you check from a phone that is not a nicety, it is the difference between a
+// game and a website.
+//
+// The worker is also the ONLY way she can ever reach your lock screen: iOS gives a
+// home-screen web app no background execution at all, so there is no timer that outlives
+// the app being closed, and the ping has to be a server push waking this worker.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // no worker: she still runs, she just cannot reach you and she needs the network.
+      // Not worth a word to the player, who did not ask for a service worker.
+    });
+  });
+}
+
 // ─────────────────────────────────────────────────────────────────────── start
 wireBoot();
 const saved = load(store);

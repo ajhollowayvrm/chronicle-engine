@@ -14,7 +14,8 @@
     "test": "node --test test/*.test.js",
     "serve": "node bin/serve.js",
     "grow": "node bin/grow.js",
-    "doc": "node bin/doc.js"
+    "doc": "node bin/doc.js",
+    "icons": "node bin/icons.js"
   },
   "keywords": [
     "idle",

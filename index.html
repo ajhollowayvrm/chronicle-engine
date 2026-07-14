@@ -8,6 +8,17 @@
 <meta name="description" content="You are assigned to one woman. She walks a world you can watch and cannot touch. She knows you are there, and she talks to you — less, and colder, the further she drifts.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🕯</text></svg>">
 <link rel="stylesheet" href="./web/style.css">
+
+<!-- SHE LIVES ON THE HOME SCREEN.
+     iOS will only let her reach your lock screen if she has been ADDED TO THE HOME
+     SCREEN — a web push from a Safari tab is not a thing that exists, and this is the
+     single most common way this feature silently fails to work. -->
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./web/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="The Vigil">
 </head>
 <body>
 

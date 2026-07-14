@@ -1,0 +1,88 @@
+<!doctype html>
+<!-- THE ICON, AS A PAGE.
+     There is no rasteriser in this repo and there is not going to be one — so the icon is
+     drawn in the same CSS the game is drawn in, and `npm run icons` screenshots it. The
+     palette is `web/style.css` verbatim: an unlit room, and one warm light in it, which is
+     what the whole game is.
+     The flame is her. The dark is the world. You are the one looking at it. -->
+<meta charset="utf-8">
+<style>
+  :root {
+    --unlit: #14120f;
+    --close: #e8b95c;
+    --blood: #a4453c;
+    --ink-low: #635c51;
+  }
+  * { margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; }
+  body { background: var(--unlit); }
+
+  #icon {
+    position: relative;
+    width: 512px;
+    height: 512px;
+    background:
+      radial-gradient(circle at 50% 62%, rgba(232,185,92,0.20) 0%, rgba(232,185,92,0.05) 34%, transparent 62%),
+      var(--unlit);
+    overflow: hidden;
+  }
+
+  /* the candle */
+  .candle {
+    position: absolute;
+    left: 50%;
+    bottom: 96px;
+    transform: translateX(-50%);
+    width: 74px;
+    height: 176px;
+    background: linear-gradient(180deg, #2f2a23 0%, #241f1a 100%);
+    border-radius: 4px 4px 2px 2px;
+  }
+  /* the wick */
+  .wick {
+    position: absolute;
+    left: 50%;
+    bottom: 268px;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 20px;
+    background: #1a1613;
+  }
+
+  /* HER. the only warm thing in the picture, and it is not steady. */
+  .flame {
+    position: absolute;
+    left: 50%;
+    bottom: 282px;
+    transform: translateX(-50%);
+    width: 62px;
+    height: 118px;
+    background: radial-gradient(ellipse 50% 42% at 50% 74%, #fff3d4 0%, var(--close) 38%, var(--blood) 78%, transparent 100%);
+    border-radius: 50% 50% 46% 46% / 68% 68% 32% 32%;
+    filter: blur(0.4px);
+  }
+  .flame::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: 26px;
+    transform: translateX(-50%);
+    width: 20px; height: 40px;
+    background: radial-gradient(ellipse at 50% 70%, #fffaf0 0%, #ffe9b8 55%, transparent 100%);
+    border-radius: 50%;
+  }
+
+  /* the ruled line. the world counts her. */
+  .rule {
+    position: absolute;
+    left: 0; right: 0; bottom: 88px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--ink-low) 22%, var(--ink-low) 78%, transparent 100%);
+    opacity: 0.5;
+  }
+</style>
+<div id="icon">
+  <div class="rule"></div>
+  <div class="candle"></div>
+  <div class="wick"></div>
+  <div class="flame"></div>
+</div>
