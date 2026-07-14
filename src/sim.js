@@ -1472,7 +1472,7 @@ export class Sim {
         s.wounds += this.chance(0.5) ? 1 : 0;
         s.attention += 2;
         this.use('hand');
-        shift(b, { friction: +6, closeness: -4, trust: -4 }, 'she settled it, at ${this.here().name}', s.day, true);
+        shift(b, { friction: +6, closeness: -4, trust: -4 }, `she settled it, at ${this.here().name}`, s.day, true);
         b.alive = this.chance(0.4) ? false : b.alive;
         if (!b.alive) {
           s.ghosts.push({ name: b.who, why: 'she killed them', day: s.day, wanted: b.node?.wants ?? null, was: 'betrayer' });

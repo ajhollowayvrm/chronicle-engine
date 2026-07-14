@@ -112,6 +112,30 @@ test('coin never goes negative, and no line reports a negative quantity', () => 
   }
 });
 
+test('nothing she remembers leaks raw code', () => {
+  // A memory read "she settled it, at ${this.here().name}" for a while, because the
+  // template literal was written inside single quotes. It went straight into the
+  // relationship history and out to the player.
+  for (let seed = 1; seed <= 30; seed++) {
+    const s = new Sim({ seed, dials: { reckless: 65, sociable: 85 } });
+    for (let i = 0; i < 300 && s.state.alive; i++) {
+      s.tick();
+      for (const j of [...s.state.pending]) {
+        const keys = j.options ? Object.keys(j.options) : ['yes'];
+        s.answer(j.id, keys[0]);
+      }
+    }
+    for (const b of Object.values(s.state.bonds)) {
+      for (const h of b.history) {
+        assert.ok(!/\$\{/.test(h.what), `seed ${seed}: raw template in a memory -> "${h.what}"`);
+      }
+    }
+    for (const l of s.state.log) {
+      assert.ok(!/\$\{/.test(l.text), `seed ${seed}: raw template in the chronicle -> "${l.text}"`);
+    }
+  }
+});
+
 test('no chronicle line leaks an unfilled {placeholder}', () => {
   for (let seed = 1; seed <= 50; seed++) {
     for (const l of run(seed, 200, { sociable: 85, reckless: 80 }).state.log) {
