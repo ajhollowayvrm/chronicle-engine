@@ -642,3 +642,53 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
   color: var(--ink-mid);
   line-height: 1.5;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════ THE TWO TABS
+   THE RECORD is the world's account of her: ruled, counted, third person — the file the
+   watching power would keep on her. HER is what she actually is. The whole subject of this
+   game is that those are not the same document, so they are not the same page.
+
+   Her voice and her question are NOT in here. They sit above both tabs and are never tabbed
+   away — you open this to hear from her, and a question hidden behind a tab is a question
+   you miss, and missing it costs her Faith. That is too high a price for tidiness. */
+.tabs {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 1.75rem;
+  margin-top: 2.25rem;
+  padding-top: 0.75rem;
+  border-bottom: 1px solid var(--rule);
+  background: var(--unlit);
+}
+
+.tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  margin-bottom: -1px;              /* sit the underline ON the rule, not under it */
+  padding: 0.5rem 0.1rem 0.7rem;
+  cursor: pointer;
+
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-low);
+  transition: color 0.15s ease;
+}
+.tab:hover { color: var(--ink-mid); }
+
+/* The selected tab is lit, and it is the ONLY warm thing outside her voice — because the
+   thing you are looking at is the thing the lamp is on. */
+.tab.on {
+  color: var(--ink);
+  border-bottom-color: var(--close);
+}
+.tab:focus-visible { outline: 1px solid var(--ink-low); outline-offset: 3px; }
+
+.ledger { padding-top: 1.5rem; }
+
+@media (prefers-reduced-motion: reduce) { .tab { transition: none; } }

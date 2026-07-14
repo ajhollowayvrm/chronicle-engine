@@ -739,12 +739,30 @@ function renderTick() {
 }
 
 // ────────────────────────────────────────────────────────────────────── wiring
-$('nav-toggle').addEventListener('click', () => {
-  const p = $('panel');
-  p.hidden = !p.hidden;
-  $('nav-toggle').setAttribute('aria-expanded', String(!p.hidden));
-  $('nav-toggle').textContent = p.hidden ? 'Her state' : 'Hide';
-});
+// ─────────────────────────────────────────────────────────────────────── the two tabs
+//
+// THE RECORD is the world's account of her — ruled, counted, third person, the file the
+// watching power would keep. HER is what she actually is. The game's whole subject is that
+// those are not the same document, so they are not the same page.
+//
+// The choice is remembered, because a player who came here to check on her state should not
+// have to ask for it twice.
+const TAB_KEY = 'chronicle.tab.v1';
+
+function showTab(which) {
+  for (const name of ['record', 'her']) {
+    const on = name === which;
+    $(`tab-${name}`).hidden = !on;
+    $(`tab-${name}-btn`).setAttribute('aria-selected', String(on));
+    $(`tab-${name}-btn`).classList.toggle('on', on);
+  }
+  store.setItem(TAB_KEY, which);
+}
+
+for (const name of ['record', 'her']) {
+  $(`tab-${name}-btn`).addEventListener('click', () => showTab(name));
+}
+showTab(store.getItem(TAB_KEY) === 'her' ? 'her' : 'record');
 
 $('new-life').addEventListener('click', () => {
   const s = sim.state;

@@ -76,7 +76,6 @@
         <span id="her-where"></span>
       </p>
     </div>
-    <button id="nav-toggle" class="ghost tiny" aria-expanded="false">Her state</button>
   </header>
 
   <!-- HER VOICE. The hero, and the only warm thing on the page. It goes cold as
@@ -104,18 +103,31 @@
     <button id="new-life" class="primary">Take another assignment</button>
   </section>
 
-  <!-- THE RECORD. Ruled, tabular, counted — the world's account of her, which is
-       not the same thing as her. -->
-  <section class="ledger">
+  <!-- TWO VIEWS OF ONE WOMAN, and the distinction is the game's.
+
+       THE RECORD is the world's account of her: ruled, tabular, counted, in the third
+       person. It is what the watching power would have in its file.
+       HER is what she actually is — and the two are not the same thing, which is the
+       entire subject.
+
+       Her voice and the question she is asking sit ABOVE both, and are never tabbed
+       away: you open this to hear from her, and she goes first, every time. A live
+       question hidden inside a tab you are not looking at is a question you will miss,
+       and missing it is not a UI inconvenience — it costs her Faith. -->
+  <nav class="tabs" role="tablist">
+    <button id="tab-record-btn" class="tab" role="tab" aria-selected="true" aria-controls="tab-record">The record</button>
+    <button id="tab-her-btn" class="tab" role="tab" aria-selected="false" aria-controls="tab-her">Her</button>
+  </nav>
+
+  <section id="tab-record" class="ledger" role="tabpanel" aria-labelledby="tab-record-btn">
     <div class="ledger-head">
-      <p class="eyebrow">The record</p>
+      <p class="eyebrow">Everything that has happened to her</p>
       <span id="next-day" class="tick"></span>
     </div>
     <div id="log" class="log"></div>
   </section>
 
-  <!-- Her state. Collapsed on a phone, because it is context, not the point. -->
-  <div id="panel" class="panel" hidden>
+  <div id="tab-her" class="panel" role="tabpanel" aria-labelledby="tab-her-btn" hidden>
 
     <section class="block">
       <p class="eyebrow">What she is</p>
