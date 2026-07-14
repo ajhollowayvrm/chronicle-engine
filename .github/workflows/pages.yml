@@ -23,7 +23,10 @@ jobs:
         with:
           node-version: 20
       # zero dependencies, so there is nothing to install
-      - run: node --test test/*.test.js
+      - name: validate the lore packs
+        run: node bin/lore.js       # every slot filled, no two worlds sharing a line
+      - name: invariants
+        run: node --test test/*.test.js
 
   deploy:
     needs: test

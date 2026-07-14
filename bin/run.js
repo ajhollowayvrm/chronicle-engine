@@ -1,14 +1,25 @@
-import { Engine } from '../src/engine.js';
+// Simulate N days in one world and print the chronicle.
+//
+//   node bin/run.js [seed] [days] [world] [reckless] [sociable] [generous]
+//
+//   node bin/run.js                          # seed 7, 120 days, world by seed
+//   node bin/run.js 12 300 world-03 20 10 90 # cautious, solitary, generous
+//   node bin/run.js 4 300 - 95 90 20         # "-" = pick the world from the seed
 
-// node bin/run.js [seed] [days] [reckless] [sociable] [generous]
-const [, , seedArg, daysArg, r, o, g] = process.argv;
+import { Engine } from '../src/engine.js';
+import { loadPack, packForSeed } from './packs.js';
+
+const [, , seedArg, daysArg, worldArg, r, o, g] = process.argv;
 
 const seed = Number(seedArg ?? 7);
 const days = Number(daysArg ?? 120);
+const world = worldArg && worldArg !== '-' ? worldArg : null;
+
+const lore = world ? await loadPack(world) : await packForSeed(seed);
 
 const eng = new Engine({
   seed,
-  name: 'Kestrel of Ilmun',
+  lore,
   dials: {
     reckless: Number(r ?? 68),
     sociable: Number(o ?? 74),
@@ -16,8 +27,12 @@ const eng = new Engine({
   },
 });
 
-const d = eng.state.intent;
-console.log(`\nseed ${seed} · ${days} days · dials  reckless ${d.reckless}  sociable ${d.sociable}  generous ${d.generous}`);
+const s0 = eng.state;
+const d = s0.intent;
+
+console.log(`\n${lore.title}  ·  ${lore.id}`);
+if (lore.premise) console.log(lore.premise);
+console.log(`\n${s0.name} · seed ${seed} · ${days} days · dials  reckless ${d.reckless}  sociable ${d.sociable}  generous ${d.generous}`);
 console.log('-'.repeat(78));
 
 eng.run(days);
@@ -25,16 +40,15 @@ const s = eng.state;
 
 for (const l of s.log) {
   const tag = l.kind === 'judgment' ? (l.by === 'her' ? ' [she decided]' : ' [you decided]')
-    : l.kind === 'death' ? ' [death]'
-    : l.kind === 'cycle' ? ' [cycle]' : '';
+    : l.kind === 'death' ? ' [death]' : '';
   console.log(`day ${String(l.day).padStart(3)}  ${l.text}${tag}`);
 }
 
 console.log('-'.repeat(78));
 console.log(`alive: ${s.alive}   coin ${Math.round(s.coin)}   wounds ${s.wounds}   renown ${s.renown}   relics ${s.relics}   threads ${s.threads}`);
 console.log(`companions: ${s.companions.filter((c) => c.alive).map((c) => `${c.name}(bond ${c.bond}${c.beloved ? ', beloved' : ''})`).join(', ') || 'none'}`);
-console.log(`ghosts:     ${s.ghosts.map((x) => `${x.name} (${x.why}, day ${x.day})`).join(', ') || 'none'}`);
-console.log(`baron attention: ${s.barons.attention}`);
+console.log(`buried:     ${s.ghosts.map((x) => `${x.name} (${x.why}, day ${x.day})`).join(', ') || 'none'}`);
+console.log(`${lore.power.name} is watching: ${s.watch.attention}`);
 console.log('');
 console.log('DIAL DRIFT  (what you asked for -> who she became)');
 for (const k of ['reckless', 'sociable', 'generous']) {

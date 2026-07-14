@@ -14,11 +14,19 @@
 //   which is precisely the mechanic the game is built on.
 //
 // So we persist the INPUTS instead of the OUTPUT. The engine is deterministic by
-// invariant — same seed, same inputs, same run, always — so the full state is a
-// pure function of (seed, dials, the things the player did, how many days passed).
-// We store that short list and replay it from day 1 on load. The save file stays
-// tiny, no function is ever serialized, and determinism stops being a nice
-// property of the engine and starts being the thing that holds the game up.
+// invariant — same seed, same lore pack, same inputs, same run, always — so the
+// full state is a pure function of (seed, loreId, dials, the things the player
+// did, how many days passed). We store that short list and replay it from day 1
+// on load. The save file stays tiny, no function is ever serialized, and
+// determinism stops being a nice property of the engine and starts being the
+// thing that holds the game up.
+//
+// THE LORE PACK IS AN INPUT TOO. It is chosen once, recorded by id, and never
+// regenerated — otherwise the day-5 line you read yesterday would say something
+// different today, and the chronicle would stop being a chronicle.
+//
+// THERE IS NO CYCLE. She dies once. Nothing carries forward, there is no prestige
+// reset, and the next life is a different world with a different name for the sky.
 
 import { Engine } from './engine.js';
 
@@ -29,7 +37,8 @@ export const SPEEDS = {
 };
 
 export const DEFAULT_SPEED = 'normal';
-export const SAVE_KEY = 'chronicle.save.v1';
+export const SAVE_KEY = 'chronicle.save.v2';
+export const EPITAPH_KEY = 'chronicle.epitaphs.v1';
 
 // A clock jump (timezone change, a machine waking from sleep with a bad RTC)
 // must not blow up into a million-tick replay. Cap the catch-up.
@@ -42,7 +51,8 @@ export const HEADSTART_DAYS = 5;
 
 export function newJournal({
   seed,
-  name = 'Kestrel of Ilmun',
+  loreId,
+  name,                    // omit and the world names her itself
   dials = {},
   speed = DEFAULT_SPEED,
   headstartDays = HEADSTART_DAYS,
@@ -50,9 +60,10 @@ export function newJournal({
 }) {
   const per = SPEEDS[speed] ?? SPEEDS[DEFAULT_SPEED];
   return {
-    v: 1,
+    v: 2,
     seed,
-    name,
+    loreId,
+    name: name ?? null,
     speed,
     dials: { reckless: 50, sociable: 50, generous: 50, ...dials },
     startedAt: now - headstartDays * per,
@@ -82,10 +93,15 @@ export function msUntilNextDay(journal, now) {
 // Replay the journal from day 1 to `toElapsed`. Deterministic and pure: this is
 // the only way state is ever constructed, on first load and on every load after.
 //
-// `elapsed` is our own day counter and is NOT state.day — reincarnate() resets
-// state.day to 1 while the chronicle, and the wall clock, keep going.
-export function replay(journal, toElapsed) {
-  const eng = new Engine({ seed: journal.seed, name: journal.name, dials: journal.dials });
+// `elapsed` is our own day counter, and it keeps running after she dies — a dead
+// tick is a no-op, so over-ticking a corpse is harmless.
+export function replay(journal, toElapsed, pack) {
+  const eng = new Engine({
+    seed: journal.seed,
+    name: journal.name ?? undefined,
+    dials: journal.dials,
+    lore: pack,
+  });
 
   const byDay = new Map();
   for (const e of journal.entries) {
@@ -104,19 +120,22 @@ export function replay(journal, toElapsed) {
         eng.answer(entry.id, entry.key);
       } else if (entry.type === 'dials') {
         Object.assign(eng.state.intent, entry.dials);
-      } else if (entry.type === 'reincarnate') {
-        eng.reincarnate(entry.name);
+      } else if (entry.type === 'suggest') {
+        // Where the player would LIKE her to go. It is not an order — the engine
+        // weighs it by `heeds()`, which decays as she drifts away from them. A
+        // suggestion is an input like any other, so it belongs in the journal and
+        // replays with everything else. `null` withdraws it.
+        eng.state.suggested = entry.region ?? null;
       }
     }
     // Mark where the player's attention stopped, so we can show them the gap.
-    // Taken by log length rather than by day, because day resets on reincarnate.
     if (elapsed === journal.seenElapsed) seenMark = eng.state.log.length;
   };
 
   let elapsed = 1;
   apply(elapsed);
   while (elapsed < target) {
-    eng.tick();     // a no-op once she's dead: the world waits for the cycle to turn
+    eng.tick();     // a no-op once she's dead: nothing more will ever happen to her
     elapsed++;
     apply(elapsed);
   }
@@ -141,9 +160,27 @@ export function load(storage) {
   if (!raw) return null;
   try {
     const j = JSON.parse(raw);
-    if (j && j.v === 1 && typeof j.seed === 'number' && Array.isArray(j.entries)) return j;
+    if (j && j.v === 2 && typeof j.seed === 'number' && j.loreId && Array.isArray(j.entries)) return j;
     return null;
   } catch {
     return null;   // a corrupt save should start a new life, not a white screen
   }
+}
+
+// The player's memory, not hers. She gets no afterlife; you get a list of names.
+export function epitaphs(storage) {
+  try {
+    const raw = storage.getItem(EPITAPH_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function bury(storage, { name, world, day }) {
+  const list = epitaphs(storage);
+  list.unshift({ name, world, day });
+  storage.setItem(EPITAPH_KEY, JSON.stringify(list.slice(0, 40)));
+  return list;
 }

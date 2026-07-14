@@ -1,0 +1,1360 @@
+{
+  "v": 1,
+  "id": "world-01",
+  "title": "Glasswater",
+  "premise": "A sun-bleached desert where the old canals have fused to glass in the heat, and water is not a resource but the law itself.",
+  "power": {
+    "name": "the Thirst",
+    "agents": "waterwrights",
+    "agent": "waterwright"
+  },
+  "names": [
+    "Suri",
+    "Halven",
+    "Mote",
+    "Kessa",
+    "Orrin",
+    "Lathe",
+    "Nim",
+    "Dovic",
+    "Sarel",
+    "Tuck",
+    "Ammer",
+    "Piscet",
+    "Rendal",
+    "Ossa",
+    "Kemp",
+    "Vell"
+  ],
+  "heroines": [
+    "Suri",
+    "Kessa",
+    "Sarel",
+    "Ossa",
+    "Nim",
+    "Ammer"
+  ],
+  "regions": [
+    {
+      "id": "canal",
+      "name": "the Glass Canal",
+      "blurb": "The spine of the country: the old canal, fused to glass, and every cart and toll-house on it.",
+      "places": [
+        "the Glass Canal",
+        "the Shattered Aqueduct",
+        "Old Sluice",
+        "the Cistern Gate",
+        "Pitchglass"
+      ],
+      "traits": {
+        "town": 1.3,
+        "power": 1.5,
+        "people": 1.2,
+        "danger": 0.9,
+        "fortune": 0.8,
+        "quiet": 0.9
+      },
+      "wealth": 1,
+      "lines": {
+        "arrive": [
+          "she came down onto the canal road at {place}. there is always someone on it, and everyone on it is going somewhere they have to be.",
+          "into {region} out of {from}. the glass runs straight to the horizon here, and she can be seen for a mile in either direction, and so can everyone else.",
+          "she is on the canal again. {place} by nightfall, and the glass ringing under cartwheels all night, which she had forgotten and did not miss.",
+          "{region}: tolls, traffic, and {agents} at every crossing. she has coin, so it is only expensive, and not yet a problem.",
+          "she walked back into {region} at {place} like a woman returning to a job. the road knows her here, and that cuts both ways."
+        ],
+        "depart": [
+          "she left the canal at {place}, bound for {to}. the last of {region} she saw was a queue at a toll-house that had not moved in an hour.",
+          "out of {region} toward {to}. she took the old cut to avoid a checkpoint, lost a day, and considered it money well spent.",
+          "she turned off the glass at {place} and went for {to}. the ringing under her boots stopped, and the quiet took some getting used to.",
+          "leaving {region} for {to}. she paid a toll to get out, which she thought was the joke of the week. nobody else laughed.",
+          "she walked out of {region} toward {to} with her hood up. too many people here know her face now."
+        ],
+        "quiet_road": [
+          "walked the glass canal toward {place}. nothing happened. she slept in the shade of it and dreamed of nothing.",
+          "{place}, and the light coming up off the canal-floor all day until her eyes ached. she did not close them. that is how people go missing.",
+          "three days on the canal road. the glass under her boots rang like a struck pot every mile or so, and she stopped flinching at it on the second day.",
+          "she found a shard of canal glass the size of her hand near {place} and carried it most of a day before she put it down.",
+          "the canal runs straight for eleven miles out of {place}. she walked all eleven and thought about nothing at all, and it was the best day she has had in a season.",
+          "{place}. someone had scratched a name into the glass. she read it, and walked on, and carried it the rest of the day.",
+          "the glass is cooler under the overhangs. she walked shade to shade all day out of {place}, like a lizard, and thought about how she must look.",
+          "the canal glass throws your own face back at you at the right hour. she has learned which hour, and walks the other way in it."
+        ],
+        "ambush_triumph": [
+          "they came out of the canal shade at {place} and she put them down and stood there breathing and wanting more of it."
+        ],
+        "ambush_scrape_ally": [
+          "they came at her and {ally} outside {place}, and the two of them put their backs to the canal wall and got through it. neither has said much since.",
+          "they came out of the sluice at {place}. she and {ally} put them back into it."
+        ],
+        "sickness": [
+          "fever at {place}. she saw the canal running full and blue, and knew exactly what that meant, and walked toward it anyway."
+        ],
+        "beast_kill": [
+          "she killed a canal-cat at {place} and sold the hide for less than it was worth, and knew it, and took the money.",
+          "something came out of the dry canal at {place}. she got it in the eye on the second pass. she is telling people it was the first."
+        ],
+        "relic": [
+          "she dug something out of the canal bed at {place} that is the wrong weight for its size. she has not sold it. she has not shown it to anyone.",
+          "she found a piece of glass at {place} with something moving in it. it is not moving now. she has not sold it, and {power} takes an interest in things like that."
+        ],
+        "work": [
+          "she scraped glass off a canal floor at {place} for eight days. {coin} coin, and blisters, and a wound elsewhere that healed while she was not watching."
+        ],
+        "rumor": [
+          "someone at {place} said {power} was here before the canals. someone else said {power} is what happened to them.",
+          "an old man at {place} said the glass in the canals is not from the heat. he was laughed at. he did not seem to mind."
+        ]
+      },
+      "polity": "league",
+      "borders": [
+        "march"
+      ]
+    },
+    {
+      "id": "flats",
+      "name": "the Sunder Flats",
+      "blurb": "Forty miles of salt with nothing on it. No cover, no water, no company.",
+      "places": [
+        "the Sunder Flats",
+        "Saltpan Nine",
+        "the Bleaching Fields",
+        "Thirstmarch",
+        "the Mirage Road"
+      ],
+      "traits": {
+        "quiet": 1.5,
+        "danger": 1.15,
+        "town": 0.4,
+        "people": 0.5,
+        "fortune": 0.7,
+        "rest": 0.8
+      },
+      "wealth": 0.6,
+      "lines": {
+        "arrive": [
+          "she came out onto the flats at {place}. forty miles of nothing in every direction, and a man walking toward you takes a day to arrive.",
+          "into {region}. the salt throws the light back at her from underneath, and there is nowhere at all to stand out of it.",
+          "{region}, after {from}. no cover, no shade, no company. she counted her water twice the first morning and did not care for the answer.",
+          "she is on the flats now. {place} is four days out, and there is nothing between here and it but her own footprints going the wrong way.",
+          "she walked into {region} and the world went quiet and white. it is the emptiest country she knows, and she has come back to it on purpose."
+        ],
+        "depart": [
+          "she came off the salt at {place} and went for {to}. she did not look back at {region}, which is a thing she has started noticing about herself.",
+          "out of {region} toward {to}. the first tree she saw, she stopped and put a hand on it, and would deny it.",
+          "leaving the flats for {to}. the salt is in her boots, her food, and every cut on her hands, and it will be weeks getting out.",
+          "she left {region} the way you leave a room you were not invited into. {to} by the end of the week.",
+          "she walked off the salt at {place} toward {to}, and her eyes hurt for three days after, and she says that is normal."
+        ],
+        "quiet_road": [
+          "{place}, and then more flats. she rations her spit now, which she did not used to do, and has not decided how she feels about that."
+        ],
+        "quiet_camp_restless": [
+          "she lay down while it was still light and listened to the flats tick as they cooled, and did not sleep, and did not much mind."
+        ],
+        "sickness": [
+          "a fever, and the flats, and no shade past {place}. she got through it. she does not want to talk about how."
+        ],
+        "beast_kill": [
+          "she brought down one of the big salt-hounds outside {place}. the meat was foul. the skin paid for a week."
+        ],
+        "relic": [
+          "a thing from under the flats at {place}. it hums when the wind is from the east. she has begun walking with the wind at her back."
+        ],
+        "work": [
+          "she hauled salt at {place} for {coin} coin. her back is ruined and everything else is better."
+        ],
+        "stranger": [
+          "{name} came out of the flats near {place} with a blade and no story, and has been useful, and that is the whole of what she knows."
+        ],
+        "companion_talk": [
+          "she and {ally} watched the light go off the flats and did not fill the silence."
+        ],
+        "rumor": [
+          "a drunk at {place} said he had been down into the works below the flats. he was not lying. that is the part she keeps returning to."
+        ]
+      },
+      "polity": "march",
+      "borders": [
+        "league"
+      ]
+    },
+    {
+      "id": "wellmouth",
+      "name": "Wellmouth",
+      "blurb": "The only city with enough — and it has enough because nowhere else does.",
+      "places": [
+        "Wellmouth",
+        "Dry Ledger",
+        "Low Basin",
+        "the Water Court",
+        "the Long Queue"
+      ],
+      "traits": {
+        "town": 1.8,
+        "power": 1.6,
+        "people": 1.4,
+        "rest": 1.3,
+        "danger": 0.6,
+        "fortune": 1.1,
+        "quiet": 0.5
+      },
+      "wealth": 1.5,
+      "lines": {
+        "arrive": [
+          "she came into {region} at {place} and heard running water for the first time in a month, and it did something to her that she did not care for.",
+          "{region}: the only city in the country that has enough, and it has enough because everywhere else has not.",
+          "into {region} out of {from}. there is a fountain at the middle of it that runs day and night, and people bring their children to look at it.",
+          "she is in the city. {place}, and beds, and baths, and {agents} on every corner, and a queue at the water court four streets long.",
+          "she walked into {region} filthy and paid to stop being so, and sat in the water a long time, and did not think about what it cost."
+        ],
+        "depart": [
+          "she left {region} for {to}. she filled everything she owns before she went, and the gate-clerk wrote down how much, and she watched him do it.",
+          "out of the city toward {to}. she was glad to go, and does not entirely believe herself about that.",
+          "she left {place} for {to}. the sound of the fountains followed her about a mile, and then it did not.",
+          "leaving {region} for {to}. she had been comfortable nine days and could feel it starting to soften her.",
+          "she walked out of {region} owing nobody anything, which she counts as an achievement, and toward {to}, which is not."
+        ],
+        "quiet_road": [
+          "a day in the city and nothing in it. she walked the length of {place} twice, bought nothing, and was watched the whole time.",
+          "{place}. she stood an hour in a queue to look at water she did not need, and could not afterwards have told you why.",
+          "she slept indoors at {place}, behind a door that locked, and lay listening to the fountains, and did not trust the sound of them.",
+          "nothing happened at {place}. she spent the day among more people than she had seen in a month and spoke to none of them, and it was restful, and then it was not."
+        ],
+        "work": [
+          "a week carrying water in {place} for {coin} coin — carrying it for people who already live where the water is. she thought about that all week.",
+          "{coin} coin for eight days on the door of a water-house at {place}, turning away people who looked a great deal like her.",
+          "she kept order in the queue at {place} for {coin} coin. she was good at it, and hated every hour of it."
+        ],
+        "rumor": [
+          "in {place} they say the city draws its water from no well at all. they say it quietly, and then they talk about something else.",
+          "a clerk at {place} told her the water court has never once ruled against {power}. he laughed. then he stopped laughing.",
+          "heard at {place}: the fountains have run without stopping for a hundred years, and nobody will say what is underneath them."
+        ],
+        "charity": [
+          "{coin} coin to the far end of the queue at {place}, where people had been standing three days. she did not wait to be thanked.",
+          "she paid the water-fee for a family at {place} — {coin} coin. the clerk stamped it without looking up, and that was that."
+        ],
+        "cache": [
+          "{coin} coin behind a loose brick in a room she rented at {place}. the last tenant never came back for it. she asked after him. nobody would say.",
+          "she found {coin} coin sewn into a mattress at {place}, and slept on it two more nights before she took it."
+        ],
+        "power_moves": [
+          "there were {agents} at both ends of her street in {place} for three days, and in three days they did nothing at all.",
+          "the water court at {place} sent for her. she did not go. nothing happened, and the nothing is the part that frightens her."
+        ]
+      },
+      "polity": "league",
+      "borders": []
+    },
+    {
+      "id": "reeds",
+      "name": "Reed End",
+      "blurb": "The last green in the country, and it is only green because something in it eats what comes to drink.",
+      "places": [
+        "Reed End",
+        "the Green Sump",
+        "Heron Stair",
+        "Fen Gate",
+        "the Rushes"
+      ],
+      "traits": {
+        "combat": 1.5,
+        "people": 1.2,
+        "quiet": 1.15,
+        "power": 0.5,
+        "town": 0.7,
+        "fortune": 0.8
+      },
+      "wealth": 0.9,
+      "lines": {
+        "arrive": [
+          "she came into {region} at {place} — the last green in the country, and it is only green because something in it eats whatever comes down to drink.",
+          "{region}: reeds over her head, water at her boots, and things moving in it that she cannot see and has stopped pretending she can.",
+          "into the reeds out of {from}. it is the only place she has been in a year where she was cold at night, and she slept badly, and gratefully.",
+          "she is in {region} now. {place} is an hour in, and everything past it is water and noise and green light.",
+          "she walked into the wet country at {place}. there are birds here. she had forgotten about birds."
+        ],
+        "depart": [
+          "she came out of {region} at {place} and went for {to} with her boots rotting off her feet.",
+          "out of the reeds toward {to}. she killed something on the way out and did not stop to sell it, which tells you what she thought of the reeds.",
+          "she left {region} for {to}. she has a fever coming, and she knows exactly where she got it.",
+          "leaving the green for {to}. she stood at the edge of it a while first, which is not like her.",
+          "she walked out of {region} toward {to} and did not stop until the ground was dry, and then went on a while more."
+        ],
+        "quiet_road": [
+          "a day in the reeds out of {place}, water to her knees, and nothing to show for it but leeches.",
+          "{place}. something big moved in the water twenty feet from her and did not come out, and she did not go in.",
+          "she walked the boardwalks at {place} all day without once putting a foot on the ground, and slept in a hut on stilts, and slept well.",
+          "nothing happened at {place}. the birds went up all at once in the evening for no reason she could see, and she did not sleep afterwards."
+        ],
+        "beast_kill": [
+          "she killed something in the shallows at {place} that had been taking dogs. it had teeth in a double row and she sold every one of them.",
+          "a long ugly kill in the water at {place}. it took an hour and she was waist-deep for all of it.",
+          "she put a spear through something at {place} that came up under the boat. the boatman would not take her money afterwards."
+        ],
+        "work": [
+          "a week cutting reed at {place} for {coin} coin. her hands are in ribbons and she slept every night like the dead.",
+          "{coin} coin for a week guiding people through the wet country out of {place}. she brought all of them out, which is well above the usual rate."
+        ],
+        "sickness": [
+          "the fever she took out of the water at {place} put her down for five days. she has had it before. it comes back.",
+          "she drank at {place} because she was out and had no choice, and paid for it for a fortnight."
+        ],
+        "rumor": [
+          "at {place} they say the reeds were planted. not grown — planted. who by is where the story stops.",
+          "a fenman at {place} said the green only survives because {power} permits it, and that nothing is permitted for free."
+        ]
+      },
+      "polity": "march",
+      "borders": [
+        "league"
+      ]
+    },
+    {
+      "id": "reach",
+      "name": "the Bone Reach",
+      "blurb": "Deep desert and the old works. Nothing lives here, which is why there is anything left to find.",
+      "places": [
+        "the Bone Reach",
+        "the Sunken Works",
+        "Ash Ledger",
+        "the Dry Gulf",
+        "Ossuary Flat"
+      ],
+      "traits": {
+        "fortune": 1.7,
+        "thread": 1.5,
+        "danger": 1.3,
+        "power": 1.2,
+        "town": 0.3,
+        "people": 0.4,
+        "rest": 0.6
+      },
+      "wealth": 1.3,
+      "lines": {
+        "arrive": [
+          "she went out into {region}, where the old works are, and where people go once they have decided that coin is worth more to them than water.",
+          "{region}. nothing lives here. that is precisely why there is anything left in it to find.",
+          "into the reach out of {from}. the ruins start about a day in and they do not stop, and they are not the ruins of anything she can name.",
+          "she is in {region}. {place} was a city once. she is fairly sure it was not a city of people.",
+          "she came into the reach at {place} with two weeks of water and the arithmetic already worrying her."
+        ],
+        "depart": [
+          "she came out of {region} at {place} and went for {to} carrying more than she went in with, which is not the same as being better off.",
+          "out of the reach toward {to}. she left something out there on purpose, and has not said what.",
+          "she left {region} for {to} with her water gone and eleven miles still to walk. she made it. she has been quiet about it since.",
+          "leaving the reach for {to}. she looked back once at the works, and they were exactly where she left them, and she cannot say why that unsettles her.",
+          "she walked out of {region} toward {to}. whatever the reach counts, it counted her, and she felt it do it."
+        ],
+        "quiet_road": [
+          "four days into the reach out of {place} and she has seen nothing alive — not a bird, not a track. she is rationing hard and talking to nobody.",
+          "{place}. she walked through a doorway standing on its own in the open, with nothing on either side of it, and did not walk back through it.",
+          "nothing at {place} but the works, and the works do not change, and she has been looking at them for six days.",
+          "she built a fire at {place} out of something that was not wood, and did not ask herself what it was."
+        ],
+        "cache": [
+          "{coin} coin in a chamber under {place} that had been sealed. she broke the seal. she thinks about that.",
+          "she found {coin} coin at {place} laid out in a row, evenly spaced, as though counted. she took it, and did not put anything in its place.",
+          "{coin} coin at {place}, in a room with no door, which she got into anyway, and would rather not explain how."
+        ],
+        "relic": [
+          "she took something out of the works at {place} that is warm, and stays warm, and she has stopped putting a hand on it to check.",
+          "a thing from under {place} that she cannot make herself throw away. she has tried twice.",
+          "she found something at {place} that is a tool. she is sure of that much. she is not sure it was made for a hand."
+        ],
+        "rumor": [
+          "out at {place} they say the works were neither built nor dug, and the man who told her had been out here eleven years.",
+          "heard at {place} that {power} does not come into the reach. she has decided that is a comfort. she keeps having to decide it."
+        ],
+        "power_moves": [
+          "there were {agents} out in the reach at {place}, days from any well, standing where nobody stands. they watched her go past.",
+          "she found a marker at {place} that had not been there a week before, with her name on it and no other word."
+        ]
+      },
+      "polity": null,
+      "borders": [
+        "march"
+      ]
+    }
+  ],
+  "lines": {
+    "quiet_road": [
+      "passed through {place}. she paid for a cup and drank it too fast and was angry with herself for an hour.",
+      "a long dry stretch past {place}. she talked to the mule. the mule died last spring. she talked anyway.",
+      "nothing at {place} but a dead well and a man selling the story of how it died. she did not buy it.",
+      "she walked at night out of {place} and slept through the white part of the day, and woke with the taste of iron, and does not know why.",
+      "work of a kind at {place}: holding a horse for a man who did not tip. she has been paid worse for worse.",
+      "the wind came up past {place} and took the top inch off the road. she walked into it for six hours. nothing else happened.",
+      "{place}. a boy asked her where she was going and she told him the truth and he lost interest immediately, which was fair.",
+      "two days along the shattered stretch out of {place}. she counted seven cairns and did not stop at any of them.",
+      "no water on the road out of {place} but what she brought. she brought enough. she is quietly proud of that and would not say so.",
+      "a caravan passed her going the other way past {place}. nobody spoke. everyone looked at everyone's flasks, and everyone pretended not to.",
+      "{place}, and a day so hot the flies gave up. she kept walking, which is worse thinking than the flies managed.",
+      "she washed her feet in a cup of water at {place} and felt like a criminal, and did it anyway.",
+      "a slow week toward {place}. she has begun to sing, badly, when the road is empty. she stops when it is not.",
+      "dust and light and the road, and at the end of it {place}, and nothing waiting there either.",
+      "she earned a few coin at {place} carrying water for a man who could afford not to carry it. she thought about that all evening.",
+      "a dry crossing to {place}. she chewed a strap for the wet of it — a habit she picked up somewhere and cannot remember where.",
+      "she slept in the lee of a broken sluice near {place}. the stone gave its heat back all night. she slept badly, and warm.",
+      "nothing happened on the road out of {place}, and it took nine days to happen.",
+      "she is walking the long way around {place}. she has told herself three separate reasons and does not believe any of them.",
+      "hot wind, hard light, {place} somewhere ahead of her. she has stopped checking how far.",
+      "she gave a stranger directions outside {place} and got them slightly wrong on purpose and has not worked out why.",
+      "a day of nothing at {place}. she cleaned her kit twice. the second time was not about the kit.",
+      "she watched a cart of {agents} go by outside {place} and stood very still until it had gone, which was not necessary, and she knows it.",
+      "she took the low road past {place} to save half a day and it cost her a full one. she has done this before.",
+      "{place}, and a man there who remembered her, and she could not place him, and she talked her way through it.",
+      "bought bread at {place}. it was bad bread. she ate all of it.",
+      "she reached {place} with water to spare, and sat down, and did not know what to do with the extra hour.",
+      "a quiet stretch past {place}. she mended her boots badly and walked on them and they held, and she is treating that as a verdict on something.",
+      "nothing on the road to {place} but heat-shake and the smell of hot stone. she has stopped seeing shapes in the shake. that took years.",
+      "she passed a dry cistern outside {place} with the ladder still in it and did not go down, and spent the night deciding whether that was sense or cowardice.",
+      "she walked past the bones of something big near {place}, picked clean and bleached. she did not slow down.",
+      "{place}. she paid a woman for a bed and slept on the floor beside it out of habit, and could not have explained that to anyone.",
+      "a day of walking to {place} and a day of waiting in it, and the waiting was harder.",
+      "she has walked the stretch past {place} enough to know where the shade falls at every hour. she is not sure whether that is competence or a sentence.",
+      "she spoke to nobody for four days out of {place}. she noticed on the fourth. that is longer than it used to take.",
+      "a good road, flat and hard, out of {place}. she made twenty miles and felt almost young, and paid for it in the morning.",
+      "she stopped at the shrine-stone outside {place} because everyone stops. she left nothing and took nothing and felt watched anyway.",
+      "a long day on the road to {place} and nothing in it but the walking. she has had worse days, and fewer of them lately.",
+      "{place}. she sat in the shade of a wall for an hour and watched people come and go and did not speak to any of them.",
+      "she made {place} by dusk with her water half gone and her feet in worse shape than that.",
+      "nothing happened on the way to {place}. she has begun to notice the days when nothing happens, and to count them.",
+      "she walked behind a herd of goats for six miles out of {place} and could not get past them, and stopped minding around the third.",
+      "{place}, and a hot wind out of the east all day, and grit in everything she owns.",
+      "she came into {place} with a stone in her boot she had been ignoring for two days. she took it out. it was nothing at all.",
+      "a slow road to {place}. she has begun talking to herself out loud, and has decided to call it efficiency.",
+      "she reached {place} a day earlier than she meant to, and spent the day doing nothing, badly."
+    ],
+    "quiet_camp_healed": [
+      "made camp while the sun was still up and let a wound have the air. it is closing. she checked it twice, which is once more than necessary.",
+      "she stopped early. the wound in her side has stopped weeping. she poured a little water over it and resented every drop.",
+      "an early camp, and a wound that has decided to close on its own. she did nothing to earn it and is taking the credit anyway.",
+      "she dressed the cut on her arm properly for once, with clean cloth, and it is already better, and she is annoyed by the lesson in that.",
+      "camp before dusk. she picked the scab, looked at it, and put the bandage back on, and knows exactly how stupid that was.",
+      "she rested. it worked. she does not like how much she resents that.",
+      "the wound is closing. she has stopped bracing when she rolls over at night, and only noticed because she slept.",
+      "she sat with her boots off and her back against a warm stone and let the day end without her. one wound less.",
+      "an early fire, a wound cleaned, and a whole hour of nothing. she filled it with worrying and healed regardless.",
+      "she made camp early and slept nine hours and woke furious with herself, and better.",
+      "she cut the dead skin away and it bled clean, which is what you want, and she said so out loud to nobody.",
+      "she stopped walking at noon because the wound told her to. she is learning to listen to it, slowly, and only when it shouts.",
+      "camp early. the good cloth is gone so she used the bad, and it is closing anyway. bodies do not know the difference. she does.",
+      "the swelling is down. she can make a fist. she made a fist several times, unnecessarily.",
+      "she washed a wound with water she could have drunk. she has done the arithmetic and it still comes out right, and it still hurt.",
+      "she stopped early, for once, and the wound closed, for once, and she is dimly aware that these two facts are related.",
+      "an early camp, and she did nothing all evening but let herself mend, and she was bored, and boredom is a luxury she has not had in months."
+    ],
+    "quiet_camp_restless": [
+      "she made camp early with nothing to tend and no reason to stop, and stopped anyway, and lay awake.",
+      "nothing hurts. she cleaned a knife that was already clean.",
+      "an early camp and a whole body that works. she does not know what to do with the evening. she never has.",
+      "she is not wounded, not hungry, not hunted. she sat up until the fire went out, looking for the catch.",
+      "camp before dark, nothing to mend, nothing to dress. she counted her coin twice, got the same number, and was disappointed.",
+      "she stopped early and could not settle. she walked the perimeter three times. there was no perimeter.",
+      "no wounds. she sharpened everything she owns.",
+      "a whole night with nothing in it. she has been in worse nights and slept better.",
+      "she stopped for no reason and could not name one, and it bothered her more than a wound would have.",
+      "nothing to do. she reorganised the pack, which is now organised exactly as it was.",
+      "she is fine. that is the entire report, and she turned it over half the night.",
+      "an early camp, a good fire, and nothing to think about but herself, which is why she does not make early camps.",
+      "she stopped early and her hands wanted work. she gave them rope, and took it apart, and gave it to them again.",
+      "no pain anywhere. she keeps checking, the way you check a pocket.",
+      "camp early. she ate well and slept badly, which is the usual arrangement, in reverse.",
+      "she built a good fire and then sat away from it, out in the cold, and could not have told you why.",
+      "she had two hours of daylight left and stopped anyway, and spent both of them irritated about it.",
+      "nothing needed doing, so she found something and did it slowly on purpose, to make it last.",
+      "she is uninjured and unhurried and she hates it, and would deny hating it, and did, out loud, to the fire.",
+      "a still night. she heard her own heart and took it for footsteps for a moment, and was almost relieved.",
+      "she made camp early and did not sleep and did not rest, and got up at dawn with nothing to show for the night but the night.",
+      "she lay awake listening to the ground give back its heat, and counted nothing in particular, and did not sleep."
+    ],
+    "ambush_triumph": [
+      "four of them at {place}, and she was better than all four, and knew it by the second one. she is not proud of how good that felt.",
+      "ambushed at {place}. she walked away with their purses, their water, and a grin she could not get off her face for a day.",
+      "they picked her badly at {place}. she has told the story twice already and improved it both times.",
+      "she killed two men at {place} and took a third's boots while he watched. she has thought about his face since, and not with regret.",
+      "an ambush at {place} that lasted about as long as it takes to draw. she has been waiting years for one to go like that.",
+      "three of them tried her outside {place} and it was finished before the third had his knife up. she has been in a good mood since, and knows what that says about her."
+    ],
+    "ambush_ruin_ally": [
+      "jumped at {place}, and it went badly, and {ally} stepped into a blade that had her name on it. she is carrying that, and the wound, and a good deal less coin.",
+      "they had her down at {place} before she understood it was happening. {ally} took a knife in the shoulder pulling them off her. she has not said thank you and does not know how.",
+      "it went wrong at {place}. she lost blood and coin and every illusion about how good she is. {ally} took the cut that would have finished her, and has not mentioned it once, which is worse than mentioning it."
+    ],
+    "ambush_ruin": [
+      "they took her at {place} and left her with nothing but the walk to the next well. she was a long time getting up.",
+      "it went badly at {place}. she does not remember the end of it, and her coin is gone, and she has resolved to be careful for a while.",
+      "four men at {place}, and she was wrong about every one of them. she crawled out of it. she says she will not make that mistake twice.",
+      "ambushed at {place} and beaten, properly beaten, for the first time in years. she has been quiet since, and slower, and she is checking corners again."
+    ],
+    "ambush_scrape_ally": [
+      "ambushed at {place}. {ally} took the two on the left without being asked. that is the whole of it, and it is not nothing.",
+      "a bad hour at {place}. she and {ally} came out of it upright and split what the men had been carrying, and did not count it carefully.",
+      "jumped at {place}. she heard {ally} laugh in the middle of it, which she found appalling, and thinks about often.",
+      "she and {ally} were ambushed near {place} and fought like people who have done it together before. they have not. they will again.",
+      "men in the road at {place}. she went left, {ally} went right, and neither of them had to say so.",
+      "it was close at {place}. {ally} was closer than she was, and stayed.",
+      "ambushed at {place}. afterwards {ally} sat down and shook for a while, and she let them, and said nothing, and stood watch.",
+      "a scrap at {place} that could have gone the other way. {ally} bound her arm afterwards without being asked, and did it well.",
+      "she took a cut at {place} keeping it off {ally} and has not mentioned it, and {ally} noticed anyway.",
+      "she and {ally} were ambushed at {place}. she has stopped counting how many times now, and so, she suspects, has {ally}.",
+      "bandits at {place}, and a short ugly fight, and afterwards {ally} handed her a flask without a word and she drank from it without wiping it.",
+      "jumped near {place}. {ally} is faster than she is. she has decided this is useful and not to think about it further.",
+      "it went badly at {place} for about ten seconds. {ally} made it go the other way.",
+      "they came at her and {ally} on the road out of {place}, and the two of them put their backs together and got through it. neither has said much since.",
+      "men in the road at {place}. she and {ally} put them down, and afterwards sat in the dirt getting their breath back, side by side, saying nothing."
+    ],
+    "ambush_scrape": [
+      "ambushed alone at {place}. she won it, barely, and afterwards sat down in the road for longer than she would admit.",
+      "two men at {place}. she came away with a cut, their coin, and no particular feeling about it.",
+      "it was close at {place}, and there was nobody to be close with, and she noticed.",
+      "jumped near {place}. she got through it. she has a wound and forty fewer illusions.",
+      "she was alone at {place} when they came. she is still alone. that is the report.",
+      "a fight at {place} she should not have won, and did, and she is not asking why too loudly."
+    ],
+    "sickness": [
+      "fever took her outside {place} and she walked through it, because stopping costs water. that was stupid, and she knew it while she did it.",
+      "she was sick for three days on the road out of {place} and does not remember two of them.",
+      "a fever at {place}, and she kept walking. she has always believed you can outpace a thing like that, and has never once been right.",
+      "something in the water at {place}. she was down a day and up too early, and paid for it for a week.",
+      "she went hot and grey past {place} and told a stranger she was fine, and the stranger did not believe her, and she resented that.",
+      "sick on the road out of {place}. she drank her ration hot and it did not help and she drank it anyway.",
+      "she brought up water she could not spare outside {place}, and knelt in the road a while afterwards doing the arithmetic.",
+      "she has been ill since {place}. she is walking it off, which is not a thing that works, which she knows.",
+      "a bad night at {place}, shaking under everything she owns. she was better by morning and worse by noon.",
+      "sick, and alone, and moving. she has done this before. it does not get easier. it gets familiar.",
+      "she caught something at {place} and gave it three days, and it gave her a week.",
+      "she woke at {place} unable to stand, and stood.",
+      "a fever past {place}, and a long argument with herself about whether to stop, which she won, and lost.",
+      "she was ill outside {place} and hid it from everyone who passed. there was no reason to. she did it anyway.",
+      "she has been coughing since {place} and telling people it is the dust. it may be the dust.",
+      "a fever came on her past {place}, and there was no shade to have it in. she got through it. she does not want to talk about how.",
+      "fever at {place}. she saw water where there was none, and knew exactly what that meant, and walked toward it anyway."
+    ],
+    "beast_maul": [
+      "something came out of the dark at {place} and opened her arm to the bone. she will not say what it was. she may not know.",
+      "it took her down at {place} before she heard it. she got the knife in eventually. she has not slept properly since.",
+      "a thing the size of a horse at {place}, and faster. she is alive. she does not want to discuss the terms.",
+      "she was mauled near {place}. she killed it, or it left. she has told it both ways and does not seem sure.",
+      "whatever it was at {place}, it was not a dog. she has a set of holes in her thigh in a pattern she keeps looking at."
+    ],
+    "beast_kill": [
+      "something big came for her near {place} and she was ready and it was not. she sold the teeth.",
+      "a long ugly kill at {place}. it took an hour and three tries. she is fine and it is not.",
+      "killed something at {place} that she has no name for, and sold it in pieces to people who did.",
+      "she put a spear through a thing at {place} that had been eating goats, and she was not sorry about the goats.",
+      "a beast at {place}, and she killed it well and quickly and stood over it feeling nothing much at all.",
+      "she killed the thing that had been taking children near {place}. they paid her and could not look at her, and she left the same night.",
+      "a good kill at {place}. she skinned it herself, badly, and sold it anyway.",
+      "she killed a big one near {place} and it was a long time dying and she stayed for all of it, because that is the least you can do.",
+      "she and the beast at {place} came to an arrangement in which it died. she took what would sell.",
+      "it came at her twice at {place}. it did not come a third time.",
+      "she killed a lizard the size of a boat at {place}. nobody believes her. she has the hide. nobody believes the hide either.",
+      "it had a den under the aqueduct near {place}, and the den was full of bones. she went in anyway, and came out better paid than she went in.",
+      "she killed a thing at {place} that had killed at least four people, and was paid the price of a goat for it, and took it.",
+      "she killed a big cat at {place} and sold the hide for less than it was worth, and knew it, and took the money.",
+      "something came for her out of the dark near {place}. she got it in the eye on the second pass. she is telling people it was the first.",
+      "she brought down one of the big hunting dogs outside {place}. the meat was foul. the skin paid for a week."
+    ],
+    "patrol_defied": [
+      "the {agents} stopped her at {place} and named a price for the water she was carrying. she told them what she thought of that. {power} does not forget being told.",
+      "they put a hand on her pack at {place}. she took the hand off it. word of that runs faster than she does, and it runs to {power}.",
+      "{agents} at a checkpoint outside {place}, wanting their share. she walked around them. one of them wrote something down.",
+      "she refused the {agents} at {place}, in front of forty people, and enjoyed it, and has been watching the road behind her ever since.",
+      "the {agents} told her the well was {power}'s and the water in her flask was {power}'s. she drank it in front of them.",
+      "she was stopped at {place} and asked for the tithe and said no, plainly, once, and walked on. nobody stopped her. that is not the same as nobody minding.",
+      "she talked her way out of paying at {place} and it worked, and she has never seen a man look so patient. that patience is a thing she thinks about."
+    ],
+    "patrol_paid": [
+      "the {agents} took {coin} coin off her at {place}. she paid, and smiled, and has been chewing on it for days.",
+      "{coin} coin to the {agents} at {place}, for the privilege of walking on a road. she paid.",
+      "they stopped her at {place}, counted her water, and fined her {coin} coin for having it. she said nothing at all, which cost her more than the coin did.",
+      "{coin} coin to {power}'s men at {place}. she handed it over the way you hand over a tooth.",
+      "a checkpoint at {place}. {coin} coin, no receipt, no argument. she is getting good at no argument, and it is doing something to her.",
+      "the {agents} at {place} were polite about it. that made the {coin} coin worse.",
+      "she paid the {agents} {coin} coin at {place} and thanked them, because it was cheaper than not thanking them.",
+      "{coin} coin at {place}. she thought about the knife the whole time and did not touch it, and she thinks about that too.",
+      "they wanted {coin} coin at {place} and she had it, which is the only reason this is a small story."
+    ],
+    "cache": [
+      "{coin} coin under a flagstone in a ruin at {place}, in a pot, with a milk tooth beside it. she took the coin and put the tooth back.",
+      "she found {coin} coin in the wall of a dead house near {place}. there was a ring with it. she left the ring.",
+      "{coin} coin at {place}, in a cistern nobody had opened in years, and a child's sandal, and she took the one and not the other.",
+      "a stash at {place}: {coin} coin, and a folded letter she did not read and did not burn.",
+      "she pried up a hearthstone at {place} and found {coin} coin and a braid of hair. she is not sentimental. she left the braid.",
+      "{coin} coin in a jar at {place}. somebody buried it meaning to come back. she thought about that for a mile and then stopped thinking about it.",
+      "she found {coin} coin in the ruins outside {place}, under a body's worth of dust, and no body. she did not look further.",
+      "{coin} coin at {place}, in an old boot, wrapped in cloth and wrapped again. whoever hid it was frightened. she took it anyway.",
+      "a cache at {place} — {coin} coin and a wooden bird, well carved. she carried the bird a day and left it on a wall.",
+      "she found {coin} coin at {place}, and a name scratched inside the lid of the box, and she has not been able to stop reading it.",
+      "{coin} coin in a ruin at {place}. beside it a smaller purse, empty. someone got here first, once, and did not take everything.",
+      "she found {coin} coin under the floor of a dry house at {place}. the door had been barred from the inside. she left by the window.",
+      "{coin} coin at {place}. she counted it twice in the dark and once more in the light, and it was the same, and she still did not believe it.",
+      "a good cache at {place}: {coin} coin, and a set of milk teeth in a twist of cloth, which is a thing people do, apparently.",
+      "she found {coin} coin in a jar of weevils at {place}. she took the coin, which is what anyone would say they would do.",
+      "{coin} coin in a wall at {place}. she put the stone back afterwards, neatly, and could not have said who for.",
+      "she turned up {coin} coin at {place} and a knife with a woman's name on the grip. the knife was better than hers. she left it.",
+      "{coin} coin at {place}, in a chest that took her an hour. the hour was the point, she thinks, in retrospect.",
+      "she found {coin} coin buried at {place}, and a doll with no face, and did not care for that at all, and took only the coin.",
+      "{coin} coin under a slab at {place}. there was a smaller hollow beside it, exactly the size of a hand, and empty.",
+      "a hidden {coin} coin at {place}, and a lock of hair pinned to the lid with a thorn. she is not superstitious. she took the coin and shut the lid quickly.",
+      "she found {coin} coin at {place}, in a house where the table was still laid.",
+      "{coin} coin in the roots of a dead tree at {place}. also a small shoe. also she did not think about it.",
+      "she dug up {coin} coin at {place}. beside it, a bundle of letters tied with string. she is not a reader, and that was convenient.",
+      "{coin} coin at {place}, and a bowl, and a spoon, and a cup, all packed very carefully, as if the coin were the least of it.",
+      "she found {coin} coin at {place} and a mirror the size of her palm. she looked at herself in it, and put it back face down.",
+      "{coin} coin, hidden well at {place}. whoever hid it did not come back, and she is walking on, and she is aware those are the same sentence."
+    ],
+    "relic": [
+      "a thing from under {place} that is warm when nothing else is. it is in her pack. she has decided nothing about it.",
+      "something came up out of the sand at {place} with writing on it in no hand she has seen. she could sell it in a day. she has not.",
+      "she has a thing in her pack from the ruins at {place} that she does not like to touch and will not put down.",
+      "pulled out of the ground at {place}: a disc, cold, with a hole through it that goes further than the disc is thick. she has stopped looking through it.",
+      "a relic from {place}. every buyer she has shown it to has gone quiet and offered too much. she has kept it, which is how one attracts {power}'s notice.",
+      "she found something at {place} that the flies will not land on.",
+      "a piece of the old works at {place} came away in her hand, and it should have been dead stone, and it was not.",
+      "she took something from a ruin at {place} that has not stopped being heavy. {power} counts these things. she knows that, and has kept it.",
+      "she has a bone from {place} that is not a bone. she carries it wrapped, and moves it from pocket to pack and back, and cannot let it alone.",
+      "she dug something out of the ground at {place} that is the wrong weight for its size. she has not sold it. she has not shown it to anyone.",
+      "she found something at {place} with something moving inside it. it is not moving now. she has not sold it, and {power} takes an interest in things like that.",
+      "a thing out of the ground at {place}. it hums when the wind is from the east. she has begun walking with the wind at her back."
+    ],
+    "work": [
+      "a week of honest work at {place} hauling water. {coin} coin, a bed, and a wound that finally closed.",
+      "she dug out a cistern at {place} for {coin} coin. hard work, warm bed, and her shoulder stopped aching for the first time in a month.",
+      "{coin} coin for a week of guarding a well at {place}. nobody came. she slept indoors and healed.",
+      "she took work at {place} — {coin} coin, a roof, and eight days of nothing worse than lifting. she was almost content, and noticed, and did not stop.",
+      "a week at {place} mending sluice gates. {coin} coin. she is good with her hands and rarely gets to prove it.",
+      "she carried stone at {place} for {coin} coin, and slept like the dead, and woke without pain.",
+      "honest work at {place}: {coin} coin, a bed with a mattress in it, and a week with no knife in it.",
+      "she worked a caravan out of {place} and back. {coin} coin, and nobody died, and the cut on her hand closed.",
+      "{coin} coin for a week of standing behind a merchant at {place} looking dangerous. easiest money she has made in a year.",
+      "a week's work at {place}. {coin} coin. she ate three times a day and it frightened her a little.",
+      "she took a job minding a gate at {place}. {coin} coin, a bed, and time enough to mend.",
+      "honest work, {coin} coin, and a week at {place} in which nothing at all went wrong.",
+      "a week at {place}. {coin} coin, and a woman who fed her twice a day and asked nothing, and she waited the whole week for the asking.",
+      "she worked as a digger at {place} — {coin} coin — and the wound in her side finally shut, and she has stopped favouring it.",
+      "{coin} coin for a week of pulling a rope at {place}. she thought about nothing for six days. it is the best rest she has had.",
+      "she mended a roof at {place} for {coin} coin and a bed under it, which she thought was fair, and it was.",
+      "work at {place}: {coin} coin, and they wanted her back, and she said maybe, and meant it, which is new.",
+      "she watched a warehouse at {place} for a week. {coin} coin. she healed, and read nothing, and thought too much.",
+      "a week of ordinary work at {place} and {coin} coin. she was good at it. she does not know what to do with that information.",
+      "{coin} coin at {place} for eight days of loading carts. her hands are wrecked and her ribs are sound.",
+      "she took honest work at {place} and finished it, and was paid {coin} coin without argument, and it unsettled her all the way to the gate.",
+      "she dug graves at {place} for a week. {coin} coin. steady work, here.",
+      "a week at {place} teaching a merchant's sons which end of a knife is which. {coin} coin. they were terrible, and she liked them.",
+      "she worked the pumps at {place}. {coin} coin, a bed, and a week of sleeping through the night, which she is counting as the wage.",
+      "{coin} coin for a week at {place}. she spent two of it on a bath, does not regret it, and would not tell you about it.",
+      "she signed on as an escort out of {place} for {coin} coin. the road was quiet the whole way and she was almost disappointed, and hates that about herself.",
+      "a fortnight of work at {place}, paid {coin} coin. she stayed a day longer than she needed to and has not examined why.",
+      "she worked a week at {place} and healed and ate and was paid {coin} coin, and on the last night she packed early, because she could feel herself settling.",
+      "she cut stone at {place} for eight days. {coin} coin, and blisters, and a wound elsewhere that healed while she was not watching.",
+      "she hauled sacks at {place} for {coin} coin. her back is ruined and everything else is better."
+    ],
+    "stranger": [
+      "a stranger called {name} fell in beside her outside {place}, armed, offering no reason, and has not left.",
+      "{name} was at the well at {place} when she got there, and on the road when she left it, and has been ever since.",
+      "she has picked up a shadow. {name}: armed, uninvited, walking half a step behind her since {place}.",
+      "{name} sat down at her fire outside {place} without asking, and put a sword down where she could see it, which she took as manners.",
+      "someone named {name} has been walking with her since {place}. she has not asked why. she is aware that she has not asked.",
+      "{name} saved her a walk at {place} by carrying half her water, and did not give it back, and did not steal it either.",
+      "she woke at {place} and {name} was awake, and had built up the fire, and had not gone through her pack. she checked.",
+      "{name} attached themselves at {place}. armed, quiet, competent. she cannot decide whether that is better or worse.",
+      "a stranger, {name}, out of {place}, who talks a great deal and fights, apparently, very well.",
+      "{name} has walked with her three days out of {place} and has not once said where they are going.",
+      "she found {name} sitting on her pack at {place}. she did not like that. {name} is still here.",
+      "someone called {name} has decided to walk her road. she has not agreed to this. she has also not said no.",
+      "{name} came up out of the heat-shake near {place} with a blade and no story, and has been useful, and that is the whole of what she knows."
+    ],
+    "companion_talk": [
+      "a quiet hour with {ally}. neither of them said anything worth writing down, and something got said anyway.",
+      "{ally} told her how they lost the finger. she told them something back, and only lied about part of it.",
+      "{ally} asked her a question she did not answer, and did not leave, and that was the whole conversation.",
+      "she and {ally} argued about the road for an hour, badly, and both enjoyed it enormously.",
+      "{ally} laughed at something she said. she has been repeating it to herself since, to find out what was funny.",
+      "a night with {ally} and a bad bottle. she said more than she meant to, and is less worried about that than she should be.",
+      "{ally} sharpened her knife without asking. she let them.",
+      "she told {ally} the name of a place she has not said out loud in eleven years.",
+      "{ally} is a bad cook and does it anyway, and she eats it and says nothing, and that is a kind of trust.",
+      "she and {ally} walked eleven miles without a word and arrived somehow better than they set out.",
+      "{ally} said something true about her, plainly, over the fire. she did not argue. she thought about it for two days.",
+      "she caught {ally} looking at her, and neither of them looked away fast enough to pretend.",
+      "{ally} asked what she is walking toward. she gave the answer she gives, and heard how thin it has got.",
+      "she took the second watch so {ally} could sleep, and did not tell them, and {ally} knew.",
+      "{ally} told her about someone they buried. she listened. she is not good at that, and did it anyway.",
+      "a whole evening with {ally} talking about nothing — food, roads, a horse they both hated. she cannot remember the last time.",
+      "{ally} was wrong about something and she let it go, which is not like her at all.",
+      "she told {ally} how she got the scar. honestly, which she has never done, and then was angry for an hour afterwards.",
+      "{ally} put a hand on her shoulder and she did not shrug it off. that is the entire event, and it took her all night to get over.",
+      "she and {ally} shared water without measuring it out. in this country that is a sentence about the whole of it.",
+      "{ally} asked nothing of her all evening, and she found she had been braced for it.",
+      "she made {ally} laugh on purpose, and then had to go and see to the fire.",
+      "{ally} said her name the way you say a person's name and not the way you say a stranger's. she noticed.",
+      "she and {ally} sat back to back against the cold and talked until one of them stopped, and she is not sure which.",
+      "{ally} knows what she is now, near enough, and was still there in the morning.",
+      "an hour with {ally} in which she was, briefly, not on her guard. she has been examining the hour ever since for what it cost.",
+      "she and {ally} watched the light go out of the sky and did not fill the silence."
+    ],
+    "companion_leaves": [
+      "{ally} was gone before dawn. she did not look for tracks. she stood in the road a while, looking at the ground.",
+      "{ally} left in the night. she noticed the missing weight of them before she noticed the empty place by the fire.",
+      "she woke and {ally} had gone, and had taken nothing of hers, which she keeps coming back to.",
+      "{ally} is gone. no word, no note, nothing missing. she has decided not to have a feeling about it.",
+      "{ally} went in the night. she walked a quarter mile back the way they had come, then turned around, and has told herself she was checking the road.",
+      "she woke alone. {ally}'s fire was banked properly, which means they left slowly, which means they thought about it.",
+      "{ally} left without a word. she has caught herself, twice since, saving them the good half of the shade."
+    ],
+    "companion_dies_beloved": [
+      "{ally} died at {place}. she carried the body eight miles before she put it in the ground, and she has not been careful about anything since.",
+      "she loved {ally}, and {ally} is dead at {place}, and she buried them herself and would not let anyone help. she is taking risks now that she would once have called stupid.",
+      "{ally} is dead and she was there. she has not slept a full night since {place}, and she has stopped bothering to look before she crosses open ground."
+    ],
+    "companion_dies_plain": [
+      "{ally} is dead at {place}. she buried them and walked on before noon.",
+      "{ally} did not get up at {place}. she said the words she knows and they came out wrong, and she went on anyway.",
+      "{ally} died at {place}. she is telling herself that burying someone properly is the same as grieving. she is not convinced, and she is still walking."
+    ],
+    "love": [
+      "she and {ally} sat past the end of the fire at {place}, and neither of them stood up.",
+      "at {place}, {ally} reached over to look at a wound that healed weeks ago, and she let them, and neither said anything about it.",
+      "the cold came down at {place} and they shared a blanket out of sense, and stayed under it out of something else.",
+      "she and {ally} talked until the fire was out at {place}, and then sat in the dark, and did not talk, and did not go."
+    ],
+    "charity": [
+      "she gave {coin} coin to a family at {place} with nothing, and left before they could thank her, because she cannot take it.",
+      "{coin} coin to a man at {place} who had less than nothing. she told him to buy water and not to drink it all.",
+      "she paid a well-keeper at {place} {coin} coin to let a queue of strangers drink, and walked off before anyone worked out who had done it.",
+      "{coin} coin to a widow at {place}. she was rough about it, deliberately, so it would not look like what it was.",
+      "she bought {coin} coin of water for a road full of people at {place} and told them she was clearing a debt. she was not.",
+      "{coin} coin to a girl at {place} who reminded her of nobody in particular, she says.",
+      "she gave {coin} coin away at {place} and then walked twenty miles on short rations. she does not want that mentioned.",
+      "{coin} coin to the dry-camp outside {place}. they will remember her face there. she has not decided whether that is good.",
+      "she paid off another woman's water-debt at {place} — {coin} coin — and told the clerk it was an error in the roll, and left.",
+      "{coin} coin to a man at {place} who was going to die anyway. she knew it. she gave it anyway.",
+      "she gave {coin} coin to some children at {place} and was short with them, and they will remember the coin and not the shortness, which was the plan.",
+      "{coin} coin at {place}, to people who had queued three days for a cup. she gave it and left angry, and could not have told you at whom.",
+      "she left {coin} coin where a beggar at {place} would find it, and did not stay to watch, and that is the closest thing to tenderness in her.",
+      "{coin} coin at {place} for a burial that was not hers to pay for.",
+      "she gave {coin} coin to a well-woman at {place} to keep a trough open one more day. one more day was what there was.",
+      "{coin} coin to a family walking the other way out of {place}. she gave them water too, and re-rationed herself, and said nothing about it.",
+      "she paid {coin} coin at {place} for a boy's ration and told him it was a loan. she will not collect it. he does not know that.",
+      "{coin} coin to strangers at {place}, and afterwards she was in a foul mood for a day and could not say why.",
+      "she handed over {coin} coin at {place} to people with nothing, and made a joke of it, and the joke was not good, and they laughed anyway.",
+      "{coin} coin at {place}. they blessed her. she took the blessing badly, the way she takes most things.",
+      "she gave {coin} coin to a camp of the water-struck outside {place}, and did not go in among them, and stood at the edge, and left.",
+      "{coin} coin to a man at {place} who had been struck off every roll there is. she did not ask why. that was the gift, more than the coin was.",
+      "she gave {coin} coin away at {place} in front of a {agent} at his checkpoint, slowly, looking at them while she did it.",
+      "{coin} coin at {place}. she will be poorer for it in a month, and remembered for it longer than that, and only one of those was the point."
+    ],
+    "debt_repaid": [
+      "someone she helped once took her in at {place}, fed her, and asked for nothing. she did not know where to put her hands.",
+      "a woman at {place} recognised her, and fed her, and would not take coin. she has been chewing on it since.",
+      "she was taken in at {place} by a family she does not remember helping. they remember. she let them tell her about it.",
+      "a man at {place} paid her bill before she reached the counter. she has no memory of him at all, and did not say so.",
+      "at {place} someone gave her a bed for nothing and would not explain, and she lay awake in it.",
+      "she was fed at {place} by people she once pulled off a bad road. she ate. it was hard.",
+      "a girl she gave coin to years ago is grown now at {place} and runs a stall, and would not take her money.",
+      "they knew her name at {place} before she gave it. it was not a debt she remembered being owed.",
+      "she got a free bed at {place} and lay in it feeling handled.",
+      "someone at {place} said 'you don't remember me,' and she did not, and they fed her anyway and asked for nothing, and she has thought about it every day since.",
+      "at {place} a man paid for her water and walked away before she could refuse. refusing had been the plan.",
+      "she was given a place at a table at {place} by strangers who were not strangers. she stayed one night and left early, which is what she does.",
+      "someone she once did a kindness found her at {place} and did her one back, and she was so unready for it she was almost rude.",
+      "she was owed something at {place} and it was paid, freely, and she has decided she does not like being owed things.",
+      "a household at {place} took her in and fed her and asked for nothing, and she left a week's coin under the bowl and went before dawn."
+    ],
+    "rumor": [
+      "heard at a trough at {place}: {power} is not measuring the water. it is measuring what people will do for it.",
+      "a well-keeper at {place} would not say {power}'s name aloud, and would not say why not, and changed the subject twice.",
+      "they say at {place} that the {agents} do not drink. she has watched. she has not seen one drink.",
+      "heard at {place}: the wells that fail do not fail by accident and do not fail at random, and nobody will finish that thought out loud.",
+      "a caravan master at {place} told her never to be the last to leave a dry well. he would not say more, and he was not drunk.",
+      "there is a well out past {place} that is full and clean and nobody uses. everyone knows where it is. nobody could tell her why.",
+      "a woman at {place} said the {agents} came for her neighbour, and were kind about it, and that was the part she could not get past.",
+      "heard at {place} that {power} has begun taking its share from people who have never drawn a cup in their lives.",
+      "they say {power} gives water to the greedy first, and lets them keep it, and watches. she heard it twice at {place}, from people who did not know each other.",
+      "a {agent} at {place} asked a child what her mother had given away that week. just that. then he thanked her, and went on.",
+      "heard at {place}: {power} does not take anything that is not offered. the man who said it would not explain what counts as an offer.",
+      "at {place} they told her the deep cisterns were not dug. they did not say what they were.",
+      "someone at {place} said the {agents} keep a list of the people who share their water. not who hoards it. who shares it.",
+      "she heard at {place} that when {power} is finished counting there will be an answer, and nobody in the room wanted to say what the question was.",
+      "a girl at {place} sang a song about {power} that her mother tried to stop her singing.",
+      "at {place} a man said he had seen {power} take a well back — not dry it, take it. she has asked three people what that means and been given three different silences.",
+      "heard at {place} that the {agents} were people once, and that this is not a figure of speech, and that they were promoted.",
+      "the story at {place} is that {power} is patient because it has already won and is only tidying up. she has decided that is a story people tell to feel important.",
+      "an old woman at {place} said the honest wells run dry first, and said it the way you say it will rain.",
+      "heard at {place}: {power} is not counting cups. it is counting cruelties, and it is nearly done.",
+      "someone at {place} said {power} was here before the wells were dug. someone else said {power} is what happened to whoever dug them.",
+      "an old man at {place} said the country was not always dry, and that it was not the sun that did it. he was laughed at. he did not seem to mind.",
+      "a drunk at {place} said he had been down into the works beneath the country. he was not lying. that is the part she keeps returning to."
+    ],
+    "ghost_dead": [
+      "she dreamed about {ghost} again, and woke before dawn, and walked until it was light.",
+      "{ghost} was in the fire tonight, the way the dead get into fires. she let it burn down.",
+      "she said {ghost}'s name out loud in her sleep and woke herself doing it, and did not sleep again."
+    ],
+    "ghost_gone": [
+      "she heard {ghost}'s name at {place}, spoken by someone who had seen them recently. she paid for her bread and left.",
+      "{ghost} is alive. someone at {place} said so in passing, about somebody else's business. she did not ask a single question.",
+      "at {place} a man described {ghost} without knowing it. she listened to all of it and then walked out mid-sentence.",
+      "{ghost} was at {place} a month ago. she found this out by accident, and has not gone looking, and has walked past two roads that would have taken her there.",
+      "she heard {ghost} is well, and married, or something like it, near {place}. she is glad. she left the same day.",
+      "someone at {place} owes {ghost} money. she almost laughed. that is very much {ghost}.",
+      "{ghost}'s name came up at {place} and she found she had stopped breathing, and started again, and said nothing.",
+      "she saw a back at {place} that was {ghost}'s back. it was not. she stood in the street a while afterwards.",
+      "at {place} she learned {ghost} is alive and two days east. she went west, and has been making good time.",
+      "{ghost} passed through {place} in the spring. she asked one question and then made herself stop.",
+      "someone at {place} asked whether she knew {ghost}. she said no.",
+      "she heard at {place} that {ghost} had been asking after her, once, years ago. nobody thought to mention it at the time.",
+      "{ghost} is alive and gone, and she has known it three days now, and has not decided what to do with the knowledge, which is itself the decision.",
+      "a trader at {place} had a knife of {ghost}'s and did not know it. she bought it, and has not looked at it since."
+    ],
+    "power_moves": [
+      "there were {agents} outside the inn at {place} all night and they were not trying to hide it. {power} knows her name now.",
+      "a {agent} sat down across from her at {place}, said nothing, ate, and left. she has not eaten since.",
+      "{power} has taken an interest. two {agents} walked her road at her pace for four hours out of {place}, and never once closed the distance.",
+      "she found her pack searched at {place} and nothing taken, which is a message, and she has received it.",
+      "the {agents} at {place} let her through the checkpoint without stopping her. that is new, and it is worse.",
+      "a {agent} at {place} used her name. she has never given it to one of them.",
+      "{power}'s people are watching her openly now. at {place} one of them nodded to her. she nodded back, and has been furious with herself since.",
+      "every well between here and {place} had a {agent} standing at it. she drank at all of them, slowly, and made them watch.",
+      "at {place} the innkeeper would not take her coin and would not look at her, and there was a {agent} at the door.",
+      "{power} is paying attention. she has been given the good room at {place} twice, unasked, and has slept in neither."
+    ],
+    "death": [
+      "{name} died on day {day}, at {place}. the wound was older than she admitted, and she had stopped counting it.",
+      "{name} died at {place} on day {day}. she was alone. it took most of the night.",
+      "{name} died on day {day} at {place}. there was no water within a day's walk, and there had not been for some time."
+    ]
+  },
+  "judgments": {
+    "trust": {
+      "prompt": [
+        "{name} has walked beside her since {place} and shows no sign of leaving. what is {name} to her?",
+        "{name} is still here. she has to decide what that means.",
+        "{name} has not asked her for anything since {place}. that will not last. what does she do about it?",
+        "there is a stranger at her fire. {name} is armed, useful, and unexplained. how close does she let them stand?",
+        "{name} sleeps within reach of her pack now. is that trust, or an oversight?",
+        "it is a long road, and {name} has been on it beside her since {place}. does she let them in?",
+        "{name} has done nothing wrong. she is still deciding whether that is the same as being safe.",
+        "she cannot walk with someone she has not made up her mind about. what is {name}?",
+        "{name} is waiting for an answer to a question they have not asked. give them one.",
+        "how much of herself does she give {name}?"
+      ],
+      "options": {
+        "trust": {
+          "label": "Take them in fully",
+          "lines": [
+            "she told {name} her real name. that is not nothing, for her.",
+            "she gave {name} the second watch and slept through it, which she has not done in years.",
+            "she showed {name} where the money is. she has never done that. she did it quickly, before she could stop herself.",
+            "she told {name} about the scar — all of it, not the version.",
+            "{name} is in, now. she made a joke of it when she said so, and meant every word.",
+            "she has stopped sleeping with her back to the wall. {name} noticed and said nothing, which was the correct thing to do.",
+            "she let {name} carry the pack and did not check it afterwards, and lay awake about it once, and then not again.",
+            "she trusts {name}. she said it out loud, badly, and then went and saw to the fire.",
+            "she handed {name} her knife to hold and did not watch their hands.",
+            "she has begun saying 'we'. she caught it, and did not correct it.",
+            "{name} asked her a direct question and she gave a direct answer. she cannot remember the last time she did that.",
+            "she took {name} in fully, and has been sleeping better, and finds that frightening."
+          ]
+        },
+        "wary": {
+          "label": "Keep them at a distance",
+          "lines": [
+            "{name} walks half a pace behind her now. she likes it that way. she thinks she likes it that way.",
+            "she keeps {name} on her weak side, where she can see them. {name} has worked this out and has not said so.",
+            "she has not given {name} her name. {name} has stopped asking.",
+            "{name} stays. {name} does not get close. she has drawn the line and does not intend to move it.",
+            "she counts her coin when {name} is asleep. she has never once found any missing.",
+            "{name} is useful. she has decided to leave it there.",
+            "she sleeps light with {name} in the camp, and would tell you that she always sleeps light.",
+            "she keeps {name} at arm's length, which is exactly the length of an arm, and near enough for a blade.",
+            "she watches {name}'s hands. {name} has begun keeping them where she can see them, which is a kindness she has not acknowledged.",
+            "{name} is at the fire but not at her back. that is the arrangement. neither of them has ever stated it.",
+            "she gave {name} a name that is not hers. {name} uses it happily. she hears it and feels nothing, which was the idea.",
+            "she is keeping {name} at a distance, and is no longer certain she still needs to."
+          ]
+        },
+        "send": {
+          "label": "Send them away",
+          "lines": [
+            "she sent {name} back down the road, and watched until they were out of sight, which she would deny.",
+            "she told {name} to go. she gave a reason. the reason was a lie and {name} took it anyway.",
+            "{name} is gone. she made it clean and quick and cold, and it worked, and she was in a foul mood for three days.",
+            "she sent {name} off at first light without breakfast, because breakfast would have made it a conversation.",
+            "she cut {name} loose. she is telling herself it was for {name}'s sake, and half of that is even true.",
+            "she told {name} the road ahead was hers alone. {name} did not argue, and that was somehow worse.",
+            "{name} asked whether they had done something wrong. she said no. it was the only honest thing in the whole exchange.",
+            "she sent {name} off with water and coin and no explanation, which is the most generous version of this she has in her.",
+            "she got rid of {name}. she has been sleeping badly, and has put it down to the heat.",
+            "she said goodbye to {name} and turned around first.",
+            "she sent {name} away. she has caught herself listening for a second set of footsteps.",
+            "{name} is gone, by her hand, and the road is exactly as safe as it was, and quieter, and she wanted that."
+          ]
+        }
+      }
+    },
+    "love": {
+      "prompt": [
+        "something has changed between her and {ally}. does she let it?",
+        "she and {ally} both know. neither has said it. does she?",
+        "she can have this, or she can stay as she is. {ally} is waiting.",
+        "{ally} is not going to ask her again. what does she do?"
+      ],
+      "options": {
+        "yes": {
+          "label": "Let her have it",
+          "lines": [
+            "she let it happen. she is more careful now, and she is furious about that.",
+            "she said yes without saying anything at all, and has been a different woman since, and is watching for the cost.",
+            "she has {ally} now. she also has, for the first time in years, something to lose, and she can feel the weight of it in every fight.",
+            "she let herself have it. she looks for {ally} in a fight now, and it slows her, and she will not give it up.",
+            "she stopped pretending. {ally} was not surprised, which stung, and then stopped stinging.",
+            "she chose it. she is happy, in the way she is capable of being happy, which is quietly and with suspicion."
+          ]
+        },
+        "no": {
+          "label": "She has work to do",
+          "lines": [
+            "she said nothing and let the moment go past. {ally} understood, which was worse.",
+            "she got up and went to see to the horses. there were no horses.",
+            "she has work to do. she told {ally} so, and heard exactly how it sounded, and did not take it back.",
+            "she let it die. she has been very kind to {ally} since, and they both know what that is.",
+            "she said no. she was gentle about it, which is not her way, and {ally} noticed that too.",
+            "she turned it down, and has not slept well since, and would tell you the two things are unrelated."
+          ]
+        }
+      }
+    }
+  },
+  "factions": [
+    {
+      "id": "hand",
+      "name": "the Open Hand",
+      "blurb": "They give water away. In this country that is not charity, it is sedition.",
+      "wants": {
+        "charity": 0.7,
+        "debt_repaid": 0.5,
+        "patrol_defied": 0.4,
+        "patrol_paid": -0.8
+      },
+      "rivals": [
+        "ledger"
+      ],
+      "lines": {
+        "favour": [
+          "someone from {faction} left a full skin outside her door at {place} and was gone before she opened it.",
+          "{faction} know her name at {place} now. she did not give it to them. a woman at a trough filled her flask and would not take the coin.",
+          "a door was open to her at {place} that is open to nobody. {faction} have decided she is one of the ones worth feeding.",
+          "at {place} a child sent by {faction} brought her bread, and stood there until she had eaten it."
+        ],
+        "shelter": [
+          "{faction} took her in at {place} — a room, a bolt on the inside of the door, and no questions. she slept eleven hours and hated needing it.",
+          "she was hidden at {place} by {faction} for four days while {agents} went house to house. nobody gave her up. she does not know how to sit with that.",
+          "{faction} dressed her wounds at {place}, and fed her, and asked for nothing, and she kept waiting for the price, and there was not one.",
+          "she stayed with {faction} at {place}. they gave her the good bed. she gave the good bed to someone worse off and slept on the floor and felt like herself again.",
+          "at {place}, {faction} put her in a cart under sacking and drove her out past a checkpoint, and would not say where they were going, and she let them."
+        ],
+        "hunted": [
+          "{faction} came for her at {place}. she had not thought they had it in them. she was wrong, and she is bleeding, and she had it coming.",
+          "she was set on at {place} by people who used to feed her. {faction} do not forget who takes and never gives.",
+          "at {place} every trough of {faction} was shut to her, and then their people were behind her, and one of them said her name like a charge being read.",
+          "{faction} put four of theirs on her at {place}. they were not good at it. that is not the same as it not hurting.",
+          "she was jumped at {place} by {faction}, who were angrier than they were skilled. she got out of it. she has not slept since."
+        ]
+      },
+      "allegiance": {
+        "prompt": [
+          "{faction} have offered her a place. she has never belonged to anything. does she take it?",
+          "{faction} want her. it would make their enemies hers. does she say yes?",
+          "they are asking her to stand with {faction} at {place}, in front of witnesses. what does she do?",
+          "{faction} have opened a door, and walking through it means she cannot walk back out. does she?",
+          "she has been useful to {faction}. now they want her name on it. does she give it?"
+        ],
+        "join": [
+          "she is one of {faction} now. she said the words, and could not look at anybody while she said them.",
+          "she took the place with {faction}. she has never had people before and does not know where to put her hands.",
+          "she joined {faction} at {place}. that night she gave away half of what she owns, and slept better than she has in years.",
+          "she is with {faction} now, and their enemies are hers, and she has already started a list.",
+          "she said yes to {faction}. she has been waiting her whole life to be asked for something like this, and would deny it under oath."
+        ],
+        "refuse": [
+          "she turned {faction} down. they took it well, which is not the same as taking it kindly.",
+          "she said no to {faction}, and gave a reason, and the reason was true, and it did not help.",
+          "she refused {faction}. she has spent the week since telling herself she was right.",
+          "she told {faction} she belongs to nobody. an old woman there said 'we know', and that was worse than an argument.",
+          "she would not take the place. she left {place} the same evening without saying goodbye, because she is not good at it."
+        ],
+        "use": [
+          "she took what {faction} offered and gave nothing back. it worked. it will keep working right up until it does not.",
+          "she lets {faction} feed her and hide her and has never once said yes to them. they are patient people. they are not stupid ones.",
+          "she used {faction} at {place} and walked out with a full pack and no obligations, and felt clever for most of a day.",
+          "she took the help and not the collar. {faction} have stopped smiling at her and still open the door, which is somehow worse.",
+          "she has been taking from {faction} for weeks and giving them nothing. someone there has started writing it down."
+        ]
+      }
+    },
+    {
+      "id": "ledger",
+      "name": "the Ledger",
+      "blurb": "They own the debt, and the debt is water. Respectable, and they work well with the waterwrights.",
+      "wants": {
+        "work": 0.6,
+        "patrol_paid": 2,
+        "charity": -0.8,
+        "patrol_defied": -2
+      },
+      "rivals": [
+        "hand",
+        "runners"
+      ],
+      "lines": {
+        "favour": [
+          "{faction} extended her credit at {place} without being asked. that is how it starts.",
+          "a clerk of {faction} at {place} waved her past a fee, and made a small mark in a book, and smiled at her.",
+          "{faction} sent word ahead of her to {place}. the innkeeper knew her name, and the price had already been agreed.",
+          "someone from {faction} bought her a drink at {place} and talked about nothing for an hour, which cost her a great deal more than the drink."
+        ],
+        "shelter": [
+          "{faction} put her up at {place} in a clean room with an account attached to it, and told her not to worry about the account.",
+          "she was ill at {place} and {faction} paid the physician and never mentioned it again, and she thinks about that more than she would like to.",
+          "{faction} hid her at {place} behind a ledger-house door, and {agents} walked past it twice and did not knock.",
+          "at {place}, {faction} settled a debt of hers that she had told nobody about. she does not know how they knew. she has stopped asking.",
+          "{faction} gave her a bed and a bath and a week of quiet at {place}. she healed. she has never in her life felt so purchased."
+        ],
+        "hunted": [
+          "{faction} called in everything she owes at once at {place}, and when she could not pay they sent men, and the men were professional.",
+          "she was taken at {place} by {faction} and worked over carefully, by somebody who does it for a living and does not enjoy it.",
+          "at {place} every door {faction} own was shut to her — which is most of the doors — and then a man put a knife in her side in the street.",
+          "{faction} have put a price on her. she learned this at {place}, from a man she had never met, who was trying to collect it.",
+          "they came for her at {place} with a paper, and when she would not sign it they took payment out of her instead."
+        ]
+      },
+      "allegiance": {
+        "prompt": [
+          "{faction} have offered her a place — a book, a district, a cut. does she take it?",
+          "{faction} are offering her respectability and a wage. she has never had either. does she say yes?",
+          "they want her working for {faction} at {place}, with her name written in the book. what does she do?",
+          "{faction} have made her an offer that is generous and entirely sincere, which is the part that worries her. does she take it?",
+          "she could be one of {faction} and never go hungry again. does she?"
+        ],
+        "join": [
+          "she signed with {faction}. her name is in a book now, in ink, and she keeps coming back to that.",
+          "she is one of {faction}. she has a wage, a district, and men who answer to her, and she has not slept properly once since.",
+          "she took the place with {faction} and bought a coat. she looks like somebody. she cannot stand the sight of herself in glass.",
+          "she joined {faction} at {place}. she is on the right side of the book for the first time in her life, and she knows exactly what that says about the other side.",
+          "she said yes to {faction}, and everyone she used to drink with stopped drinking with her, and she says she does not mind."
+        ],
+        "refuse": [
+          "she turned {faction} down at {place}. the man who had asked wrote something down and thanked her for her time.",
+          "she said no to {faction}. they were gracious about it. she has been watching the road behind her ever since.",
+          "she refused {faction} and walked out, and nobody stopped her, and every price in the town went up the following morning.",
+          "she would not sign. {faction} closed the book and smiled and told her the offer would not be made twice, and it was not.",
+          "she told {faction} no. she is not certain she meant it, and that is the part that keeps her awake."
+        ],
+        "use": [
+          "she took {faction}'s credit and gave them nothing, and is spending it as fast as she can.",
+          "she has been drawing on {faction} for a month with no intention of paying. somebody has begun adding it up.",
+          "she took the help and would not sign. {faction} keep lending. she has worked out that this is the trap, and cannot make herself stop.",
+          "she used {faction} at {place} and thought she had got away with it. the account is still open, and open is not the same as forgiven.",
+          "she lets {faction} pay for everything and gives them nothing but her company. they seem content with that, which tells her what her company is worth to them."
+        ]
+      }
+    },
+    {
+      "id": "runners",
+      "name": "the Runners",
+      "blurb": "They move water past the tolls. It is a hanging offence and they are the best company in the country.",
+      "wants": {
+        "patrol_defied": 2.5,
+        "relic": 1,
+        "cache": 0.25,
+        "patrol_paid": -2.5,
+        "work": -0.3
+      },
+      "rivals": [
+        "ledger"
+      ],
+      "lines": {
+        "favour": [
+          "someone from {faction} showed her a way around a checkpoint at {place} for nothing, and would not say why.",
+          "{faction} left a mark on a wall at {place} that she now knows how to read. it meant: not this road.",
+          "a runner at {place} put a skin in her pack while she was not looking. it had not been stolen from her. it had been stolen for her.",
+          "{faction} let her sleep in one of their holes at {place}. it stank. nobody asked her to pay for it."
+        ],
+        "shelter": [
+          "{faction} moved her out of {place} in a water-cart with a false bottom. she lay in the dark for nine hours and did not complain once.",
+          "she was hidden by {faction} at {place} in a cistern with two feet of air at the top of it, and it was the safest she has been in a year.",
+          "{faction} took her in at {place} — no bed, no bath, no questions, and a knife within reach, and she slept like a child.",
+          "she healed up in a hole of {faction}, under {place}. they fed her stolen water and told her stolen jokes, and she laughed at both.",
+          "{faction} kept her out of {agents} hands at {place} for a week, and never once asked her what she had done."
+        ],
+        "hunted": [
+          "{faction} caught up with her at {place}. they know the roads better than she does, and they chose the spot.",
+          "she was ambushed at {place} by {faction}, out of a hole she had not known was there, which is the whole of their argument.",
+          "at {place}, {faction} took her water. not her coin — her water. she understood the message perfectly.",
+          "{faction} have put her name on a wall somewhere. she found out at {place}, when three men came at her without a word.",
+          "she was jumped by {faction} at {place}. they were fast and they were quiet and she is lucky to be walking."
+        ]
+      },
+      "allegiance": {
+        "prompt": [
+          "{faction} want her to run with them. it is a hanging offence and the best company she has had in years. does she?",
+          "{faction} have offered her a place. no wage, no roof, and nobody ever asks where you have been. does she take it?",
+          "they are asking her to run water with {faction} out of {place}. what does she do?",
+          "{faction} would have her. it means never standing in a queue again as long as she lives. does she say yes?",
+          "she could be one of {faction} by nightfall. does she?"
+        ],
+        "join": [
+          "she runs with {faction} now. she has never been so illegal, and she has never slept so well.",
+          "she is one of {faction}. no wage, no roof, and not one question about her life, and she would kill for them.",
+          "she took the place with {faction} at {place}. she can never use a well again. she has not stopped grinning.",
+          "she joined {faction}. the first thing they gave her was a map, and it was a map of places that are not on maps.",
+          "she said yes to {faction}, and they did not make a ceremony of it, which is exactly why she said yes."
+        ],
+        "refuse": [
+          "she turned {faction} down. they shrugged, and bought her a drink, and told her where the next checkpoint was anyway.",
+          "she said no to {faction} at {place}. no hard feelings, apparently. she does not believe in no hard feelings.",
+          "she refused {faction}. she has gone back to walking legal roads and paying legal tolls, and hating every mile of it.",
+          "she would not run with {faction}. she watched them go, and stood in the road a while, which she would deny.",
+          "she told {faction} she works alone. one of them said 'so does everybody, until they don't', and walked off."
+        ],
+        "use": [
+          "she takes the roads of {faction} and their water and gives them nothing back. they have noticed. they notice everything.",
+          "she has been reading the marks of {faction} off the walls for months without once carrying for them. in their arithmetic that is theft.",
+          "she took the help and not the collar. {faction} still show her the safe road. they have stopped showing her the safest one.",
+          "she used {faction} at {place} and slipped a checkpoint she should have died at, and gave them nothing, and knows precisely what she is.",
+          "she drinks their water and runs none of it. somebody among {faction} has started calling her a customer, and not kindly."
+        ]
+      }
+    }
+  ],
+  "schools": [
+    {
+      "id": "cutters",
+      "name": "the Cutters' Yard",
+      "blurb": "A knife-school in the yard behind a toll-house on the canal. They charge by the bruise.",
+      "teaches": "blade",
+      "region": "canal",
+      "cost": 240,
+      "lines": {
+        "prompt": [
+          "{school} at {place} will take her for {coin} coin and a season. she has never once paid to be taught anything.",
+          "there is a man at {place} who teaches killing properly, and {school} want {coin} coin for it. does she spend it?",
+          "{coin} coin to {school} at {place}, and a season of being beaten by people better than her. does she?",
+          "she watched {school} train at {place} for an hour and could not look away. it is {coin} coin to be let in."
+        ],
+        "train": [
+          "she paid {school} {coin} coin and spent a season being knocked down at {place}. she is better now. she is furious about how much better.",
+          "{coin} coin to {school}. they took the flourish out of her and left the economy in, and she has not lost a fight since.",
+          "she trained at {place} with {school} until her hands bled and then trained with them bandaged. {coin} coin. worth every one.",
+          "she gave {school} {coin} coin and they gave her back the same body, moving differently. she has stopped announcing herself in a fight."
+        ],
+        "refuse": [
+          "she walked past {school} at {place} with {coin} coin in her pocket and told herself she has done all right so far.",
+          "she would not pay {school}. she has been fighting since she was fourteen and does not care to be a beginner at it now.",
+          "{coin} coin was too much for {school}, or she said it was. she has thought about the yard at {place} most days since.",
+          "she kept her {coin} coin and left {place}. she can already fight. that is what she said, out loud, to nobody."
+        ]
+      }
+    },
+    {
+      "id": "physicians",
+      "name": "the Salt Physicians",
+      "blurb": "They keep the city alive and charge it accordingly. They will teach anyone who can pay.",
+      "teaches": "mend",
+      "region": "wellmouth",
+      "cost": 300,
+      "lines": {
+        "prompt": [
+          "{school} at {place} will teach her to keep a body alive, hers included, for {coin} coin. does she pay?",
+          "it is {coin} coin to sit with {school} at {place} and learn what they know about wounds. she has a great many wounds.",
+          "{school} take students. {coin} coin, a season, and no promises. does she?",
+          "a physician at {place} told her she would be dead inside two years and offered to teach her otherwise for {coin} coin."
+        ],
+        "train": [
+          "she paid {school} {coin} coin and learned what a wound actually is. she has stopped losing months to things that should take a week.",
+          "{coin} coin to {school} at {place}. she can close her own flesh now, and does, without ceremony, and heals like something younger.",
+          "she studied with {school} for a season. {coin} coin. she has not had a wound go bad since, and she knows exactly why.",
+          "she gave {school} {coin} coin and they gave her boiled cloth, clean hands, and a lecture. she has followed all three ever since."
+        ],
+        "refuse": [
+          "she did not pay {school}. she has been stitching herself with a boot-needle for eleven years and it has worked so far.",
+          "{coin} coin to {school} was more than she could stand to part with. she left {place} with the coin and the same bad shoulder.",
+          "she turned {school} down at {place}. she does not like being told what her body is doing.",
+          "she kept the {coin} coin. she will spend it on something. she has not yet worked out what."
+        ]
+      }
+    },
+    {
+      "id": "gleaners",
+      "name": "the Gleaners",
+      "blurb": "They work the old ruins and have done for generations. They know what is worth carrying out.",
+      "teaches": "scavenge",
+      "region": "reach",
+      "cost": 220,
+      "lines": {
+        "prompt": [
+          "{school} will show her how to read the works at {place} — what is worth lifting and what is worth leaving. {coin} coin.",
+          "it is {coin} coin to be taken out into the ruins by {school} and taught what she is looking at.",
+          "{school} at {place} want {coin} coin to teach her the trade properly. she has been guessing at it for years.",
+          "an old woman of {school} offered to teach her the works for {coin} coin, and said she would not offer twice."
+        ],
+        "train": [
+          "she paid {school} {coin} coin and learned the works the way a reader learns letters. she has been coming out heavier ever since.",
+          "{coin} coin to {school}. they taught her which walls are hollow, which floors are false, and which rooms to leave alone. she leaves those alone.",
+          "she went out with {school} for a season. {coin} coin. she no longer digs where there is nothing, which is most of everywhere.",
+          "she gave {school} {coin} coin and they gave her an eye for it. what she used to walk past is what she now walks out with."
+        ],
+        "refuse": [
+          "she kept her {coin} coin and told {school} she had been digging holes since before they were born. they let it go, politely.",
+          "she would not pay {school}. she has found plenty on her own. she has also walked past a great deal, and does not know it.",
+          "{coin} coin to {school} felt like paying to be told what she already knows. she may have been wrong. she is not going back to ask.",
+          "she refused {school} at {place}, and dug the next ruin herself, and found a wall, and stopped."
+        ]
+      }
+    },
+    {
+      "id": "dowsers",
+      "name": "the Dowsers",
+      "blurb": "They cross the flats and come back. Nobody is entirely sure how, and they charge for the answer.",
+      "teaches": "road",
+      "region": "flats",
+      "cost": 260,
+      "lines": {
+        "prompt": [
+          "{school} cross the salt and come back, and nobody knows how. it is {coin} coin to be told.",
+          "a dowser at {place} offered to teach her the country itself for {coin} coin — where the water is, and what the flats do to people.",
+          "{school} will take her out onto the salt for a season and teach her to survive it. {coin} coin. does she go?",
+          "it is {coin} coin to walk with {school} and learn what they know. everyone who does not know it dies out there eventually."
+        ],
+        "train": [
+          "she paid {school} {coin} coin and walked the salt with them for a season, and came back reading the ground like a page.",
+          "{coin} coin to {school}. she knows where the water is now. she cannot unlearn it, and she cannot explain it, and neither can they.",
+          "she went out with {school}. {coin} coin, and a season, and she has not been properly thirsty since, and she has stopped fearing the crossing.",
+          "she trained with {school} and now the country is a thing she reads rather than a thing that happens to her."
+        ],
+        "refuse": [
+          "she would not pay {school} {coin} coin. she has crossed the flats before. she has also nearly died on them before, twice.",
+          "she kept the {coin} coin and crossed on her own, and made it, and has been a little smug about it, and it is still early.",
+          "she turned {school} down at {place}. they did not argue. they told her the road she was taking and then said nothing else.",
+          "she said no to {school}. one of them filled her flask anyway, for free, and would not look at her while doing it."
+        ]
+      }
+    }
+  ],
+  "polities": [
+    {
+      "id": "league",
+      "name": "the Cistern League",
+      "kind": "merchant republic",
+      "blurb": "Wellmouth and the canal that feeds it. They own the water, so they own the law.",
+      "laws": {
+        "toll": 1.4,
+        "tax": 0.12,
+        "zeal": 1.6,
+        "outlaws": [
+          "runners"
+        ]
+      },
+      "relations": {
+        "march": "cold"
+      },
+      "lines": {
+        "cross": [
+          "she crossed into {polity} at {place} and was counted, weighed, and written down before she had walked a hundred yards.",
+          "into {polity}. the roads are better here, and so are the tolls, and everyone she passes is carrying a paper.",
+          "{polity} begins at a line of posts outside {place}. she paid to walk past them and has been paying ever since.",
+          "she came out of {from} into {polity}, where the water is metered, the law is written, and both belong to the same men.",
+          "back into {polity} at {place}. she knows the drill now — the queue, the clerk, the fee, the stamp — and knowing the drill has not made her like it."
+        ],
+        "law": [
+          "they wanted her name at {place}, and a reason, and a fee for the reason. she gave all three and has been in a temper since.",
+          "she was made to sign for a cup of water at {place}. she signed. she thought about the signing for a long time afterwards.",
+          "a clerk at {place} explained the water statute to her, patiently, twice, and charged her for the explanation.",
+          "she could not sell what she was carrying at {place} without a licence, and the licence cost more than the thing was worth, which is the point of the licence.",
+          "she was fined at {place} for drawing water from a trough she had already paid for. she paid the fine. she paid for the receipt.",
+          "at {place} they would not let her sell the hide until it was inspected, and the inspection was Thursday, and she waited until Thursday.",
+          "a boy was taken up at {place} for carrying an unmarked skin. she watched, and did nothing, and has been arguing with herself since.",
+          "the League counted her water at the gate of {place}, wrote the number down, and counted it again on her way out.",
+          "she was told at {place} that she could not stay more than four nights without a residency. she left on the third out of spite.",
+          "they weighed what she was carrying at {place} and taxed it by weight, and the stone they weighed it with was theirs.",
+          "at {place} there is a queue for the queue. she stood in both. it took a day and she has nothing to show for it but the stamp."
+        ]
+      }
+    },
+    {
+      "id": "march",
+      "name": "the Saltward March",
+      "kind": "frontier march",
+      "blurb": "The dry country and the reeds, held by whoever is standing there. The law is a man with a spear.",
+      "laws": {
+        "toll": 0.6,
+        "tax": 0.04,
+        "zeal": 0.8,
+        "outlaws": []
+      },
+      "relations": {
+        "league": "cold"
+      },
+      "lines": {
+        "cross": [
+          "she crossed into {polity} at {place}. nobody counted her. nobody asked. she has not decided yet whether that is better.",
+          "into {polity} out of {from}, where the law is a man with a spear and it depends entirely on which man.",
+          "{polity}: no posts, no papers, and a garrison at {place} that has not been paid in a year and is not hiding it.",
+          "she walked into {polity} and the roads got worse and the questions stopped, and she will take that trade.",
+          "she came back into {polity} at {place} and nobody remarked on it. she could have been gone a year. she could have been dead. nobody had noticed either way."
+        ],
+        "law": [
+          "the law at {place} is a sergeant with a grudge. he took what he wanted and called it a levy, and there is nobody to complain to.",
+          "they hold the road at {place} and charge for it, and the charge changes depending on how she looks that day.",
+          "at {place} she was told the March protects her. she has seen what it protects her from, and it is mostly the March.",
+          "a captain at {place} pressed her for a week of work and called it a duty, and paid her in nothing at all.",
+          "the garrison at {place} took a third of what she was carrying and gave her a chit for it. the chit is worth nothing and everybody knows it.",
+          "a man with a spear at {place} decided she looked like somebody, and it took her most of an evening to prove she was not.",
+          "at {place} they conscripted a boy in front of her for a war nobody has declared, and his mother did not even shout.",
+          "she was told at {place} that the road was closed, and then that it was open, and the difference between the two was eleven coin.",
+          "the March hanged a man at {place} while she was buying bread. nobody stopped buying bread.",
+          "at {place} a sergeant asked what she was doing here. she told him the truth. he did not believe it and charged her anyway.",
+          "there is no law at {place}, only a captain, and the captain was drunk, and it cost her the good knife."
+        ]
+      }
+    }
+  ],
+  "history": {
+    "war_declared": [
+      "the word at {place} is that {polity} and {other} are at war as of Tuesday. the man who told her was packing while he said it.",
+      "at {place} they are taking the carts off the road. {polity} and {other} have gone to war and everyone here has done this before.",
+      "{polity} and {other} are fighting. she heard it at {place} from a woman who had already sold her house.",
+      "war between {polity} and {other}. at {place} the price of water doubled inside a day, and nobody was surprised, and that was the frightening part."
+    ],
+    "peace_made": [
+      "{polity} and {other} have stopped fighting. at {place} nobody cheered. the men who did well out of it were the quietest in the room.",
+      "peace between {polity} and {other}, apparently. at {place} they are already arguing about who won.",
+      "the war is over. she heard at {place}, from a soldier walking home, who did not seem to think it was over.",
+      "{polity} and {other} have made peace. the roads are open again, and full of people who have nowhere to go back to."
+    ],
+    "ruler_dies": [
+      "whoever ruled {polity} is dead. at {place} the bells went all night and nobody could tell her whether it was grief or relief.",
+      "the news reached {place} a week late: {polity} has lost whoever was holding it. nothing has changed yet. that is the part she does not like.",
+      "{polity} is without a ruler. at {place} the {agents} are standing in the road doing nothing at all, and waiting, and it is unbearable.",
+      "they are burying somebody important in {polity}. at {place} the taverns are full and very quiet."
+    ],
+    "tolls_raised": [
+      "{polity} has put the tolls up overnight and given no reason. at {place} everyone is doing sums in their heads and going quiet.",
+      "the toll at {place} is half again what it was last month. {polity} did not announce it. they simply began charging it.",
+      "at {place} the new rates of {polity} went up on the door in the night. a man read them aloud twice and then went home.",
+      "{polity} wants more now. she paid it at {place}, and looked at the man taking it, and he would not look back.",
+      "the toll went up again in {polity} this week. at {place} a carter said it was the third rise this year, and then looked around to see who had heard him."
+    ],
+    "faction_outlawed": [
+      "{polity} has outlawed {faction}. the notices were up at {place} by morning, and there is a price on the list of names, and she has been on lists before.",
+      "at {place} they are pulling {faction} out of houses. {polity} decided overnight, and the men doing the pulling are not from here.",
+      "{faction} is illegal in {polity} as of this week. she read the notice at {place} twice and walked away slowly.",
+      "{polity} has made it a crime to be {faction}. at {place} a woman she has drunk with was arrested for a conversation."
+    ]
+  }
+}

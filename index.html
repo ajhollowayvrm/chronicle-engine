@@ -4,9 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chronicle — she walks the world without you</title>
-<meta name="description" content="An idle RPG where the adventurer lives her own life between your check-ins. If you don't answer, she decides for herself.">
+<meta name="description" content="An idle RPG where the adventurer lives her own life between your check-ins. If you don't answer, she decides for herself. Every world is generated: new names, new gods, new prose.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🗡️</text></svg>">
+<meta name="theme-color" content="#12100e">
 <link rel="stylesheet" href="./web/style.css">
+<link rel="stylesheet" href="./web/mobile.css">
 </head>
 <body>
 
@@ -20,15 +22,17 @@
     </p>
     <p class="lede dim">
       If you do not answer, <strong>she decides for herself</strong> — and becomes
-      whoever those decisions make her.
+      whoever those decisions make her. When she dies, she stays dead, and the next
+      world is not this one.
     </p>
 
     <div class="boot-form">
-      <label>Her name
-        <input id="boot-name" type="text" value="Kestrel of Ilmun" maxlength="40">
+      <label>World
+        <select id="boot-world"></select>
+        <span id="boot-premise" class="premise"></span>
       </label>
 
-      <label>Seed <span class="hint">the world she gets</span>
+      <label>Seed <span class="hint">the life she gets</span>
         <input id="boot-seed" type="number" value="7" min="0" step="1">
       </label>
 
@@ -49,21 +53,36 @@
 
       <button id="boot-go" class="primary">Send her out</button>
     </div>
+
+    <div id="boot-graves" class="graves" hidden>
+      <h2>Those who did not come back</h2>
+      <ul id="boot-graves-list"></ul>
+    </div>
   </div>
 </div>
 
 <main id="game" hidden>
 
+  <!-- Sticky. On a phone this is the only thing always on screen, so it carries
+       the four numbers that decide whether you need to act: who, where, how hurt,
+       how much is being watched. -->
   <header class="topbar">
     <div class="who">
       <h1 id="her-name">—</h1>
-      <div class="sub"><span id="her-cycle"></span> · <span id="her-day"></span></div>
+      <div class="sub">
+        <span id="her-day"></span> ·
+        <span id="her-where" class="where"></span>
+        <span id="her-law" class="law-chip"></span>
+      </div>
     </div>
-    <div class="clock">
-      <div id="next-day" class="next-day">—</div>
-      <div class="sub">until the next day</div>
+    <div class="topstats">
+      <div class="tstat"><b id="t-coin">0</b><span>coin</span></div>
+      <div class="tstat" id="t-wounds-wrap"><b id="t-wounds">0</b><span>wounds</span></div>
+      <div class="tstat" id="t-eye-wrap"><b id="t-eye">0</b><span id="t-eye-label">seen</span></div>
     </div>
   </header>
+
+  <div id="alerts"></div>
 
   <section id="away" class="card away" hidden>
     <h2>While you were away</h2>
@@ -74,39 +93,127 @@
   <section id="death" class="card death" hidden>
     <h2 id="death-line">She is dead.</h2>
     <p class="dim">
-      The coin and the wounds are lost. The dead, the debts, the threads, and
-      whoever she became are not — they go with her into the next life.
+      There is no cycle. Nothing she earned, nothing she carried, and nobody she
+      buried goes anywhere from here. What comes next is not her, and not this
+      world.
     </p>
-    <button id="reincarnate" class="primary">Turn the cycle</button>
+    <button id="new-world" class="primary">Walk a new world</button>
   </section>
 
+  <!-- Judgments sit ABOVE the tabs, always visible, on every tab. They are the
+       only thing in this game that expires. -->
   <section id="judgments"></section>
 
-  <section class="card">
-    <h2>Her state</h2>
-    <div id="vitals" class="vitals"></div>
-    <div id="people" class="people"></div>
-  </section>
+  <!-- ------------------------------------------------------------- CHRONICLE -->
+  <div class="pane" id="pane-chronicle">
+    <section class="card">
+      <div class="card-head">
+        <h2>The chronicle</h2>
+        <div id="next-day" class="next-day">—</div>
+      </div>
+      <div id="log" class="log"></div>
+    </section>
+  </div>
 
-  <section class="card">
-    <h2>Standing orders</h2>
-    <p class="dim small">
-      The slider is a <em>request</em>. The mark beneath it is who she has actually
-      become. She drifts. Given long enough, she stops listening.
-    </p>
-    <div id="dials" class="dials"></div>
-    <div id="drift-note" class="drift-note" hidden></div>
-  </section>
+  <!-- ------------------------------------------------------------------- HER -->
+  <div class="pane" id="pane-her" hidden>
+    <section class="card">
+      <h2>Her state</h2>
+      <div id="vitals" class="vitals"></div>
+    </section>
 
-  <section class="card">
-    <h2>The chronicle</h2>
-    <div id="log" class="log"></div>
-  </section>
+    <section class="card">
+      <div class="card-head">
+        <h2>What she has been taught</h2>
+        <span class="dim small">coin is for this</span>
+      </div>
+      <div id="skills" class="skills"></div>
+      <p class="dim small" id="skills-note"></p>
+    </section>
 
-  <footer class="footer">
-    <span id="save-note" class="dim small"></span>
-    <button id="new-life" class="ghost small">Abandon her and start over</button>
-  </footer>
+    <section class="card">
+      <h2>The living</h2>
+      <div id="people" class="people"></div>
+    </section>
+
+    <section class="card">
+      <h2>The dead and the gone</h2>
+      <div id="ghosts" class="ghosts"></div>
+    </section>
+  </div>
+
+  <!-- ----------------------------------------------------------------- WORLD -->
+  <div class="pane" id="pane-world" hidden>
+    <section class="card">
+      <div class="card-head">
+        <h2>The map</h2>
+        <span class="dim small">tap a region to suggest it</span>
+      </div>
+      <div id="map" class="map"></div>
+      <p class="dim small" id="suggest-note"></p>
+    </section>
+
+    <section class="card">
+      <h2>Countries</h2>
+      <p class="dim small">Law is a fact about where she is standing. It changes when she crosses.</p>
+      <div id="polities" class="polities"></div>
+    </section>
+
+    <section class="card">
+      <h2>Who is keeping score</h2>
+      <p class="dim small">She never picks a side. They score her on what she actually does.</p>
+      <div id="factions" class="factions"></div>
+    </section>
+
+    <section class="card">
+      <h2>Schools</h2>
+      <div id="schools" class="schools"></div>
+    </section>
+  </div>
+
+  <!-- ---------------------------------------------------------------- ORDERS -->
+  <div class="pane" id="pane-orders" hidden>
+    <section class="card">
+      <h2>Standing orders</h2>
+      <p class="dim small">
+        The slider is a <em>request</em>. The mark beneath it is who she has actually
+        become. She drifts. Given long enough, she stops listening.
+      </p>
+      <div id="dials" class="dials"></div>
+      <div id="drift-note" class="drift-note" hidden></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>How much she listens</h2>
+        <b id="heeds-pct">100%</b>
+      </div>
+      <div class="meter"><div id="heeds-bar" class="meter-fill"></div></div>
+      <p class="dim small">
+        How much of a suggestion survives contact with the woman she has become. It
+        falls as she drifts from the orders you set. You cannot move her; you can
+        only ask.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>The world she is in</h2>
+      <dl id="worldinfo" class="worldinfo"></dl>
+    </section>
+
+    <footer class="footer">
+      <span id="save-note" class="dim small"></span>
+      <button id="abandon" class="ghost small">Abandon her</button>
+    </footer>
+  </div>
+
+  <!-- Bottom nav: thumb-reachable, which is the whole reason it is at the bottom. -->
+  <nav class="tabs" id="tabs">
+    <button data-pane="chronicle" class="on"><span>Chronicle</span></button>
+    <button data-pane="her"><span>Her</span></button>
+    <button data-pane="world"><span>World</span></button>
+    <button data-pane="orders"><span>Orders</span></button>
+  </nav>
 
 </main>
 
