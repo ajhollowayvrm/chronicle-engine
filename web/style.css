@@ -283,22 +283,22 @@ button { font: inherit; cursor: pointer; }
 .entry p { margin: 0; font-size: 0.94rem; line-height: 1.52; }
 
 /* her voice, INSIDE the record, still refuses to be part of it */
-.entry.her { border-top-color: var(--rule); }
-.entry.her p {
+.entry.k-her { border-top-color: var(--rule); }
+.entry.k-her p {
   color: var(--close);
   padding-left: 0.75rem;
   border-left: 1px solid color-mix(in srgb, var(--close) 40%, transparent);
 }
-.entry.her[data-mood="cold"] p,
-.entry.her[data-mood="absent"] p {
+.entry.k-her[data-mood="cold"] p,
+.entry.k-her[data-mood="absent"] p {
   color: var(--cold);
   border-left-color: color-mix(in srgb, var(--cold) 45%, transparent);
 }
-.entry.her[data-mood="grief"] p { color: var(--blood); border-left-color: color-mix(in srgb, var(--blood) 45%, transparent); }
+.entry.k-her[data-mood="grief"] p { color: var(--blood); border-left-color: color-mix(in srgb, var(--blood) 45%, transparent); }
 
-.entry.loss p, .entry.death p { color: var(--blood); }
-.entry.became p { color: var(--ink); }
-.entry.became p::before {
+.entry.k-loss p, .entry.k-death p { color: var(--blood); }
+.entry.k-became p { color: var(--ink); }
+.entry.k-became p::before {
   content: 'she is not who she was';
   display: block;
   font-family: var(--mono);
@@ -308,9 +308,9 @@ button { font: inherit; cursor: pointer; }
   color: var(--ink-low);
   margin-bottom: 0.2rem;
 }
-.entry.rumour p, .entry.witness p { color: var(--ink-mid); font-style: italic; }
-.entry.judgment p { color: var(--ink-mid); }
-.entry.hook p::before {
+.entry.k-rumour p, .entry.k-witness p { color: var(--ink-mid); font-style: italic; }
+.entry.k-judgment p { color: var(--ink-mid); }
+.entry.k-hook p::before {
   content: 'she has worked something out';
   display: block;
   font-family: var(--mono);
@@ -771,9 +771,9 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
 .quarry.dead b { color: var(--close); }
 
 /* the chronicle, when she hunts */
-.entry.hunt p { color: var(--ink); }
-.entry.bounty p { color: var(--ink-mid); }
-.entry.bless p { color: var(--close); }
+.entry.k-hunt p { color: var(--ink); }
+.entry.k-bounty p { color: var(--ink-mid); }
+.entry.k-bless p { color: var(--close); }
 
 /* A blessing sits in the same list as her scars — because that is what it is: a thing that
    happened to her, that she did not choose, that she cannot put down. The difference is

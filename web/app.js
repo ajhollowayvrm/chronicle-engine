@@ -270,7 +270,19 @@ function renderLog(s) {
   const host = $('log');
   host.replaceChildren();
   for (const l of s.log.slice(-160)) {
-    const row = el('div', `entry ${l.kind}`);
+    // NAMESPACED, AND IT HAS TO BE.
+    //
+    // This was `entry ${l.kind}`, and the sim's log kinds include `mark`, `kit`, `calling`,
+    // `hunt`, `bless` and `stat` — every one of which is ALSO the class name of a container
+    // in the panel. So a chronicle entry silently inherited the styling of an unrelated
+    // component, and `.mark` — the 1px absolutely-positioned tick on the dial slider — turned
+    // every mark in her chronicle into a one-pixel-wide absolutely-positioned column of text
+    // spilling across the whole log.
+    //
+    // Renaming the offender fixed it once and it came straight back the moment new log kinds
+    // were added, because the bug was never the name: it was that a log entry was reaching
+    // into the global class namespace at all. `k-` is the fence.
+    const row = el('div', `entry k-${l.kind}`);
     if (l.why) row.dataset.mood = l.why;
     row.append(el('span', 'd', String(l.day)));
     row.append(el('p', null, l.text));
