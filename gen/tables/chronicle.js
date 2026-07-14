@@ -13,10 +13,17 @@
 //
 //   {place}  where she is            {country}  who rules it (or nobody)
 //   {commodity} what it produces     {pays}     who the economy is paid for by
-//   {rich}   who holds the money     {power}    the divine figure who is watching
-//   {faction} a faction present      {figure}   another person here
-//   {coin}   a number                {cost}     what the magic here takes
-//   {quirk}  a fact about its machines
+//   {rich}   who holds the money     {currency} what they pay each other IN
+//   {house}  the faction that operates here, by name
+//   {power}  the god over this ground {working} the magic they use here, by name
+//   {cost}   what that working takes  {quirk}   a fact about its machines
+//   {coin}   a number
+//
+// {power}, {working} and {house} are chosen by HASHING THE PLACE NAME, never rolled. The
+// god over a country does not change between one sentence and the next — and it used to,
+// because vocab() called pick() on every render, which is exactly why the world felt
+// arbitrary. A detail that changes when nothing has happened is not a fact, it is noise
+// wearing a fact's clothes.
 //
 // THE VOICE: lowercase. terse. the interior revealed obliquely and usually
 // self-deceiving. never sentimental. And every line must carry a FACT — a cost, a
@@ -25,23 +32,26 @@
 
 export const CHRONICLE = {
   // ------------------------------------------------------------------ the road
+  // EVERY LINE CARRIES A FACT. The first version of this pool broke its own rule harder
+  // than any other: sixteen lines of weather and mood, in which nothing was priced, nobody
+  // was named, and nothing was true of THIS country that was not true of every other. It is
+  // the pool that fires most often, so it was most of what the player ever read — which is
+  // why the whole chronicle felt like it was about nowhere.
   road: [
-    'a long day at {place} and nothing in it but the walking. she has had worse days, and fewer of them lately.',
-    '{place}. she sat in the shade of a wall for an hour and watched people come and go and did not speak to any of them.',
-    'nothing happened at {place} today. she has begun to notice the days when nothing happens, and to count them.',
-    'she walked {place} end to end with a stone in her boot she had been ignoring for two days. she took it out. it was nothing at all.',
-    'a slow day in {place}. she has begun talking to herself out loud, and has decided to call it efficiency.',
-    'she had nothing to do in {place} and did it badly, for a whole day.',
-    'she followed a cart of {commodity} across {place} and could not get past it for six miles, and stopped minding around the third.',
-    '{place}, and a hard wind all day, and grit in everything she owns.',
-    'she spoke to nobody in {place} for four days. she noticed on the fourth. that is longer than it used to take.',
-    'good road out of {place} and back. she made twenty miles and felt almost young, and paid for it in the morning.',
-    'she passed the bones of something big outside {place}, picked clean. she did not slow down.',
-    '{place}. a boy asked her where she was going and she told him the truth and he lost interest immediately, which was fair.',
-    'she mended her boots badly in {place} and walked on them and they held, and she is treating that as a verdict on something.',
-    'a day of waiting in {place}, and the waiting was harder than the walking.',
-    'she counted what she has left, in {place}. she counted it twice. the number did not improve.',
-    'nothing in {place} but people going somewhere else, and she stood in the road and let all of them past.',
+    'a long day out of {place}. she followed a cart of {commodity} for six miles and could not get past it, and stopped minding around the third.',
+    '{place}. she sat against a wall for an hour and watched {pays} go by, and counted them, and stopped counting.',
+    'a day on the road out of {place} and nothing in it but the walking. bread has gone up again. it is always {pays} who notice first.',
+    'she walked {place} end to end. every third door has {house}’s mark on it, and nobody she asked would say what the mark means.',
+    'she crossed {place} in a day. they price everything here in {currency}, and she has not worked out yet who decides what it is worth.',
+    'a slow day in {place}, where {quirk}. she has stopped finding that strange, and noticed that she has stopped.',
+    'she made twenty miles out of {place} and felt almost young, and paid for it in the morning, and has stopped pretending she does not.',
+    '{place}, and a hard wind all day, and grit in everything she owns, and {commodity} dust in the water.',
+    'she passed the bones of something big outside {place}, picked clean. nobody had taken the metal. that told her more than the bones did.',
+    'she spoke to nobody for four days out of {place}. she noticed on the fourth. that is longer than it used to take.',
+    'nothing in {place} but people going somewhere else. she stood in the road and let all of them past, and none of them were going the way she is.',
+    'she mended her boots badly in {place}. leather costs what a week costs here, and she is not spending a week on her feet.',
+    'a day of waiting in {place} for a road that {house} had closed, and would not say why, and opened again at dusk.',
+    'she counted what she has left, in {place}. she counted it twice. the number did not improve, and the price of everything here is set by {rich}.',
   ],
 
   // --------------------------------------------------------------------- work
@@ -55,6 +65,8 @@ export const CHRONICLE = {
     'she dug at {place} for {coin} coin, alongside {pays}, and they did not talk about who was getting the rest of it.',
     '{coin} coin at {place}. she worked beside {pays} all week and could not look at them by Friday.',
     'she guarded a store of {commodity} at {place} for {coin} coin. nobody came. she slept indoors and healed.',
+    '{coin} coin from {house} at {place}, for eight days of work they would not describe and she did not ask about.',
+    'she was paid {coin} coin at {place}, in {currency}, which is worth what {rich} says it is worth on the day they hand it to you.',
     'work at {place}, {coin} coin, and on the last night she packed early, because she could feel herself settling.',
     'she was paid {coin} coin at {place} and it was short, and she counted it in front of him, and he did not blink.',
     'a fortnight at {place}. {coin} coin. she is good at this and does not know what to do with that information.',
@@ -71,7 +83,9 @@ export const CHRONICLE = {
     '{coin} coin at {place}, for the privilege of walking on a road. she paid.',
     'she was fined {coin} coin at {place} for a thing she had already paid for. she paid the fine. she paid for the receipt.',
     'the law at {place} is a man with a spear, and it depends entirely on which man, and today it was that one.',
-    'they took {coin} coin at {place} and called it a levy. there is nobody to complain to. she checked.',
+    'they took {coin} coin at {place} and called it a levy. it goes to {house}. there is nobody to complain to. she checked.',
+    'she was made to convert what she had into {currency} at {place}, at a rate {rich} set this morning, and it will be a different rate tomorrow.',
+    'a clerk at {place} would not let her pass without a stamp from {house}, and {house} do not stamp anything on a {power}-day.',
     'at {place} a boy was taken up for carrying unmarked {commodity}. she watched, and did nothing, and has been arguing with herself since.',
     'she was told at {place} she could not stay four nights without a residency. she left on the third, out of spite.',
     'they hanged a man at {place} while she was buying bread. nobody stopped buying bread.',
@@ -104,6 +118,7 @@ export const CHRONICLE = {
     'she pulled something out of the ground at {place} that is the wrong weight for its size. she has not sold it. she has not shown it to anyone.',
     'a thing from under {place} that is warm when nothing else is. it is in her pack. she has decided nothing about it.',
     'she found something at {place} that the flies will not land on. {power} counts these things.',
+    'a {working} charm, in a wall at {place}. she knows what it costs — {cost} — and she has not put it down.',
     'she has a thing from {place} that she does not like to touch and will not put down.',
     'she took something from the works at {place} that has not stopped being heavy. she knows what that attracts. she kept it.',
   ],
@@ -127,6 +142,8 @@ export const CHRONICLE = {
     'the bread went up again at {place} and a woman put a window through, and everyone agreed she was right, and nobody helped her afterwards.',
     'there was a crowd at {place} and it had not decided yet what it was. she left before it did.',
     'they have started burning things at {place}. not buildings yet.',
+    'the {commodity} price broke at {place} and {rich} were out of the city by the afternoon, which is how everybody else found out.',
+    'they are striking against {house} at {place}. {house} have not answered, and the not-answering is the answer.',
     'a man at {place} said out loud what everyone here thinks, and he was taken up for it, and the taking-up was the loudest thing that has happened in years.',
     'the whole of {place} is waiting for something, and nobody will say what, and the waiting is doing the damage on its own.',
   ],
@@ -141,12 +158,13 @@ export const CHRONICLE = {
   ],
 
   rest: [
-    'she made camp early and let a wound have the air. it is closing. she checked it twice, which is once more than necessary.',
-    'she rested. it worked. she does not like how much she resents that.',
+    'she made camp early outside {place} and let a wound have the air. it is closing. she checked it twice, which is once more than necessary.',
+    'she took a room in {place}. it cost her a day’s work, in {currency}, and she slept as though she had been hit.',
     'she stopped early and could not settle. she walked the perimeter three times. there was no perimeter.',
-    'nothing hurts. she cleaned a knife that was already clean.',
-    'she is not wounded, not hungry, not hunted. she sat up until the fire went out, looking for the catch.',
-    'she slept nine hours and woke furious with herself, and better.',
+    'nothing hurts. she cleaned a knife that was already clean, and listened to {house} moving people through the yard all night.',
+    'she is not wounded, not hungry, not hunted. she sat up in {place} until the fire went out, looking for the catch.',
+    'she slept nine hours in {place} and woke furious with herself, and better.',
+    'a day off her feet at {place}. they are burning {commodity} in the square for {power} and it goes on until dawn, and she slept through it.',
   ],
 
   // NOTE: `figure_meet` and `figure_clash` used to live here. They are gone, and the

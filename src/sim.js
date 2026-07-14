@@ -451,21 +451,50 @@ export class Sim {
   // The same line re-colours itself as she walks, because these all resolve from
   // where she is standing. This is what buys one shared chronicle table instead of
   // 391 hand-written lines per world.
+  // A HASH, NOT A ROLL.
+  //
+  // `vocab` used `this.pick` for the god and for the price of magic — which meant it rolled
+  // the RNG on every line it rendered, and named A DIFFERENT GOD EVERY TIME. Monday the
+  // power watching Ambril was Orrun; Tuesday it was Ashra; nobody had done anything. That is
+  // not atmosphere, it is the world failing to hold still, and it is precisely why the
+  // chronicle read as arbitrary — the details were not FACTS about a place, they were noise
+  // dressed as facts.
+  //
+  // The god over a place does not change between one sentence and the next. Choose by the
+  // name of the ground she is standing on, and it is the same answer forever.
+  steady(list, key) {
+    if (!list?.length) return null;
+    const s = String(key);
+    let h = 2166136261;
+    for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+    return list[(h >>> 0) % list.length];
+  }
+
   vocab(extra = {}) {
     const econ = this.law('economy') ?? {};
     const country = this.country();
     const gods = this.world.children.filter((c) => c.kind === 'figure' && c.divine);
     const magic = this.law('magic') ?? {};
+    const tech = this.law('technology') ?? {};
+    const here = this.here().name;
+    const factions = this.factionsHere();
 
     return {
-      place: this.here().name,
+      place: here,
       country: country?.name ?? 'nobody',
       commodity: econ.resources ?? 'whatever there is',
       pays: econ.who_pays_for_it ?? 'somebody',
       rich: econ.who_is_rich ?? 'whoever holds the paper',
-      power: gods.length ? this.pick(gods).name : 'nothing anyone can name',
-      cost: magic.types?.length ? this.pick(magic.types).cost : 'more than it says',
-      quirk: this.law('technology')?.quirks?.[0] ?? 'nothing anyone will explain',
+      // NAME THE MONEY. She is paid in it, taxed in it and cheated in it every day of her
+      // life, and the chronicle has never once said what it was.
+      currency: econ.currency ?? 'coin',
+      // Who actually operates here. Placement IS scope, so this is not a lookup — it is the
+      // children of the node she is standing in.
+      house: this.steady(factions, here)?.name ?? (econ.who_is_rich ?? 'the men who collect here'),
+      power: this.steady(gods, here)?.name ?? 'nothing anyone can name',
+      cost: this.steady(magic.types, here)?.cost ?? 'more than it says',
+      working: this.steady(magic.types, here)?.name ?? 'whatever they call it here',
+      quirk: tech.quirks?.[0] ?? 'nothing anyone will explain',
       name: this.state.name,
       day: this.state.day,
       ...extra,
@@ -2042,10 +2071,12 @@ export class Sim {
         dueOn: s.day + 6,
         at: site.node.name,
       });
-      this.say(
-        `she put two things together at ${site.node.name}. ${h.facts[0]}. and: ${h.facts[1]}.`,
-        'hook'
-      );
+      // SHOW THE READING, NOT THE TWO HALVES OF IT. This printed the raw facts side by side
+      // — "a chapter of The Long Company does not know it has a head. and: the money sits
+      // with whoever wrote the roll." — which is the working, not the conclusion. The
+      // collision now names every party in both facts, so it cites them BY SAYING THEM, and
+      // it is the sentence a person would actually say when the penny dropped.
+      this.say(`she put two things together at ${site.node.name}. ${h.collision}`, 'hook');
       return;
     }
   }

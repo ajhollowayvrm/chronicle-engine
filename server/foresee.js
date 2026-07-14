@@ -77,10 +77,12 @@ function words(eng, j) {
   if (j.kind === 'romance' || j.kind === 'counsel' || j.kind === 'join') {
     return { title: `${her} is asking you`, body: j.prompt };
   }
-  // a hook: two facts she already knew, put next to each other
+  // A hook: two facts she already knew, put next to each other. The collision now names
+  // every party in both of them, so it IS the message — bolting "and she does not know what
+  // to do about it" onto the end of a finished paragraph just made it a longer paragraph.
   return {
     title: `${her} has worked something out`,
-    body: j.collision ? `${j.collision} — and she does not know what to do about it.` : 'She has put two things together, and she is waiting on you.',
+    body: j.collision || 'She has put two things together, and she is waiting on you.',
   };
 }
 
