@@ -394,7 +394,13 @@ export class Sim {
     if (!MARKS[key] || s.marks.some((m) => m.key === key)) return;
     s.marks.push({ key, since: s.day, why: why ?? null });
     this.say(MARKS[key].line, 'mark', { mark: key });
-    this.speak(MARKS[key].she, 'became');
+    // a mark's voice may be one line or a small pool — she does not always say the same
+    // thing about the same scar. Choose from the pool WITHOUT touching this.rng (a hash of
+    // the mark and the day, exactly like vocab's `steady`), so that adding voice variety to a
+    // scar never perturbs the world's dice — a prose change must not rewrite anyone's life.
+    const voice = MARKS[key].she;
+    const pool = Array.isArray(voice) ? voice : [voice];
+    this.speak(this.steady(pool, `${key}:${s.day}`), 'became');
   }
 
   // Some of it mends. Not all of it, and she cannot tell which is which at the time.

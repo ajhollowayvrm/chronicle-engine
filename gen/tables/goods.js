@@ -207,28 +207,51 @@ export const OF_KIT = {
     'It is faster than I am. I know that. I am carrying it anyway and I would like that noted.',
     'This thing was made for a better hand than mine. I have started to resent it.',
     'I am not big enough for it. I have been telling myself I will grow into it, which is a thing children say.',
+    'It uses me. That is the honest way round of it. I do not use it, it uses me, and it gets me hurt in the using, and I keep it, because a thing that is too good for you is still better than a thing that is not good enough.',
+    'Every time I reach for it there is a half-beat where it is quicker than my hand and the half-beat is where a woman my age gets killed, and I know that, and I have not put it down.',
+    'It is heavier than I have the back for, and I feel the weight of it in my shoulders at the end of a day, and in my sleep, and I am carrying more than I can carry and calling it being well-equipped.',
+    'I am overmatched by my own kit and there is a grim joke in that somewhere. The thing that is supposed to save me is a little beyond me, so it is one more thing I am managing, one more thing that could turn on me, and I chose it, so I cannot even be angry.',
   ],
   // she has finally caught up to a thing she was carrying badly
   caught_up: [
     'It stopped fighting me. I noticed the day it stopped and I have not told anyone.',
     'I can use it now. It took a year and I would rather not talk about the year.',
+    'We have come to an understanding, the thing and I. It took long enough, and cost enough, and now it does what I ask, and I did not so much master it as outlast its resistance.',
+    'It fits my hand at last. Not because it changed — because I did, slowly, without noticing, until one day the thing that was too much for me simply was not, and I have grown into it the way children swear they will and mostly do not.',
+    'I stopped being afraid of it. That is what caught up, really. Not skill — nerve. I trust my hand with it now, and the trust was the last piece, and it was the piece that took the longest.',
   ],
   bought: [
     'I bought it. I have not spent money on myself in a long time and I am being strange about it.',
     'It cost more than I have ever spent on anything and I have not stopped checking it is still there.',
+    'I paid full price and did not haggle, which is not like me, and I think I did not haggle because I wanted, for once, to simply deserve a good thing without also winning the argument about it.',
+    'I have wanted one this good for years and always talked myself out of it, and today I did not, and I keep waiting to feel foolish about the money and instead I feel like a person who is allowed things.',
+    'It is the first thing I have owned that nobody died for and nobody gave me and I did not pry out of the ground. I just — bought it. Like an ordinary person. I am absurdly proud of how ordinary it is.',
   ],
   given: [
     'They gave it to me. I have not worked out what I owe for that and I know they would say nothing.',
+    'It was a gift. I do not do well with gifts. I keep turning it over looking for the hook and there is no hook and the no-hook is the thing I cannot get comfortable with.',
+    'They put it in my hands and closed my fingers over it and would not take it back, and I have carried gifts lighter than the weight of being given something freely.',
+    'Someone thought of me when they were not obliged to, and this is the proof of it, and I look at it more than it warrants, because proof that someone thought of me is rarer in my life than the thing itself.',
+    'I did not earn it and they gave it anyway and I have decided to let that be all right, which is harder than it sounds for a woman who has paid for everything she owns twice over.',
   ],
   sold: [
     'I sold it. I needed to eat. I am aware of how that sentence sounds and it is still the sentence.',
     'It is gone. It was only a thing. I have been saying that all week.',
+    'I took what they offered, which was half what it was worth, because a starving woman is not in a negotiating position and the buyer knew it and I knew he knew it.',
+    'I sold it to a man who did not know what he had and I did not tell him, and that is the closest thing to satisfaction I got out of losing it, and it is a thin satisfaction.',
+    'I let it go. I have let a lot go. There is a version of my life laid out in the shops of six countries, one good thing at a time, sold in one bad month after another, and I could nearly walk it backward by the trail.',
   ],
   lost: [
     'They took it. Of everything they could have taken.',
+    'It is gone, taken off me, and it is not the worth of it I keep circling, it is that it was mine, and now it is being carried by someone who did nothing to earn it but be stronger than me that day.',
+    'They took the good one. They always know the good one. I do not know how they always know the good one, but they took it, and left me the rest, which is its own kind of insult.',
+    'Somebody is walking around out there with my thing, and every so often I picture it, and I have to make myself stop, because that picture is a road that only ends one way and I have promised myself I am done walking that particular road.',
   ],
   // she is carrying something she has no right to carry
   unsworn: [
     'I have no right to this and everyone who looks at it knows. I have not put it down.',
+    'It is dead in my hands. A thing like this answers to a name I never took, and it can tell I never took it, and it gives me nothing but the looks of everyone who understands what it means that I am holding it.',
+    'I carry it anyway. I know I should sell it. It is loud and useless and a kind of lie, a claim I have no right to make — and I have made a life of claims I had no right to, so it feels, if I am honest, a little like home.',
+    'Every room reads it the moment I walk in: a thing only a sworn one may carry, carried by a woman who swore nothing. I have stopped explaining. There is no explaining it. There is only carrying it, and being looked at, and carrying it.',
   ],
 };

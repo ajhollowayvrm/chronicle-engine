@@ -172,30 +172,46 @@ export const SHE_NOTICED = {
   body: [
     'I do not get ill any more. I noticed that, and then I noticed I had not noticed for a year.',
     'It closed in four days. It would have taken two weeks once.',
+    'I carried a full pack up the pass and had breath left at the top to be surprised about it.',
+    'The cold does not get into me the way it did. I used to feel every winter in my bones by the second week. This one I have barely felt at all.',
+    'I ate something that would have laid me out a few years ago and it did nothing. Whatever the road has been building in me, it has built something that keeps.',
   ],
   hand: [
     'It was over before I decided to do it. That is new and I do not entirely like it.',
     'I am quicker than I was. I would rather have had the years.',
+    'My hands do the difficult thing now without being asked twice. I set them a task and look away and it is done.',
+    'I disarmed him without meaning to — the hand just took the blade, the way it takes a cup off a table — and he looked more frightened of the ease of it than of me.',
+    'There is a thing I could not do at twenty that I can do now at whatever I am, and it is the one gift the years have handed back for everything they took.',
   ],
   foot: [
     'I knew what the country was going to do before it did it. I have no idea when that started.',
     'I have stopped being tired. That cannot be right, and it is.',
+    'The distances have got smaller. Not the roads — me. A day\'s walk is a morning now, and I get where I am going with the afternoon still in my hands.',
+    'My feet read the ground through my boots — loose stone, black ice, the soft edge of a path — and correct before I know there was anything to correct.',
   ],
   eye: [
     'I saw him before he moved. I want to be clear that I did not think about it.',
     'I find things now. Other people have walked over the same ground and found nothing.',
+    'I read a room the moment I enter it — who is armed, who is afraid, who has already decided about me — and it is all there in a glance now, laid out, plain.',
+    'I caught the tell. The little thing a man does with his weight before he commits to it. I caught it and I was already moving and he never understood how.',
   ],
   tongue: [
     'I talked my way out of it. I have started to enjoy that, and I am watching myself about it.',
     'They believed me. They should not have. I am getting good at the wrong thing.',
+    'I got the price down to half with three sentences and a silence, and the silence did most of it, and I have learned to trust the silence.',
+    'I said the thing that turned the room, felt it turn, felt the whole mood of a dozen strangers tip the way I wanted — and that is a power, and powers frighten me, and I used it anyway.',
   ],
   name: [
     'A man in a town I have never been to knew what I was. I did not like it. I did not hate it either.',
     'They have started stepping aside. I did not ask for that and I am not giving it back.',
+    'My name arrived somewhere before I did and had already done half my arguing for me, and I am not sure the woman the name describes is still entirely me.',
+    'A child was warned about me today, quietly, by its mother, with a glance in my direction. I have become a thing mothers warn children about. I sat with that for a while.',
   ],
   nerve: [
     'I did not shake afterwards. I stood there and waited to shake and it did not come.',
     'I looked at it. Whatever it is that is counting — I looked straight at it and it was fine.',
+    'The fear comes and I use it now instead of being used by it — it sharpens the edges of things and then it stands aside and lets me work, where once it just froze me.',
+    'I slept the night before a thing that should have kept me up until dawn. I have made some kind of peace the younger me would have called madness, and it may be, and I sleep.',
   ],
 };
 
