@@ -8,7 +8,7 @@
 // her hand. That is the central claim, and a "+2 Hand" button would delete it in an
 // afternoon.
 //
-// So a blessing is bound by three things, and none of them are negotiable:
+// So a blessing is bound by two things, and neither of them is negotiable:
 //
 // 1. SHE HAS TO BELIEVE YOU ARE THERE. A blessing lands on Faith. A woman who has stopped
 //    believing anything is listening CANNOT be blessed — not "it is less effective": it does
@@ -16,14 +16,16 @@
 //    you left it too long. Neglect does not merely cost you a judgment any more. It closes
 //    off your hands.
 //
-// 2. IT MAKES HER LOUD. `attention` is the thing that is counting, it has been in this engine
-//    since the beginning, and it is what eventually sends men to the inn she is sleeping in.
-//    A blessed woman glows. Every gift you give her is a light you switch on over her head in
-//    a country where something is looking for exactly that.
+// 2. YOU CANNOT BE A CONSTANT MIRACLE. There is a long silence between blessings (canBless's
+//    cooldown, BLESS_GAP). If you could bless her every day she would stop being a woman
+//    walking a hard country and start being a character you are buffing, and the game would
+//    be over without anybody noticing.
 //
-// 3. YOU CANNOT BE A CONSTANT MIRACLE. There is a long silence between blessings. If you
-//    could bless her every day she would stop being a woman walking a hard country and start
-//    being a character you are buffing, and the game would be over without anybody noticing.
+// A GIFT IS FREE, OTHERWISE. It once had a third binding — it made her LOUD, added to the
+// `attention` the counting thing reads, so every gift was a light switched on over her head.
+// That binding has been deliberately cut. A blessing no longer costs her anything: it is a
+// pure gift, held back only by belief and by the silence between miracles. (The fields below
+// no longer carry an `attention` cost; the sim does not read one.)
 //
 // AND SHE FINDS OUT SOMETHING SHE DID NOT KNOW.
 //
@@ -38,7 +40,6 @@ export const BLESSINGS = {
   mend: {
     name: 'Mend her',
     blurb: 'Close what is open. She will heal in a night, and wake not knowing why.',
-    attention: 3,
     needs: 4,               // the Faith she must have for it to land at all
     wounds: -3,
     heart: +1,
@@ -52,7 +53,6 @@ export const BLESSINGS = {
   warmth: {
     name: 'Warm her',
     blurb: 'Give her back some of what she has spent. Heart does not refill on its own.',
-    attention: 4,
     needs: 6,
     heart: +4,
     she: [
@@ -67,28 +67,24 @@ export const BLESSINGS = {
   quick: {
     name: 'Quicken her hand',
     blurb: 'She will be faster than she has any right to be, and she will notice.',
-    attention: 7,
     needs: 9,
     mark: 'blessed_hand',
   },
   sure: {
     name: 'Steady her foot',
     blurb: 'The road stops costing her what it costs everybody else.',
-    attention: 4,
     needs: 7,
     mark: 'blessed_foot',
   },
   clear: {
     name: 'Clear her eye',
     blurb: 'She will see it coming. It is the stat that keeps her alive.',
-    attention: 5,
     needs: 8,
     mark: 'blessed_eye',
   },
   hold: {
     name: 'Hold her nerve',
     blurb: 'She will not break. She may come to wish she could.',
-    attention: 6,
     needs: 8,
     mark: 'blessed_nerve',
   },
@@ -97,7 +93,6 @@ export const BLESSINGS = {
   item: {
     name: 'Bless what she carries',
     blurb: 'The thing in her hand stops being an ordinary thing. Everyone who sees it will know.',
-    attention: 8,
     needs: 10,
     onItem: true,
     she: [

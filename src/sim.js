@@ -791,8 +791,11 @@ export class Sim {
     s.lastBlessed = s.day;
     s.blessings = (s.blessings ?? 0) + 1;
 
-    // IT MAKES HER LOUD.
-    s.attention += B.attention;
+    // A GIFT COSTS HER NOTHING NOW. It once made her loud — attention, the thing that is
+    // counting — and that binding has been deliberately cut: a blessing is a pure gift,
+    // gated only by whether she still believes you are there (the Faith check above) and by
+    // the long silence between gifts (canBless's cooldown). She still finds out you are real,
+    // and that still frightens her — but the fright is her humanity, not a tax you levy.
 
     if (B.wounds) s.wounds = Math.max(0, s.wounds + B.wounds);
     if (B.heart) this.condition('heart', B.heart, 'blessed');
@@ -803,9 +806,9 @@ export class Sim {
       if (it && !it.blessed) {
         it.blessed = true;
         it.name = `${it.name}, and it is not what it was`;
-        // it gives more, and it is seen to give more, which is the cost
+        // it gives more, full stop. it no longer also makes her louder — a blessed thing is
+        // a pure gift now, like every other blessing.
         for (const k of Object.keys(it.gives)) it.gives[k] *= 1.8;
-        it.gives.attention_rate = (it.gives.attention_rate ?? 0) + 0.5;
         it.worth = Math.round(it.worth * 2.5);
         this.say(BLESSINGS.item.line, 'bless');
         this.speak(this.fresh(BLESSINGS.item.she), 'close');

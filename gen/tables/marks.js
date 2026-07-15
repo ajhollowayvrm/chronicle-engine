@@ -153,7 +153,7 @@ export const MARKS = {
   blessed_nerve: {
     name: 'She does not break',
     blessing: true,
-    mods: { nerve: +3, heart: -1 },
+    mods: { nerve: +3 },
     line: 'she has stopped being frightened of things that should frighten her, and the people around her have noticed before she has.',
     she: 'I am not afraid. Of anything. I have tested it and I could not find the bottom of it and I am telling you because I think you should know what you have done.',
   },

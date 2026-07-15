@@ -571,9 +571,10 @@ function renderBless(s) {
     row.append(b);
     row.append(el('span', 'gift-what', B.blurb));
 
-    // what it costs, always shown, never buried
+    // what it asks, always shown, never buried. a gift costs her nothing now — it is held
+    // back only by whether she still believes in you, and by the long silence between gifts.
     row.append(el('span', 'gift-cost',
-      `it makes her louder to the thing that is counting — attention up. she must believe in you at ${B.needs} or more.`));
+      `a pure gift — it costs her nothing. she must believe in you at ${B.needs} or more for it to land, and you cannot bless again for a while.`));
 
     if (!can.ok) row.append(el('span', 'gift-shut', can.why));
     host.append(row);

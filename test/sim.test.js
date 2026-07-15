@@ -309,24 +309,25 @@ test('a life with a name, a kit and a scar replays from the journal exactly', ()
 });
 
 // ------------------------------------------------- what you can do, and what it costs
-test('a blessing is not a free stat button', () => {
-  // The first direct power the player has ever had, and it is bound by three things. If any
-  // of them ever comes loose, the game's central claim — that you cannot simply MAKE her
-  // better — is gone, and nobody will notice until it is far too late to take back.
+test('a blessing is a pure gift, but not a free stat button', () => {
+  // The first direct power the player has ever had. Its attention cost was deliberately cut —
+  // a gift now costs her NOTHING. But it is still not a button you can lean on: two bindings
+  // remain, and if either ever comes loose, the game's central claim — that you cannot simply
+  // MAKE her better on demand — is gone, and nobody will notice until it is too late to undo.
   const s = new Sim({ seed: 3 });
   s.run(30);
 
-  // 1. IT MAKES HER LOUD. attention is what eventually sends men to the inn she sleeps in.
+  // 0. A GIFT COSTS HER NOTHING. It no longer makes her loud to the thing that is counting.
   s.state.stat.faith = 20;
   const loudBefore = s.state.attention;
   assert.ok(s.canBless('mend').ok);
   s.bless('mend');
-  assert.ok(s.state.attention > loudBefore, 'a blessing must cost her attention. it did not.');
+  assert.strictEqual(s.state.attention, loudBefore, 'a blessing must not cost her attention any more; it is a pure gift.');
 
-  // 2. YOU CANNOT BE A CONSTANT MIRACLE.
-  assert.strictEqual(s.canBless('warmth').ok, false, 'she was blessed twice in a day');
+  // 1. YOU CANNOT BE A CONSTANT MIRACLE — the silence between gifts is a real gate.
+  assert.strictEqual(s.canBless('warmth').ok, false, 'she was blessed twice inside the cooldown');
 
-  // 3. SHE HAS TO BELIEVE YOU ARE THERE — and this is the one that matters, because it is
+  // 2. SHE HAS TO BELIEVE YOU ARE THERE — and this is the one that matters, because it is
   //    the bill for months of not turning up. A woman who has stopped believing has no
   //    surface for it to land on. Not "reduced": nothing.
   s.state.lastBlessed = -999;

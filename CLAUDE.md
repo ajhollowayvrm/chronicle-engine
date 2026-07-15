@@ -42,7 +42,7 @@ gen/tables/callings.js what they call her. the class system, and she is not show
 src/kit.js             minting, and the arithmetic of raw vs bare vs effective.
 
 gen/tables/beasts.js   what she fights. there are no dragons in it, and that is the point.
-gen/tables/blessings.js what YOU can do to her, and the three things that bind it.
+gen/tables/blessings.js what YOU can do to her, now a free gift bound only by belief + cooldown.
 src/beasts.js          the bestiary, derived from the tree. never touches sim.rng.
 sw.js                  offline, and the only route she has to your lock screen.
 web/reach.js           asking your phone whether she may wake it.
@@ -67,23 +67,40 @@ scale to her and it does not wait. She finds out about it the way anybody finds 
 anything — a posting, a raised price, the names of the four before her — and then she stands
 outside it and asks you whether to go in. About **9% of lives kill it**.
 
-**A blessing is the only thing you do TO her rather than ask OF her**, and it is bound by
-three things that must never come loose:
+**A blessing is the only thing you do TO her rather than ask OF her**, and it is now bound by
+two things that must never come loose:
 
 - **She has to believe you are there.** It lands on Faith. A woman who has stopped believing
   anything is listening has no surface for it to land on — not "reduced", *nothing*. Neglect
   no longer merely costs you a judgment. It takes your hands away.
-- **It makes her loud.** `attention` is what eventually sends men to the inn she is sleeping
-  in. Every gift is a light switched on over her head in a country where something is looking
-  for exactly that.
-- **You cannot be a constant miracle.** 25 days between blessings, or she stops being a woman
-  walking a hard country and becomes a character you are buffing.
+- **You cannot be a constant miracle.** 25 days between blessings (`BLESS_GAP`), or she stops
+  being a woman walking a hard country and becomes a character you are buffing.
 
-And the first one is PROOF. Until then she believed in you the way people believe in things:
-on nothing, out of need, with a great deal of doubt. Her Faith goes up because you were real,
-and she is frightened, because you were real.
+**A gift is otherwise free.** There was once a third binding — *it made her loud*: every
+blessing added to `attention`, the thing that is counting, a light switched on over her head.
+That binding was **deliberately cut** (the owner's call, made knowing it reversed this
+invariant): a blessing costs her nothing now. The gate is belief, and the silence between
+gifts, and nothing else. `bless()` no longer touches `attention`; the blessed item no longer
+gains an `attention_rate`; the `blessed_nerve` mark is pure gain. If you find yourself
+re-adding a stat cost to a blessing "to keep it honest," check with the owner first — the
+honesty now lives entirely in the Faith gate and the cooldown.
+
+And the belief-gate is PROOF. Until the first gift she believed in you the way people believe
+in things: on nothing, out of need, with a great deal of doubt. Her Faith goes up because you
+were real, and she is frightened, because you were real — and *that* fright is her humanity,
+not a cost you levy.
 
 Her blessings live in the same list as her scars, because that is what they are.
+
+**And you can make her a thing (`canGift` → `gift`).** The rarest gift: the Angel reaches into
+the world and puts an object in her hand that was not there yesterday. It is gated exactly like
+the visit — high Faith, a prior blessing, `answered` ≥ 3, a long cooldown (`GIFT_GAP`) — because
+a blessing proves you are REAL, a visit proves you are HERE, and this proves you can *reach in*.
+The item is one of THIS world's shapes at its best, named from the world's own registry (no
+free text, so the seed still reproduces), blessed from the first moment, and hers to keep — she
+will never sell it, though it can still be taken by force, because a thing that cannot be lost is
+not a possession. Journalled as `{type:'gift', shape}` and replayed deterministically: the shape
+is data and the stats fall out of it, so there is no "+2 Hand" dial anywhere in it.
 
 ## The channel that goes both ways, and the visit
 
