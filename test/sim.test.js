@@ -9,6 +9,7 @@ import { SKILLS } from '../gen/tables/stats.js';
 import { CALLINGS } from '../gen/tables/callings.js';
 import { usable, straining } from '../src/kit.js';
 import { newJournal, replay } from '../src/game.js';
+import { QUESTION_KEYS, COMMUNE_FAITH } from '../gen/tables/communion.js';
 
 const run = (seed, days = 200, dials = {}) => {
   const s = new Sim({ seed, dials });
@@ -247,23 +248,32 @@ test('she is never called a name her life does not support', () => {
   // things she is not. And the requirement reads the WOMAN, not her kit.
   for (let seed = 1; seed <= 50; seed++) {
     const s = new Sim({ seed, dials: { reckless: 75, sociable: 75 } });
+
+    // CHECK AT THE MOMENT OF OFFERING, not at the end. `qualifies` reads BARE (the woman:
+    // raw plus her marks), and bare moves both ways — a scar can lower a needed stat long
+    // after the name was earned. So a post-hoc check false-fails on a legitimate offer. The
+    // only honest place to test the gate is the instant it opens.
+    const offer = s.offerCalling.bind(s);
+    s.offerCalling = () => {
+      const before = new Set(s.state.pending.map((p) => p.id));
+      offer();
+      for (const p of s.state.pending) {
+        if (p.kind !== 'calling' || before.has(p.id)) continue;
+        const C = CALLINGS[p.key];
+        for (const [k, v] of Object.entries(C.needs ?? {})) {
+          assert.ok(s.bare(k) >= v,
+            `seed ${seed}: she was offered ${C.name} with a bare ${k} of ${s.bare(k)}, and it needs ${v}`);
+        }
+        for (const [k, v] of Object.entries(C.lived ?? {})) {
+          assert.ok((s.state.lived[k] ?? 0) >= v,
+            `seed ${seed}: she was offered ${C.name} with ${k}=${s.state.lived[k] ?? 0}, and it needs ${v}`);
+        }
+      }
+    };
+
     for (let i = 0; i < 400 && s.state.alive; i++) {
       s.tick();
       for (const j of [...s.state.pending]) s.answer(j.id, Object.keys(j.options ?? { act: 1 })[0]);
-    }
-    for (const c of s.state.called) {
-      const C = CALLINGS[c.key];
-      // the ledger only ever grows, so a requirement true on the day it was offered is
-      // still true now
-      for (const [k, v] of Object.entries(C.lived ?? {})) {
-        assert.ok((s.state.lived[k] ?? 0) >= v,
-          `seed ${seed}: she was offered ${C.name} with ${k}=${s.state.lived[k] ?? 0}, and it needs ${v}`);
-      }
-      // raw skill only ever grows, and `qualifies` reads raw+marks — so raw must clear it
-      for (const [k, v] of Object.entries(C.needs ?? {})) {
-        assert.ok(s.state.stat[k] >= v,
-          `seed ${seed}: she was offered ${C.name} with a raw ${k} of ${s.state.stat[k]}, and it needs ${v}`);
-      }
     }
     // and the ladder holds: a second name is a promotion from the first, or the Counted
     const took = s.state.called.filter((c) => c.took);
@@ -327,6 +337,244 @@ test('a blessing is not a free stat button', () => {
   const r = s.bless('quick');
   assert.strictEqual(r.landed, false, 'the blessing landed on a woman with no faith');
   assert.strictEqual(s.eff('hand'), hand, 'it changed her anyway');
+});
+
+// ───────────────────────────────────────────────────── the channel that goes both ways
+test('when you ask her something, she answers — in a day or two, and only if she believes', () => {
+  // The communion channel. She is walking a country, not sitting by a phone, so the answer
+  // is not instant — but it comes, in her own voice, as long as she still believes there is
+  // anybody on the other end of the question.
+  const s = new Sim({ seed: 7 });
+  s.run(40);
+  s.state.stat.faith = 12;
+  const before = s.state.log.filter((l) => l.kind === 'her').length;
+
+  s.askHer('ok');
+  assert.ok(s.state.youAsked, 'the question was not registered');
+  let answered = false;
+  for (let i = 0; i < 4 && !answered; i++) {
+    s.tick();
+    if (!s.state.youAsked) answered = true;
+  }
+  assert.ok(answered, 'she never answered a question you put to her');
+  assert.ok(s.state.log.filter((l) => l.kind === 'her').length > before, 'answering produced no line in her voice');
+
+  // and a woman who has stopped believing does not answer at all — the silence is the answer.
+  // Spy on the answer generator itself, so the check can't collide with unrelated prose she
+  // happens to say (the great beast, an absent line) in the same window.
+  const q = new Sim({ seed: 7 });
+  q.run(40);
+  q.state.stat.faith = COMMUNE_FAITH - 2;
+  let answeredWhileDeaf = false;
+  const realCommune = q.commune.bind(q);
+  q.commune = (t) => { answeredWhileDeaf = true; return realCommune(t); };
+  q.askHer('where');
+  for (let i = 0; i < 10; i++) q.tick();
+  assert.ok(!q.state.youAsked, 'an unheard question should eventually be let go');
+  assert.ok(!answeredWhileDeaf, 'she answered a question she could no longer hear');
+});
+
+test('every question has a reply she can actually give, whatever state she is in', () => {
+  // The dead-pool bug, communion edition: a bucket the code selects but the table never
+  // wrote. Drive a spread of lives and assert every topic she is asked returns real words.
+  for (const reckless of [20, 60, 95]) {
+    for (let seed = 1; seed <= 8; seed++) {
+      const s = new Sim({ seed, dials: { reckless, sociable: 70, generous: 60 } });
+      for (let i = 0; i < 220 && s.state.alive; i++) {
+        s.tick();
+        for (const j of [...s.state.pending]) s.answer(j.id, Object.keys(j.options ?? { act: 1 })[0]);
+        if (s.eff('faith') >= COMMUNE_FAITH) {
+          const r = s.commune(QUESTION_KEYS[i % QUESTION_KEYS.length]);
+          assert.ok(r && r.text && !/\{\w+\}/.test(r.text) && !/undefined|null/.test(r.text),
+            `seed ${seed}: a question came back empty or with a hole -> ${JSON.stringify(r)}`);
+        }
+      }
+    }
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────── the visit
+test('the visit is the most-gated thing in the game, and it leaves a mark that never fades', () => {
+  // a careful woman, so she is alive to be visited
+  const s = new Sim({ seed: 3, dials: { reckless: 15 } });
+  s.run(40);
+  assert.ok(s.state.alive, 'the setup needs a living woman to visit');
+
+  // it asks for all three: belief, proof, and that you turned up again and again
+  s.state.stat.faith = 20;
+  s.state.blessings = 0;
+  s.state.answered = 0;
+  assert.strictEqual(s.canVisit().ok, false, 'she let you visit having never felt you were real');
+
+  s.state.blessings = 1;
+  assert.strictEqual(s.canVisit().ok, false, 'she let you visit without your ever turning up');
+  s.state.answered = 3;
+
+  s.state.stat.faith = COMMUNE_FAITH;   // believes a little, not completely
+  assert.strictEqual(s.canVisit().ok, false, 'she let you stand in front of her on thin faith');
+  s.state.stat.faith = 20;
+
+  assert.ok(s.canVisit().ok, 'a devoted relationship could not earn a visit');
+  const loud = s.state.attention;
+  const r = s.visit();
+  assert.ok(r.visited, 'the visit did not happen');
+  assert.ok(s.state.marks.some((m) => m.key === 'seen_you'), 'the visit left no mark');
+  assert.ok(s.state.attention > loud, 'a visit must make her burn to the thing that is counting');
+  assert.ok(s.state.pending.some((p) => p.kind === 'visit'), 'she did not get to ask you her one thing');
+
+  // and it does not come round again the next day — a face in the room every day is a
+  // housemate, not a visitation
+  assert.strictEqual(s.canVisit().ok, false, 'she was visited twice in a day');
+
+  // the mark is permanent: it never mends
+  s.run(300);
+  assert.ok(s.state.marks.some((m) => m.key === 'seen_you'), 'being seen wore off, and it must not');
+});
+
+test('a life with communion and a visit replays from the journal exactly', () => {
+  // Asking her things and going to her are INPUTS. If either fails to replay, the save
+  // silently stops reproducing her — the one thing it exists to do.
+  const journal = newJournal({ seed: 15, dials: { reckless: 60, sociable: 75, generous: 65 }, now: 0, headstartDays: 0 });
+  const live = new Sim({ seed: 15, dials: { reckless: 60, sociable: 75, generous: 65 } });
+  const topics = QUESTION_KEYS;
+
+  for (let day = 1; day < 320; day++) {
+    live.tick();
+    for (const j of [...live.state.pending]) {
+      const key = Object.keys(j.options ?? { act: 1 })[0];
+      live.answer(j.id, key);
+      journal.entries.push({ elapsed: live.state.day, type: 'answer', id: j.id, key });
+    }
+    // ask her something every couple of weeks
+    if (day % 15 === 0 && live.eff('faith') >= COMMUNE_FAITH) {
+      const topic = topics[(day / 15) % topics.length];
+      live.askHer(topic);
+      journal.entries.push({ elapsed: live.state.day, type: 'ask', topic });
+    }
+    // and go to her the moment she will bear it
+    if (live.canVisit().ok) {
+      live.visit();
+      journal.entries.push({ elapsed: live.state.day, type: 'visit' });
+    }
+  }
+
+  const { state } = replay(journal, live.state.day);
+  assert.deepStrictEqual(state.log.map((l) => l.text), live.state.log.map((l) => l.text), 'the replay diverged');
+  assert.strictEqual(state.visits, live.state.visits, 'the visits did not survive the replay');
+  assert.deepStrictEqual(state.marks.map((m) => m.key), live.state.marks.map((m) => m.key), 'the marks did not survive the replay');
+});
+
+test('she confides how she feels about the people in her life, and only feelings she has', () => {
+  // The point of the whole voice channel: she tells you she is in love, or that she wants
+  // somebody dead, drawn off the real state of a real bond. Over sociable lives she should do
+  // it often, in a spread of registers, and never leak an unfilled name.
+  const registers = new Set();
+  let confessions = 0;
+  // careful enough to survive and form relationships — the test is about the range of what she
+  // confides, and a woman who dies on day 40 has not met anyone to have feelings about yet.
+  for (let seed = 1; seed <= 30; seed++) {
+    const s = new Sim({ seed, dials: { reckless: 40, sociable: 92, generous: 60 } });
+    for (let i = 0; i < 400 && s.state.alive; i++) {
+      s.tick();
+      for (const j of [...s.state.pending]) s.answer(j.id, Object.keys(j.options ?? { act: 1 })[0]);
+    }
+    for (const l of s.state.log) {
+      if (l.kind !== 'her') continue;
+      assert.ok(!/\{who\}/.test(l.text), `a confession leaked an unfilled name: "${l.text}"`);
+      if (/in love with|could love|if I let myself/.test(l.text)) { registers.add('warm-romance'); confessions++; }
+      else if (/want to kill|could kill|going to end each other|dead for what|not being in the way|do without|put themselves on it|has to be settled/.test(l.text)) { registers.add('hostile'); confessions++; }
+      else if (/owe .* my life|stepped in front of a blade/.test(l.text)) { registers.add('debt'); confessions++; }
+      else if (/knows the true|put the knife/.test(l.text)) { registers.add('secret'); confessions++; }
+      else if (/am fond of|easy to be around|second watch|makes me laugh|stand between|joke my mother/.test(l.text)) { registers.add('fond'); confessions++; }
+      else if (/still talk to|dreamed about/.test(l.text)) { registers.add('grief'); confessions++; }
+    }
+  }
+  assert.ok(confessions >= 30, `she barely confided anything across 30 sociable lives (${confessions})`);
+  assert.ok(registers.has('hostile'),
+    'she never once confided anger at anyone, across 30 sociable lives — the range is missing its dark half');
+  assert.ok(registers.size >= 3, `her confessions came in only ${registers.size} register(s): ${[...registers]}`);
+});
+
+// ─────────────────────────────────────────────────── the two feeds, and the warning
+test('every line belongs to exactly one feed, and her account is in her own voice', () => {
+  const s = new Sim({ seed: 3, dials: { reckless: 60, sociable: 70, generous: 60 } });
+  for (let i = 0; i < 220 && s.state.alive; i++) {
+    s.tick();
+    for (const j of [...s.state.pending]) s.answer(j.id, Object.keys(j.options ?? { act: 1 })[0]);
+  }
+  let her = 0, world = 0;
+  for (const l of s.state.log) {
+    assert.ok(l.feed === 'her' || l.feed === 'world', `a line with no feed: "${l.text}"`);
+    l.feed === 'her' ? her++ : world++;
+  }
+  assert.ok(her > 0 && world > 0, 'one of the two feeds never got a line');
+
+  // her account is first person: the third-person Record is gone. The remaining "she …"
+  // lines are inline prose not yet converted; they must be the small minority, not the rule.
+  const herLines = s.state.log.filter((l) => l.feed === 'her');
+  const thirdPerson = herLines.filter((l) => /^she /i.test(l.text)).length;
+  assert.ok(thirdPerson < herLines.length * 0.4,
+    `her account is still ${Math.round(100 * thirdPerson / herLines.length)}% third person`);
+});
+
+test('an unwarned ambush lands; a heeded warning gives her the chance to turn it aside', () => {
+  // Not ready — because nobody warned her and she did not see it — means it cannot be dodged.
+  // It lands, and she writes it in her own account, in the first person.
+  const a = new Sim({ seed: 9 });
+  a.run(15);
+  a.state.wounds = 0;
+  a.state.stat.eye = 2;                 // she will not spot it herself
+  a.spawnThreat('ambush', 'a hard man');
+  while (a.state.threats.length) a.tick();
+  assert.ok(a.state.log.some((l) => l.id === 'ambushed' && l.feed === 'her'),
+    'an unwarned ambush did not land in her account');
+  assert.ok(!a.state.log.some((l) => l.id === 'dodged'), 'she dodged a threat she was never ready for');
+
+  // Warned, believing, and sharp: across many worlds she turns at least some of them aside.
+  let dodged = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const s = new Sim({ seed });
+    s.run(15);
+    if (!s.state.alive) continue;
+    s.state.stat.faith = 16; s.state.stat.eye = 17; s.state.stat.foot = 15;
+    s.spawnThreat('ambush', 'a hard man');
+    s.warn(s.state.threats[0].id);
+    assert.ok(s.state.threats[0].warned, 'a believing woman did not take the warning');
+    while (s.state.threats.length) s.tick();
+    if (s.state.log.some((l) => l.id === 'dodged')) dodged++;
+  }
+  assert.ok(dodged > 0, 'a warned, sharp-eyed woman never once avoided an ambush');
+});
+
+test('a warning she cannot hear lands on nothing', () => {
+  const s = new Sim({ seed: 5 });
+  s.run(15);
+  s.state.stat.faith = 2;               // she has stopped believing enough to hear you
+  s.spawnThreat('theft', 'a quiet man');
+  s.warn(s.state.threats[0].id);
+  assert.ok(s.state.threats[0].told, 'the warning was not registered as attempted');
+  assert.ok(!s.state.threats[0].warned, 'a warning landed on a woman who could not hear it');
+});
+
+test('a life with a warning in it replays from the journal exactly', () => {
+  const journal = newJournal({ seed: 9, dials: { reckless: 60, sociable: 65 }, now: 0, headstartDays: 0 });
+  const live = new Sim({ seed: 9, dials: { reckless: 60, sociable: 65 } });
+  for (let day = 1; day < 260; day++) {
+    live.tick();
+    for (const j of [...live.state.pending]) {
+      const key = Object.keys(j.options ?? { act: 1 })[0];
+      live.answer(j.id, key);
+      journal.entries.push({ elapsed: live.state.day, type: 'answer', id: j.id, key });
+    }
+    for (const t of live.state.threats) {
+      if (t.told) continue;
+      live.warn(t.id);
+      journal.entries.push({ elapsed: live.state.day, type: 'warn', id: t.id });
+    }
+  }
+  const { state } = replay(journal, live.state.day);
+  assert.deepStrictEqual(state.log.map((l) => l.text), live.state.log.map((l) => l.text),
+    'the replay diverged with warnings in the journal');
 });
 
 test('a beast is made of the world it is standing in, and never of a bestiary', () => {

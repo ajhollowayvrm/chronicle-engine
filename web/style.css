@@ -263,6 +263,33 @@ button { font: inherit; cursor: pointer; }
 .ledger-head { display: flex; align-items: baseline; justify-content: space-between; }
 .tick { font-family: var(--mono); font-size: 0.62rem; color: var(--ink-low); font-variant-numeric: tabular-nums; }
 
+/* ═══════════════════════════════════════════════════════════════════ THE TWO FEEDS
+   Her account (first person, only what she knows) and what is closing on her (what you can
+   see and she cannot). Side by side on a wide screen; stacked on a phone. */
+.feeds { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem 1.75rem; margin-top: 0.75rem; }
+.feed { min-width: 0; }
+.feed-head { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-low); margin: 0 0 0.6rem; }
+.feed-head.warm { color: var(--close); }
+.feed-sub { text-transform: none; letter-spacing: 0; color: var(--ink-low); }
+.feed-around { border-left: 1px solid var(--rule); padding-left: 1.5rem; }
+.log.around .entry p { color: var(--ink-mid); }   /* the world's voice, cooler than hers */
+@media (max-width: 720px) {
+  .feeds { grid-template-columns: 1fr; }
+  .feed-around { border-left: none; padding-left: 0; border-top: 1px solid var(--rule); padding-top: 1rem; }
+}
+
+/* WHAT IS CLOSING ON HER — the cards you act on. Blood edge: this is danger, and it is the
+   one place on the page you can reach into the world before it reaches her. */
+.threats { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1rem; }
+.threat-card {
+  border: 1px solid var(--blood); border-left-width: 3px; border-radius: 2px;
+  background: var(--card); padding: 0.7rem 0.8rem; display: grid; gap: 0.55rem;
+}
+.threat-what { margin: 0; font-size: 0.9rem; line-height: 1.5; color: var(--ink); }
+.threat-acts { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.threat-acts button { font-size: 0.74rem; padding: 0.35rem 0.75rem; }
+.threat-note { font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-low); line-height: 1.5; }
+
 .log { display: flex; flex-direction: column-reverse; }
 
 .entry {
@@ -745,6 +772,30 @@ input[type="range"]::-moz-range-thumb { width: 15px; height: 15px; border-radius
   color: var(--ink-low);
 }
 .gift-shut { color: var(--blood); }
+
+/* THE VISIT — a blessing's warmer, rarer cousin. Thicker lamplight edge; it is the one
+   thing you can do that is not a gift but a presence. */
+.visit { margin-top: 0.9rem; }
+.visit-gift { border-left-width: 3px; box-shadow: -1px 0 12px -6px var(--close); }
+
+/* ═══════════════════════════════════════════════════════════ ASK HER SOMETHING */
+.commune { margin-top: 1rem; }
+.commune-grid { display: grid; gap: 0.5rem; grid-template-columns: 1fr 1fr; }
+.ask-q {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  padding: 0.6rem 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.ask-q:hover { border-color: var(--close); color: var(--close); }
+.commune-pending { font-size: 0.92rem; line-height: 1.5; color: var(--ink); margin: 0 0 0.3rem; }
+@media (max-width: 480px) { .commune-grid { grid-template-columns: 1fr; } }
 
 /* ═══════════════════════════════════════════════════════════════ WHAT SHE IS HUNTING */
 .hunt { display: grid; gap: 0.7rem; margin-top: 1rem; }

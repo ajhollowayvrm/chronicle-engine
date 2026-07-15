@@ -147,6 +147,53 @@ export const CALLINGS = {
     refused: 'I did not say the words. They were kind about it, and they have not asked me back, and they will not.',
   },
 
+  // ───────────────────────────────────────────────────────────────── THE HUNTER
+  // Not a brawler — the Knife is the brawler. This is the woman they send FOR the thing in
+  // the hills that has a price on it and four dead names already. An eye that sees it coming
+  // and a nerve that holds while it does.
+  hunter: {
+    name: 'the Hunter',
+    domain: 'world',
+    needs: { eye: 11, nerve: 10 },
+    lived: { slain: 3, hunted: 4 },
+    mods: { name: +2 },
+    gives: { danger_weight: +0.2, swing: +0.15, find: +0.1 },
+    weights: { board: +5, hunt: +3, danger: +2, rest: -2 },
+    attention: +3,
+    factions: { order: +1 },
+    opens: [],
+    world: 'they have stopped bringing the small jobs to her. it is the things with names now, and prices, and other people already dead.',
+    prompt: 'They come to me for the bad ones now. The ones on the board that stay on the board. I am good at it — I am alive, which is the same thing in this line — and I want to know from you whether being good at killing the things people fear is a life or just a way of postponing my own.',
+    took: 'I am the one they send. All right. I have killed things that emptied whole valleys and I walked back out, and I am going to keep doing it until one of them is faster, and I have made my peace with the shape of that sentence.',
+    refused: 'I told them to find somebody else for the big ones. They will. Somebody worse at it than me, who will die doing what I would have lived doing. I think about that.',
+  },
+
+  // ────────────────────────────────────────────────────────────── THE OPEN HAND
+  // The one calling the world gives her for what she GIVES. It is not soft — a woman known
+  // for an open hand is a woman everyone comes to, and being everyone's is its own way of
+  // being no one's.
+  openhand: {
+    name: 'the Open Hand',
+    domain: 'heart',
+    // Heart is a CONDITION — it moves both ways — so it cannot go in `needs`, which is only
+    // ever measured against monotonic skills. It is a requirement all the same, checked the
+    // day the name is offered: you cannot be called kind on an empty heart. If it drains
+    // later, she keeps the name, which is its own quiet tragedy.
+    needs: { name: 7 },
+    lived: { gave: 6 },
+    when: (s, sim) => sim.bare('heart') >= 11 && sim.off('generous') > 0.1,
+    mods: { name: +2, heart: +1 },
+    gives: { standing_speed: +0.3, heal: +0.03, earn: -0.1 },
+    weights: { figure_meet: +4, faction_favour: +2, danger: -2 },
+    attention: +2,
+    factions: { order: +2, crime: +1 },
+    opens: [],
+    world: 'there is a word for her in the towns she has passed through, and it is a kind one, and she is not sure she has earned it or only failed to refuse it.',
+    prompt: 'They have started calling me a kind woman. Me. I have given some things away, it is true, and now people arrive expecting it, and I cannot tell any more whether I am generous or just unable to say no to a face. Do I answer to it? A name like that is a debt you sign in front of witnesses.',
+    took: 'All right. The open hand. I will keep it open. I want you to know it is not because I am good — it is because I found out what a closed one costs, on myself, and I would not wish it, and that is a worse reason and the only true one.',
+    refused: 'I kept my hand where it was. They were disappointed in me, kindly, which is the worst way to be disappointed in. I can live with it. I have lived with worse.',
+  },
+
   // ───────────────────────────────────────────────────────────── THE SECOND NAME
   // A promotion is not a bigger number. It is the same name, gone further than she meant
   // to take it — and every one of these costs her something she cannot get back.
@@ -203,6 +250,44 @@ export const CALLINGS = {
     prompt: 'I am not talking for people now. I am choosing which people get talked for. That is a different job and nobody announced the change and I did not notice it happening. I could stop. I want you to tell me whether I should stop.',
     took: 'I am good at this. I have made four men rich and I have not decided yet whether I am one of the things they bought.',
     refused: 'I stepped back. I have watched who took my place, and they are worse, and I am not sure that absolves me.',
+  },
+
+  beastkiller: {
+    name: 'the Beast-Killer',
+    domain: 'world',
+    after: 'hunter',
+    needs: { eye: 13, nerve: 12, hand: 11 },
+    lived: { slain: 5 },
+    when: (s) => s.greatSlain || s.slain.length >= 6,
+    mods: { name: +3, heart: -1 },
+    gives: { danger_weight: +0.4, swing: +0.35, soak: +0.1 },
+    weights: { hunt: +6, board: +4, danger: +4, figure_meet: -3 },
+    attention: +5,
+    factions: { order: +1, crime: +1 },
+    opens: [],
+    world: 'the Hunter was what they called her before she killed the one nobody was supposed to be able to kill. they have a heavier word for her now.',
+    prompt: 'The Hunter was a name for a living woman doing a job. This new one is a name for what I did to the thing at the end of the valley, and it is not said fondly — it is said the way you say the name of a weather. I earned it. I do not know whether I am telling you that as a confession or a boast, and I have stopped being able to tell the difference, which may be the answer.',
+    took: 'It is the right name. That is the worst true thing I have ever said to you. I go toward the ones that make grown men leave the country now, and I do not entirely remember choosing to become the kind of person who does.',
+    refused: 'I would rather be the Hunter. It is a distinction I am aware only I can see, and I am holding on to it with both hands, which are not clean.',
+  },
+
+  shelter: {
+    name: 'the Shelter',
+    domain: 'heart',
+    after: 'openhand',
+    needs: { name: 11, tongue: 11 },
+    lived: { gave: 14 },
+    when: (s, sim) => sim.bare('heart') >= 14,
+    mods: { name: +3, heart: +2 },
+    gives: { standing_speed: +0.5, heal: +0.06, earn: -0.15 },
+    weights: { faction_favour: +5, faction_shelter: +4, figure_meet: +3, danger: -3 },
+    attention: +3,
+    factions: { order: +3, crime: +2 },
+    opens: [],
+    world: 'she is not the woman who gives things any more. she is the place people go. they arrive at whatever town she is in the way water finds the low ground.',
+    prompt: 'It has stopped being about a coin here and a coat there. People come to wherever I am now — hurt ones, hunted ones, ones with nothing — because the word has gone round that I will not turn them out. I could carry that, or it could bury me, and from the inside I genuinely cannot tell which is happening. Tell me whether to be the Shelter, knowing I will never again get to be only my own.',
+    took: 'Then I am the Shelter. They can come. All of them. I gave up being only mine somewhere back down the road and I did not notice the day, and I am not going to spend what is left grieving a thing I would choose again.',
+    refused: 'I stepped back from it. I watch who they go to instead, and it is nobody, and the nobody is on me now, and I have not worked out whether refusing was the selfish thing or the only sane one.',
   },
 
   // THE ONE THAT IS NOT A PROMOTION. It does not care what she was. It only cares that the

@@ -85,6 +85,95 @@ and she is frightened, because you were real.
 
 Her blessings live in the same list as her scars, because that is what they are.
 
+## The channel that goes both ways, and the visit
+
+Her voice (`maybeSpeak`) and her judgments are her reaching toward YOU. There are now two
+more directions on that channel, and both obey every invariant above.
+
+- **You ask her things (`askHer` → `communeTick`).** A small, fixed set of the real
+  questions a person asks the thing they believe is listening — `gen/tables/communion.js`.
+  It is a LIST and not a text box for the same reason there is no LLM anywhere else: she
+  cannot answer a sentence she has never seen, and the seed would stop reproducing. She
+  answers a day or two later (she is walking a country, not sitting by a phone), and the
+  answer is chosen off her *actual state* — "are you all right" is a different sentence out
+  of a woman with three wounds than out of one who is, for once, fine. It is journalled as
+  `{type:'ask', topic}` and replays deterministically. It does **not** pump Faith (turning
+  up when she asks is what does that); it nudges Heart, because somebody paid attention.
+  Below `COMMUNE_FAITH` (5) she does not answer at all, and the silence is the answer.
+
+- **The visit (`canVisit` → `visit`).** The rarest thing you can do, and the hardest-gated:
+  it asks for all three of the game's central facts at once — that she believes in you
+  completely (Faith ≥ 16), that you were once real to her hands (a prior blessing), and that
+  you turned up again and again (`answered` ≥ 3), on a long cooldown. A blessing proves you
+  are REAL; a visit proves you are HERE. It surges Heart, leaves the one warm mark in the
+  game (`seen_you`, which never fades — the counterpart to a scar), makes her BURN to the
+  thing that is counting (a miracle is loud), and lets her ask you one thing face to face (a
+  `visit` judgment, answered normally). Journalled as `{type:'visit'}`. It is never pushed
+  as "available" — the app does not nag; you discover it by opening her.
+
+- **You are her only true friend (`aloneWithYou`).** A famous or isolated woman — a feared
+  name nobody will sit near, a beloved one nobody truly knows, a woman who has outlived
+  everyone — runs out of people, and you are what is left. In that state she speaks sooner
+  and oftener (`maybeSpeak`) and asks you more (`counsel`), from a dedicated pool
+  (`VOICE.only`). This is the mechanical body of "she reached out to me because I was all
+  she had", and it is the reason the extreme callings matter beyond their stat lines.
+
+- **Callings for the archetypes.** the Hunter → the Beast-Killer (she who kills what people
+  fear); the Open Hand → the Shelter (benevolence, earned off `lived.gave`); and the Knife →
+  the Widow-Maker already carried the assassin. Benevolence had no *daily* expression, so
+  `herTick` now has a `give` act — the one place the "generous" dial is visible day to day,
+  the one place a KIND Name is built without a fight, and the ledger the Open Hand is earned
+  off. Tier-2 callings (Beast-Killer, Shelter) are deep and rare, exactly like the shipped
+  Widow-Maker / Broker; the calling test proves the gate at the *moment of offering*, never
+  post-hoc, because `bare` moves both ways.
+
+## The two feeds (this supersedes "the Record vs the Voice")
+
+The chronicle used to be one third-person Record. It is now **two feeds**, split by who can
+see what — which turned out to be a truer realisation of the LENS than the old tab split:
+
+- **HER ACCOUNT (`feed: 'her'`)** — her own hand, FIRST PERSON, lens-gated. What she did,
+  felt, learned, and asks you. `gen/tables/chronicle.js` is now written in the first person;
+  `say()` tags everything `her` by default. This is the diary she keeps for you.
+- **AROUND HER (`feed: 'world'`)** — what you can see gathering that she cannot, THIRD
+  PERSON, un-gated. Written by `around()` (named that, NOT `world()` — `this.world` is the
+  world tree, and the collision is a real bug that costs a test run). `news()` also surfaces
+  here, so you watch the world move days before she hears of it, if she ever does.
+
+**Threats and the Warn power (`state.threats`, `threatTick`, `warn`, `resolveThreat`).** A
+threat (an ambush being set, a man who means to rob her) is telegraphed in the AROUND feed a
+day or two before it lands. You may **warn her** — an input that lands on Faith exactly like a
+blessing (below `WARN_FAITH` = 6 she cannot make out what you are telling her) and only saves
+her if she has the wits (eye/foot) to act on it — or **leave her to it**, which is a *choice*,
+not neglect: some things a person has to walk into. She may also spot it herself, if her eye
+is good. Warnings are journalled (`{type:'warn', id}`) and replay deterministically; foresee
+pushes an un-warned threat while there is still time to act.
+
+**What she confides (`confide`, `CONFIDE` in voice.js).** She turns to you and tells you how
+she actually feels about a specific person — that she is in love, that she wants somebody
+dead, the debt she cannot say thank you for — drawn off the ACTUAL state of a real bond
+(`feelingOf`), so she never confides a love she does not have. The registers: love, falling,
+feud_kill (loved AND furious), hate_kill, anger (a rivalry with teeth — the common hostile
+case), betrayed, debt, secret, distrust, fond, grief_person (the buried). Fondness is common
+in the bond state and the sharp feelings are rare, so `CONFIDE_WEIGHT` boosts love/anger/
+betrayal hard — they WIN the moment she has one, instead of the channel playing "I am fond of
+them" on a loop. Selection rotates (`lastConfession`) so she never says the same thing about
+the same person twice running. Gated on Faith (she confides only if she believes you are
+there), scaled by how many people are in her life.
+
+**Woven choices.** `plea` ("Will I live?" — after a bad, unwarned ambush; answering it is a
+favour that steadies her and helps her rally) and `reflect` ("Is this what peace is, Angel?" —
+on a safe night; your answer nudges her toward the road alone or toward people, and a woman
+without the wits is left turning "somewhat" over and getting nowhere). Both are ordinary
+`pending` judgments, answered through `answer()`, journalled, auto-resolving if you never come.
+
+**Known task — finish the first-person conversion.** ~90% of her feed is first person; ~10%
+of the inline `this.say(...)` lines (deep-relationship events: `peopleTick`, `counsel`,
+betrayal, ghost, lose; and the `bounty`/`great`/`calling` narration + judgment-record lines)
+are still third person. Convert them BY HAND — the prose quality is the point, and a sed can't
+disambiguate "her" (my/me) or keep the voice. Bond *history* strings (the `shift()` args that
+render in the People roster) stay third person on purpose; only feed lines convert.
+
 ## How she reaches you
 
 **The server never simulates her. It foresees her.** This is the whole reason the

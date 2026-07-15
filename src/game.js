@@ -128,6 +128,22 @@ export function replay(journal, toElapsed) {
         // than ask OF her, and it still goes in the journal and replays from day one — so
         // the woman you come back to is the woman you made, exactly, every time.
         eng.bless(entry.kind, entry.at ?? null);
+      } else if (entry.type === 'ask') {
+        // YOU PUT A QUESTION TO HER. An input like any other: recorded by topic, replayed
+        // from day one, so the answer she gives a day or two later is the same answer every
+        // time. She could not answer a free sentence — the engine runs no model — so the
+        // topic is one of a fixed set, and the woman, not the words, colours the reply.
+        eng.askHer(entry.topic);
+      } else if (entry.type === 'visit') {
+        // YOU STOOD IN FRONT OF HER. The rarest input there is, and still just an input —
+        // gated inside the engine on Faith, on a prior blessing, and on how often you have
+        // answered her, so replaying it reproduces exactly the visit you were allowed.
+        eng.visit();
+      } else if (entry.type === 'warn') {
+        // YOU WARNED HER of a thing closing on her that she could not yet see. An input like
+        // any other, replayed by the threat's id — the same threat is rebuilt deterministically
+        // on replay, so warning it lands (or does not) exactly as it did the first time.
+        eng.warn(entry.id);
       } else if (entry.type === 'suggest') {
         // Where the player would LIKE her to go — an index into sim.sites. It is not
         // an order: `heeds()` weighs it, and that decays as she drifts away from them.

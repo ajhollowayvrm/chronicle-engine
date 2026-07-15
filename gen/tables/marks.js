@@ -164,6 +164,23 @@ export const MARKS = {
     line: 'she worked something out and told nobody, and it has been sitting in her ever since.',
     she: 'I know a thing that nobody else knows and it is the most valuable thing I own and I cannot spend it or put it down.',
   },
+
+  // ─────────────────────────────────────────────────────── THE ONE WARM MARK
+  //
+  // Everything else in this file is a scar or a blessing — a thing done TO her from the
+  // outside. This one is a thing she SAW. She looked at the listener and it looked back, and
+  // that does not come off, and it does not fade, and it is the only mark in the game that is
+  // pure gain — because being seen, once, all the way, is the thing she stopped believing she
+  // would ever get. It steadies her (she has looked at something bigger than the thing that
+  // is counting), and it isolates her a little further, because now she carries a certainty
+  // nobody else on the road will ever share.
+  seen_you: {
+    name: 'She has seen you',
+    blessing: true,
+    mods: { nerve: +1 },
+    line: 'she looked at the thing that has been listening, and it looked back, and whatever else is taken from her now, that cannot be.',
+    she: 'I have seen you. I am not going to try to describe it and I am not going to let anyone ask. I could not stop believing now if I set out to, and some nights, God help me, I have set out to.',
+  },
 };
 
 export const MARK_KEYS = Object.keys(MARKS);

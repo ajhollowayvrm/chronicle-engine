@@ -24,7 +24,7 @@ import { CHRONICLE } from '../gen/tables/chronicle.js';
 import { applyPatch } from '../gen/patch.js';
 import { newBond, kindOf, describe, shift, cool } from './bonds.js';
 import { webOf, tangledWith, sideEffects, vendetta } from './web-of.js';
-import { VOICE, speaksTo } from '../gen/tables/voice.js';
+import { VOICE, speaksTo, CONFIDE } from '../gen/tables/voice.js';
 import { TRAITS } from '../gen/tables/traits.js';
 import { STATS, STAT_MAX, SKILLS, CONDITIONS, toNext, SHE_NOTICED, HEART, FAITH } from '../gen/tables/stats.js';
 import { SHAPES, OF_KIT, FROM } from '../gen/tables/goods.js';
@@ -37,10 +37,34 @@ import {
 import { bestiary } from './beasts.js';
 import { GREAT, POSTED, TOOK, REFUSED } from '../gen/tables/beasts.js';
 import { BLESSINGS, FIRST, UNFELT } from '../gen/tables/blessings.js';
+import { QUESTIONS, COMMUNE_FAITH, VISIT } from '../gen/tables/communion.js';
 
 // YOU CANNOT BE A CONSTANT MIRACLE. A long silence between blessings, or she stops being a
 // woman walking a hard country and becomes a character you are buffing.
 const BLESS_GAP = 25;
+
+// THE VISIT IS RARER THAN THE MIRACLE, AND IT ASKS FOR MORE. She has to believe in you
+// completely, you have to have been real to her once (a blessing), and you have to have
+// turned up over and over (answered her). And even then, only now and then — a face in the
+// room every few days would stop being a visitation and start being a housemate.
+const VISIT_FAITH = 16;   // near the top of the scale: she trusts you more than herself
+const VISIT_GAP = 55;     // longer than two blessings put together
+const VISIT_ANSWERED = 3; // you have actually turned up, more than once
+
+// A WARNING LANDS ON FAITH, exactly like a blessing. You can see the thing closing on her;
+// whether she can make out what you are trying to tell her depends on whether she still
+// believes there is anyone there to tell it. Below this she does not feel the warning.
+const WARN_FAITH = 6;
+const THREAT_GAP = 8;     // the world does not set a fresh trap for her every other day
+
+// WHAT SHE CONFIDES, WEIGHTED FOR VARIETY. Fondness is common in the bond state and the
+// sharp feelings are rare — so left to raw charge she would only ever tell you she is fond of
+// somebody. These multipliers make love, hatred and betrayal WIN the moment she actually has
+// one, so the range you asked for shows up instead of a single note played over and over.
+const CONFIDE_WEIGHT = {
+  betrayed: 4, feud_kill: 3.5, hate_kill: 3.5, love: 3, anger: 3, secret: 2.6, debt: 2.6,
+  falling: 2.2, distrust: 2, grief_person: 2, fond: 1,
+};
 
 function mulberry32(a) {
   return function () {
@@ -148,6 +172,10 @@ export class Sim {
         hurt_badly: 0, travelled: 0, worked: 0, defied: 0, paid: 0,
         buried: 0, nights_alone: 0, with_someone: 0, fights: 0, found: 0,
         hunted: 0, slain: 0,
+        // WHAT SHE HAS GIVEN AWAY. Not coin spent — coin given, mercy extended, a thing put
+        // into somebody else's hands. It is the ledger the Open Hand is earned off, the same
+        // way `slain` earns the Hunter: you cannot be called kind if you have not been.
+        gave: 0,
       },
 
       // WHAT SHE HUNTS. A bounty is a fact about this world with a price on it, and somebody
@@ -186,6 +214,27 @@ export class Sim {
       // decays with heeds() — a woman who has stopped listening stops talking.
       spoken: 0,
       lastSpoke: 0,
+
+      // THE CHANNEL THAT GOES BOTH WAYS. `youAsked` holds a question YOU put to her that she
+      // has not answered yet — she is walking a country, not sitting by a phone, so it takes
+      // her a day or two to turn round and answer it. `answered`/`reached` are the tally of
+      // how much you have actually turned up: they are two of the three things a visit asks
+      // for, and they are the honest measure of whether you are her angel or her app.
+      youAsked: null,      // { topic, on } — a question of yours she owes an answer to
+      answered: 0,         // judgments of hers you have come and answered
+      reached: 0,          // questions you have put to her
+      lastReached: 0,
+      visits: 0,           // times you have stood in front of her, in the flesh
+      lastVisited: undefined,
+
+      // THE SECOND FEED. Things closing on her that she has not yet seen and you have — a man
+      // who watched her pay, an ambush being set on the road out. You may warn her, or leave
+      // her to it. These live here until they land; the WORLD feed narrates them building.
+      threats: [],
+      lastThreat: -99,
+      lastReflect: -99,
+      lastConfide: -99,   // when she last told you how she feels about a specific person
+      lastConfession: null,   // {who, bucket} of the last one, so she does not repeat it back to back
     };
     this.state.seen.push(this.state.at);
   }
@@ -538,7 +587,7 @@ export class Sim {
     }
 
     s.log.push({
-      day: s.day, kind: 'judgment', by, id: j.id,
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
       text: key === 'take' ? `she is going after ${j.who}. [${by === 'you' ? 'you' : 'she'} decided]`
                            : `she left ${j.who} on the board. [${by === 'you' ? 'you' : 'she'} decided]`,
     });
@@ -573,7 +622,7 @@ export class Sim {
         `I got one look at it and I did not go any further. I am not going to apologise for that to you or to anybody.`,
       ]), 'cold');
       return this.say(
-        `she got close enough to ${beast.name}${this.beastAt(beast)} to see what it was, and turned round, and came back. it is still there.`,
+        `I got close enough to ${beast.name}${this.beastAt(beast)} to see what it was, and turned round, and came back. It is still there.`,
         'hunt');
     }
 
@@ -596,8 +645,8 @@ export class Sim {
     ]), 'cold');
 
     return this.say(
-      `she went after ${beast.name}${this.beastAt(beast)} and came back out of it, and it did not.` +
-      (bad ? ' she was a long time getting up.' : ''),
+      `I went after ${beast.name}${this.beastAt(beast)} and came back out of it, and it did not.` +
+      (bad ? ' I was a long time getting up.' : ''),
       'hunt');
   }
 
@@ -624,13 +673,13 @@ export class Sim {
       this.condition('faith', +2, 'she lived');
       this.speak(this.fresh(GREAT.after), 'close');
       return this.say(
-        `${beast.name} is dead. she killed it${this.beastAt(beast)}, and she is alive, and almost nobody who has ever gone after it has been able to say both of those things. ${paid} coin. she has not spent any of it.`,
+        `${beast.name} is dead. I killed it${this.beastAt(beast)}, and I am alive, and almost nobody who has ever gone after it has been able to say both of those things. ${paid} coin. I have not spent any of it.`,
         'hunt', { great: true });
     }
 
     return this.say(this.pick([
-      `${beast.name} is dead${this.beastAt(beast)}. ${paid} coin. she collected it herself and did not say a word to anyone in the room.`,
-      `she killed ${beast.name}${this.beastAt(beast)}. ${paid} coin, and a long walk back with it in a sack, and nobody would sit near her on the road.`,
+      `${beast.name} is dead${this.beastAt(beast)}. ${paid} coin. I collected it myself and did not say a word to anyone in the room.`,
+      `I killed ${beast.name}${this.beastAt(beast)}. ${paid} coin, and a long walk back with it in a sack, and nobody would sit near me on the road.`,
     ]), 'hunt');
   }
 
@@ -677,7 +726,7 @@ export class Sim {
 
     if (key === 'go') {
       s.log.push({
-        day: s.day, kind: 'judgment', by, id: j.id,
+        day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
         text: `she went in after ${g.name}. [${by === 'you' ? 'you' : 'she'} decided]`,
       });
       return this.hunt(g);
@@ -693,7 +742,7 @@ export class Sim {
     ]), 'cold');
     this.say(`she stood outside ${g.name} at ${g.where}, and she did not go in. it is still there.`, 'event');
     s.log.push({
-      day: s.day, kind: 'judgment', by, id: j.id,
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
       text: `she walked away from ${g.name}. [${by === 'you' ? 'you' : 'she'} decided]`,
     });
   }
@@ -859,8 +908,26 @@ export class Sim {
     return t.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
   }
 
+  // ─────────────────────────────────────────────────────────────── THE TWO FEEDS
+  // Everything she records is one of two things. HER feed is her own account — first person,
+  // lens-gated, what she did and felt and learned and asks you. THE WORLD feed is what is
+  // gathering around her that she has not yet seen and you have: the watcher, the ambush, the
+  // world moving in the dark. You read both; she writes only the first. Death is the one line
+  // in her feed she cannot write, so it belongs to the world.
+  feedOf(kind) {
+    return (kind === 'world' || kind === 'threat' || kind === 'death') ? 'world' : 'her';
+  }
+
   say(text, kind = 'event', meta = {}) {
-    this.state.log.push({ day: this.state.day, kind, text, ...meta });
+    this.state.log.push({ day: this.state.day, kind, feed: this.feedOf(kind), text, ...meta });
+  }
+
+  // A line in the WORLD feed — what you can see closing on her and she cannot. (Named
+  // `around`, not `world`, because `this.world` is the world TREE — the collision cost one
+  // test run to find.) Written in the third person on purpose: it is not her voice, it is the
+  // sight she does not have.
+  around(text, kind = 'world', meta = {}) {
+    this.state.log.push({ day: this.state.day, kind, feed: 'world', text, ...meta });
   }
 
   // ------------------------------------------------------------------ HER VOICE
@@ -871,7 +938,7 @@ export class Sim {
     this.state.lastSpoke = this.state.day;
     (this.state.said ??= []).unshift(text);
     this.state.said = this.state.said.slice(0, 6);
-    this.state.log.push({ day: this.state.day, kind: 'her', why, text });
+    this.state.log.push({ day: this.state.day, kind: 'her', feed: 'her', why, text });
   }
 
   // she does not say the same thing to you twice in a fortnight. the chronicle has had
@@ -892,8 +959,11 @@ export class Sim {
       if (this.state.day > 6 && this.chance(0.3)) this.speak(this.fresh(VOICE.first), 'first');
       return;
     }
-    if (this.state.day - this.state.lastSpoke < 4) return;
-    if (!this.chance(speaksTo(h))) return;
+    // YOU ARE ALL SHE HAS. A famous or isolated woman reaches out to you MORE OFTEN, and
+    // sooner — the room got emptier, and you are what is left in it.
+    const alone = this.aloneWithYou();
+    if (this.state.day - this.state.lastSpoke < (alone ? 2 : 4)) return;
+    if (!this.chance(alone ? Math.min(1, speaksTo(h) * 1.7) : speaksTo(h))) return;
 
     if (this.state.wounds >= 4) return this.speak(this.fresh(VOICE.hurt), 'hurt');
     if (this.state.attention >= 16 && this.chance(0.4)) return this.speak(this.fresh(VOICE.afraid), 'afraid');
@@ -906,7 +976,538 @@ export class Sim {
     // constantly while nominally devoted. Warmth has to be STABLE while she is
     // listening, and coldness has to ramp — otherwise the drift reads as noise.
     const cold = this.chance(Math.pow(1 - h, 1.7));
+    // and when it is not a cold day, and there is genuinely nobody else, she says the thing
+    // she would never say to a person: that it comes out to you, and only you.
+    if (!cold && alone && this.chance(0.45)) return this.speak(this.fresh(VOICE.only), 'close');
     this.speak(this.fresh(cold ? VOICE.cold : VOICE.close), cold ? 'cold' : 'close');
+  }
+
+  // ══════════════════════════════════════════════════════════════ WHAT SHE CONFIDES
+  //
+  // She turns to you and tells you how she actually feels about a specific person — that she
+  // is in love, that she wants somebody dead, that she owes a debt she cannot say thank you
+  // for. You are the only one she will say any of it to; some of it she would deny to their
+  // face. The bucket is chosen off the ACTUAL state of an ACTUAL bond, so she never confides
+  // a love she does not have or a hatred she has not earned.
+  confide() {
+    const s = this.state;
+    if (this.eff('faith') < COMMUNE_FAITH) return;      // she only opens up if she believes you are there
+    if (s.day - (s.lastConfide ?? -20) < 5) return;
+
+    // the people she has real feeling about — love, hatred, debt, a secret handed over
+    const living = this.bondList().filter((b) => b.alive && (
+      b.romance >= 1 || b.betrayed || b.friction >= 6 || b.owes >= 6 ||
+      (b.knows?.length) || b.closeness >= 5));
+    const grievable = s.ghosts.filter((g) => g.was && g.was !== 'betrayer');
+    if (!living.length && !grievable.length) return;
+
+    // she confides MORE the fuller her life is — a woman with people in her life talks about
+    // them, and a woman with nobody has nobody to tell you about.
+    if (!this.chance(clamp(0.12 + 0.05 * (living.length + grievable.length), 0, 0.42))) return;
+
+    // EVERY relationship she could talk about, weighted. The point is VARIETY: the sharp
+    // feelings — love, hatred, a life she owes — are rare in the state, so they are boosted
+    // hard, and they win the moment she actually has one. Fondness is common, so it is not.
+    const cands = [];
+    for (const b of living) {
+      const { bucket, mood } = this.feelingOf(b);
+      cands.push({ who: b.who, bucket, mood, w: (1 + this.charge(b)) * (CONFIDE_WEIGHT[bucket] ?? 1) });
+    }
+    for (const g of grievable) cands.push({ who: g.name, bucket: 'grief_person', mood: 'grief', w: 7 });
+    if (!cands.length) return;
+
+    // do not tell you the same thing about the same person twice running — rotate.
+    const last = s.lastConfession;
+    let pool = last ? cands.filter((c) => !(c.who === last.who && c.bucket === last.bucket)) : cands;
+    if (!pool.length) pool = cands;
+
+    const total = pool.reduce((a, c) => a + c.w, 0);
+    let r = this.rng() * total;
+    let pick = pool[pool.length - 1];
+    for (const c of pool) { r -= c.w; if (r <= 0) { pick = c; break; } }
+
+    s.lastConfide = s.day;
+    s.lastConfession = { who: pick.who, bucket: pick.bucket };
+    this.confess(CONFIDE[pick.bucket], pick.who, pick.mood);
+  }
+
+  // how loudly a relationship is asking to be talked about. love and hatred both shout.
+  charge(b) {
+    return (b.romance >= 3 ? 22 : b.romance >= 1 ? 11 : 0)
+      + (b.betrayed ? 20 : 0)
+      + Math.max(0, b.friction)
+      + b.closeness * 0.5
+      + (b.owes >= 6 ? 9 : 0)
+      + (b.knows?.length ? 7 : 0)
+      + (b.closeness >= 10 && b.trust <= 5 ? 8 : 0);
+  }
+
+  // which confession this bond calls for. order matters: the sharpest feeling wins.
+  feelingOf(b) {
+    if (b.betrayed) return { bucket: 'betrayed', mood: 'cold' };
+    if (b.romance >= 3) return { bucket: 'love', mood: 'close' };
+    if (b.closeness >= 8 && b.friction >= 11) return { bucket: 'feud_kill', mood: 'cold' };   // loved AND furious
+    if (b.friction >= 12 && b.closeness < 5) return { bucket: 'hate_kill', mood: 'cold' };     // clean hatred
+    if (b.friction >= 8) return { bucket: 'anger', mood: 'cold' };                             // a rivalry with teeth
+    if (b.romance >= 1 || (b.closeness >= 10 && b.trust >= 8)) return { bucket: 'falling', mood: 'close' };
+    if (b.owes >= 6) return { bucket: 'debt', mood: 'cold' };
+    if (b.closeness >= 10 && b.trust <= 5) return { bucket: 'distrust', mood: 'cold' };
+    if (b.knows?.length) return { bucket: 'secret', mood: 'close' };
+    return { bucket: 'fond', mood: 'close' };
+  }
+
+  // fill in the name, and do not say the same confession twice in a fortnight.
+  confess(pool, who, mood) {
+    const filled = pool.map((t) => t.replaceAll('{who}', who));
+    const said = this.state.said ?? [];
+    const open = filled.filter((t) => !said.includes(t));
+    this.speak(this.pick(open.length ? open : filled), mood);
+  }
+
+  // ════════════════════════════════════════════════════════ THE CHANNEL BOTH WAYS
+  //
+  // She talks to you (maybeSpeak) and she asks you (the judgments). This is the third
+  // thing: YOU asking HER. It is not a text box — the engine runs no model, so she cannot
+  // answer a sentence she has never seen — and it is not instant, because she is walking a
+  // country, not waiting on you. You put one of a handful of real questions to her, and a
+  // day or two later she turns round and answers it, in her own voice, out of her own state.
+
+  // Are you the only one left? A woman who is FAMOUS (a name that precedes her, a thing that
+  // is counting her) or ISOLATED (nobody living she is close to, nobody at her shoulder) has
+  // run out of people — and you are what is left. This gates how often she reaches out to
+  // you, and it is the mechanical heart of "I became her only true friend".
+  aloneWithYou() {
+    const s = this.state;
+    const closeLiving = this.bondList().filter(
+      (b) => b.alive && !b.betrayed && (b.closeness >= 8 || b.withHer)).length;
+    if (closeLiving >= 2) return false;                 // she has people; you are not all she has
+    const famous = this.eff('name') >= 12 || s.attention >= 15;
+    const isolated = closeLiving === 0 && !this.withHer().length;
+    // and she has to still believe you are there for you to BE what is left
+    return (famous || isolated) && this.eff('faith') >= COMMUNE_FAITH;
+  }
+
+  // YOU PUT A QUESTION TO HER. It is an input like any other — recorded, replayed — and it
+  // does nothing loud: it does not pump her Faith (turning up when she asks is what does
+  // that). It just means that in a day or two, she answers. She holds one at a time; a new
+  // one replaces an old one she has not got to, because that is how a person works.
+  askHer(topic) {
+    const s = this.state;
+    if (!s.alive || !QUESTIONS[topic]) return;
+    s.reached = (s.reached ?? 0) + 1;
+    s.lastReached = s.day;
+    s.youAsked = { topic, on: s.day };
+  }
+
+  // She turns round and answers — the day after, or the one after that. The WORDS were
+  // authored once; the WOMAN is picked off her actual state, so "are you all right" is a
+  // different sentence out of a woman with three wounds than out of one who is, for once,
+  // fine. Below COMMUNE_FAITH she does not answer at all: she has stopped believing there is
+  // anybody on the other end of the question, and the silence is the answer.
+  communeTick() {
+    const s = this.state;
+    if (!s.youAsked) return;
+
+    if (this.eff('faith') < COMMUNE_FAITH) {
+      // she cannot hear you any more. the question sits, and then she lets it go, and does
+      // not say so, and that is its own kind of answer.
+      if (s.day - s.youAsked.on > 6) s.youAsked = null;
+      return;
+    }
+
+    const waited = s.day - s.youAsked.on;
+    if (waited < 1) return;
+    if (waited < 2 && !this.chance(0.5)) return;   // a day, or two. never the same minute.
+
+    const answer = this.commune(s.youAsked.topic);
+    s.youAsked = null;
+    if (!answer) return;
+    this.speak(answer.text, answer.mood);
+    // she is a little less alone for having been asked. not Faith — Heart. somebody paid
+    // attention, and attention is the thing she stopped getting.
+    if (this.chance(0.5)) this.condition('heart', HEART.company, 'attended');
+  }
+
+  // Choose the pool off her state, fill in {who}/{where}, and hand back a line and a mood.
+  // Everything here reads state and rolls `this.rng` through `this.fresh` — deterministic,
+  // replayable, no model, exactly like every other line she says.
+  commune(topic) {
+    const s = this.state;
+    const Q = QUESTIONS[topic];
+    if (!Q) return null;
+
+    // her most significant living person, for the questions that are about somebody
+    const someone = this.bondList()
+      .filter((b) => b.alive)
+      .sort((a, b) => (b.closeness + b.friction) - (a.closeness + a.friction))[0];
+
+    let bucket, mood = 'close';
+    switch (topic) {
+      case 'where':
+        bucket = s.bounty ? 'bounty' : (s.knowsGreat && !s.greatSlain) ? 'great' : 'on';
+        break;
+      case 'ok':
+        if (s.wounds >= 3) { bucket = 'hurt'; mood = 'hurt'; }
+        else if (s.attention >= 14) { bucket = 'hunted'; mood = 'afraid'; }
+        else if (this.eff('heart') <= 6) { bucket = 'spent'; mood = 'grief'; }
+        else if (s.wounds === 0 && this.eff('heart') >= 12) bucket = 'good';
+        else bucket = 'fine';
+        break;
+      case 'who': {
+        if (!someone || (someone.closeness < 3 && someone.friction < 3)) { bucket = 'nobody'; break; }
+        const k = kindOf(someone);
+        bucket = someone.romance >= 3 ? 'lover'
+          : (k === 'feud' || k === 'enemy' || k === 'complicated' || k === 'rival') ? 'hard'
+          : k === 'close' ? 'close'
+          : k === 'friend' ? 'friend'
+          : 'known';
+        break;
+      }
+      case 'afraid':
+        mood = 'afraid';
+        bucket = (s.knowsGreat && !s.greatSlain) ? 'great'
+          : s.attention >= 14 ? 'counted'
+          : (this.eff('heart') <= 6 || this.aloneWithYou()) ? 'alone'
+          : 'default';
+        break;
+      case 'believe': {
+        const f = this.eff('faith');
+        bucket = f >= 14 ? 'high' : f >= 8 ? 'mid' : 'low';
+        mood = f >= 8 ? 'close' : 'cold';
+        break;
+      }
+      case 'why':
+        bucket = s.ghosts.some((g) => g.wanted && !g.settled) ? 'ghost'
+          : (someone && (someone.romance >= 3 || someone.withHer)) ? 'love'
+          : this.eff('heart') <= 6 ? 'empty'
+          : 'default';
+        if (bucket === 'empty') mood = 'cold';
+        break;
+      default:
+        return null;
+    }
+
+    const pool = Q.reply[bucket] ?? Q.reply.default ?? Object.values(Q.reply)[0];
+    let text = this.fresh(pool);
+    if (text.includes('{who}')) text = text.replaceAll('{who}', someone?.who ?? 'nobody');
+    if (text.includes('{where}')) {
+      text = text.replaceAll('{where}', s.bounty?.where ?? (this.great?.where ?? this.here().name));
+    }
+    return { text, mood };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════ THE VISIT
+  //
+  // A blessing is proof you are REAL. This is proof you are HERE — and it is the rarest,
+  // most-gated thing in the game, because it should be. It asks for all three of the things
+  // the whole design is about: that she believes in you completely, that you were once real
+  // to her hands, and that you turned up for her again and again. Grind none of them; the
+  // only way to the visit is to have actually been her angel.
+  canVisit() {
+    const s = this.state;
+    if (!s.alive) return { ok: false, why: 'no' };
+    if (s.day - (s.lastVisited ?? -VISIT_GAP) < VISIT_GAP) {
+      return { ok: false, why: `not yet — she could not bear it so soon. ${VISIT_GAP - (s.day - s.lastVisited)} days` };
+    }
+    if (this.eff('faith') < VISIT_FAITH) return { ok: false, why: 'she does not yet believe in you the way this asks — her Faith is not high enough' };
+    if ((s.blessings ?? 0) < 1) return { ok: false, why: 'she has never once felt you were real. prove it first — bless her, then she has a surface for this to land on' };
+    if ((s.answered ?? 0) < VISIT_ANSWERED) return { ok: false, why: 'you have not turned up enough. answer her when she asks, and keep answering, and then come' };
+    return { ok: true };
+  }
+
+  visit() {
+    const s = this.state;
+    if (!this.canVisit().ok) return { visited: false };
+
+    s.lastVisited = s.day;
+    s.visits = (s.visits ?? 0) + 1;
+
+    // IT MAKES HER LOUDER THAN ANY GIFT. A blessed woman glows; a visited one burns. The
+    // thing that is counting can see this from the far side of a country.
+    s.attention += 6;
+
+    // the big gift is Heart — she has just been given the thing she stopped believing she
+    // would ever get — and a little more Faith, though hers is already near the top.
+    this.condition('heart', +6, 'seen');
+    this.condition('faith', +2, 'you came, in the flesh');
+
+    // AND THE MARK THAT NEVER FADES. The one warm one. She looked at you and you looked back.
+    this.mark('seen_you', 'you stood in front of her');
+
+    this.say(VISIT.line, 'bless', { visit: true });
+    this.speak(this.fresh(VISIT.she), 'afraid');
+
+    // and while you are there, she asks you the one thing — face to face, not into the dark.
+    // it is a judgment like any other, so it journals and it foresees with no special case.
+    if (!s.pending.some((p) => p.kind === 'visit')) {
+      s.pending.push({
+        id: `visit_${s.day}`,
+        kind: 'visit',
+        raisedOn: s.day,
+        dueOn: s.day + 3,
+        prompt: VISIT.ask.prompt,
+        options: VISIT.ask.options,
+      });
+    }
+    return { visited: true };
+  }
+
+  resolveVisit(j, key, by) {
+    const s = this.state;
+    if (key === 'stay') {
+      // you let her believe you will stay. it is a kindness and it is a lie, and she half
+      // knows it, and takes it anyway, and is steadier for it.
+      this.condition('heart', +2, 'told she is not alone');
+      if (by === 'you') this.speak(this.pick([
+        'You are going to stay. All right. I am going to hold you to that in the small hours, and we both know how that will go, and I do not care.',
+        'You will stay. I heard you. I am going to believe it for as long as I can, which is a skill I have, unfortunately.',
+      ]), 'close');
+    } else {
+      // you were honest: this is the once. it costs her, and it is the truer gift, and part
+      // of her knows that too.
+      this.condition('heart', -1, 'the once');
+      this.condition('faith', +1, 'you did not lie to her');
+      if (by === 'you') this.speak(this.pick([
+        'The once. Thank you for not lying to me. Nobody has told me a hard thing straight in years and I had forgotten I preferred it.',
+        'Just the once, then. I would rather have the truth and the ache than a comfort I would catch you in later. I think. Ask me at night and I will tell you different.',
+      ]), 'close');
+    }
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
+      text: key === 'stay'
+        ? `I asked whether you would stay, and you let me believe you would. [${by === 'you' ? 'you' : 'she'} decided]`
+        : `I asked whether you would stay, and you told me the truth. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
+  }
+
+  // ══════════════════════════════════════════ WHAT IS CLOSING ON HER (the world feed)
+  //
+  // The second feed, and the second power. You see the world gather around her — a man who
+  // watched her pay, three at the inn, a road being chosen for her — a day or two before she
+  // does. Then you decide: WARN her, or LEAVE her to it. Warning is not free (it lands on
+  // Faith, and it only saves her if she has the wits to act on it), and NOT warning is not
+  // neglect — some things a person has to walk into to become who they are, and you are
+  // allowed to let her.
+
+  // a plausible local name for whoever it is. rolled off the tree where she stands, so the
+  // man who wants her sword is a man who could actually be in this town.
+  threatName() {
+    const here = this.figuresHere().filter((f) => !this.state.bonds[f.name]);
+    if (here.length) return this.pick(here).name;
+    const f = this.factionsHere()[0];
+    return f ? `a man who runs errands for ${f.name}` : 'a man with nothing and good eyes';
+  }
+
+  threatTick() {
+    const s = this.state;
+
+    // ── the ones that have come due
+    for (const t of [...s.threats]) {
+      if (s.day >= t.dueOn) { s.threats = s.threats.filter((x) => x !== t); this.resolveThreat(t); }
+    }
+
+    // ── she may spot it herself, in time, if her eye is good enough. this is the same stat
+    //    that keeps her alive everywhere else, doing the same job.
+    for (const t of s.threats) {
+      if (t.noticed || t.warned) continue;
+      if (this.chance(clamp(this.st('eye') * 0.16, 0, 0.32))) {
+        t.noticed = true;
+        this.speak(this.pick([
+          `Somebody has been watching me. I clocked him. I am not blind, whatever you think.`,
+          `There is a man who keeps being wherever I am. I have started sitting where I can see the door.`,
+        ]), 'afraid');
+        this.around(`she has seen him herself. she is watching the door now, and she is right to.`, 'threat', { threat: t.id });
+      }
+    }
+
+    // ── it builds. the day after it begins, if she is still unready, you get a clearer look
+    //    at it than she has — and a second chance to warn her.
+    for (const t of s.threats) {
+      if (s.day !== t.bornOn + 1 || t.warned || t.noticed || t.escalated) continue;
+      t.escalated = true;
+      this.around(t.kind === 'theft'
+        ? `${t.who} knows which inn she is in now. somebody told him. tonight, most likely.`
+        : `${t.who} has taken the road out of ${t.at} with two others, to where it narrows. they are waiting.`,
+        'threat', { threat: t.id, warn: true });
+    }
+
+    // ── and sometimes a new one begins. she is carrying something worth taking, or she has
+    //    made herself loud, and this is the country noticing.
+    if (s.threats.length) return;                       // one at a time. she has enough to carry.
+    if (s.day - (s.lastThreat ?? -THREAT_GAP) < THREAT_GAP) return;
+    const carryingWorth = best(s.kit)?.worth ?? 0;
+    const rich = s.coin >= 120 || carryingWorth >= 80;
+    const loud = s.attention >= 6;
+    if (!(rich || loud)) return;
+    if (!this.chance(0.10 + 0.06 * Math.max(0, this.off('reckless')))) return;
+
+    this.spawnThreat(rich && this.chance(0.5) ? 'theft' : 'ambush', this.threatName());
+  }
+
+  spawnThreat(kind, who) {
+    const s = this.state;
+    const at = this.here().name;
+    const t = {
+      id: `threat_${s.day}_${kind}`, kind, who, at,
+      bornOn: s.day, dueOn: s.day + this.int(2, 3),
+      told: false, warned: false, noticed: false, escalated: false,
+    };
+    s.threats.push(t);
+    s.lastThreat = s.day;
+    this.around(kind === 'theft'
+      ? `${who} watched her count out her coin at ${at}, and did the arithmetic, and has not stopped doing it.`
+      : `${who} saw what she is carrying out of ${at}. he wants it, and he has friends, and she has not noticed any of them.`,
+      'threat', { threat: t.id, warn: true });
+  }
+
+  // YOU WARN HER. An input like a blessing: it lands on Faith. If she still believes you are
+  // there, she takes it and readies for the thing; if she has stopped, she cannot make out
+  // what you are trying to tell her, and it lands on nothing.
+  warn(id) {
+    const s = this.state;
+    const t = s.threats.find((x) => x.id === id);
+    if (!t || t.told) return;
+    t.told = true;
+
+    if (this.eff('faith') >= WARN_FAITH) {
+      t.warned = true;
+      this.speak(this.pick([
+        `You are trying to tell me something. I do not know how you know, and I have stopped asking. I will watch for it.`,
+        `All right. I felt that. I do not like the feeling and I have learned not to argue with it.`,
+        `There is something coming. You would not push at me like this for nothing. I am ready.`,
+      ]), 'afraid');
+      this.around(`she took the warning. she is ready for it now, because of you.`, 'threat', { threat: t.id });
+    } else {
+      this.speak(this.fresh(VOICE.cold), 'cold');
+      this.around(`you tried to warn her, and it landed on nothing. she has stopped believing there is anyone there to feel.`, 'threat', { threat: t.id });
+    }
+  }
+
+  resolveThreat(t) {
+    const s = this.state;
+    const ready = t.warned || t.noticed;
+    // being ready is not the same as getting clear — her eye and her feet decide whether the
+    // warning turns into a dodge. a warning she cannot act on does not save her.
+    const dodged = ready && this.chance(clamp(0.5 + this.st('eye') * 0.3 + this.st('foot') * 0.2, 0, 0.95));
+
+    if (dodged) {
+      this.condition('faith', +1, 'you saw it coming, and you were right');
+      const how = t.warned ? `You told me, Angel. I still do not know how.` : `I felt it first this time.`;
+      this.say(t.kind === 'theft'
+        ? `Somebody meant to rob me at ${t.at}. I moved my coin, moved my bed, and sat up with a knife across my knees. In the morning my door had been tried. ${how} I was ready.`
+        : `They were waiting on the road out of ${t.at} — ${t.who} and two others, where it narrows. I did not take that road. ${how} I slept badly and I slept alive.`,
+        'event', { id: 'dodged' });
+      return;
+    }
+
+    if (t.kind === 'theft') {
+      const took = Math.round(s.coin * 0.4) + this.int(10, 40);
+      s.coin = Math.max(0, s.coin - Math.min(s.coin, took));
+      s.attention += 1;
+      const prize = best(s.kit);
+      const lostIt = prize && this.chance(0.5);
+      if (lostIt) s.kit = s.kit.filter((i) => i !== prize);
+      this.drift('reckless', -0.02);
+      this.speak(this.fresh(OF_KIT.lost), 'cold');
+      this.say(`I was robbed at ${t.at} in the night. ${took} coin gone${lostIt ? `, and ${prize.name} with it` : ''}. ${ready ? 'I was warned and still not quick enough, and that is on me.' : `I never saw ${t.who} coming, and I should have.`}`,
+        'loss', { id: 'robbed' });
+      return;
+    }
+
+    // an ambush. it lands, and it lands hard, because nobody turned it aside.
+    s.lived.fights++;
+    this.use('hand', 2);
+    this.use('nerve', 2);
+    s.attention += 1;
+    const bad = this.chance(0.5);
+    s.wounds += bad ? 2 : 1;
+    if (bad) s.lived.hurt_badly++;
+    this.drift('reckless', -0.03);
+    this.say(`I was ambushed on the road out of ${t.at} — ${t.who} and two others. I fought them off and took ${bad ? 'a wound that went deep' : 'a cut for my trouble'}. ${ready ? 'I was ready and it still cost me this much.' : 'I did not see it coming. I should have. I am telling you so one of us remembers.'}`,
+      'hunt', { id: 'ambushed' });
+
+    // BADLY HURT, AND SHE ASKS YOU THE ONE THING. "Will I live?" — plainly, the way she never
+    // does, because there is nobody on that road but you.
+    if (bad && this.chance(0.7)) this.plea(t);
+    else this.speak(this.fresh(VOICE.hurt), 'hurt');
+  }
+
+  // ─────────────────────────────────────────────────────────── will I live, Angel
+  plea(t) {
+    const s = this.state;
+    if (s.pending.some((p) => p.kind === 'plea')) return;
+    s.pending.push({
+      id: `plea_${s.day}`, kind: 'plea', raisedOn: s.day, dueOn: s.day + 2,
+      prompt: `It went deep, Angel. I have stopped the worst of the bleeding and I am not sure it is enough. I am asking your favor, plainly, the way I never do. Will I live?`,
+      options: { hold: 'Tell her to hold on', quiet: 'Say nothing' },
+    });
+  }
+
+  resolvePlea(j, key, by) {
+    const s = this.state;
+    if (key === 'hold') {
+      this.condition('faith', +2, 'you answered when it mattered most');
+      this.condition('heart', +1, 'held on');
+      // hope is not medicine. but a woman who believes she is being kept alive fights to stay
+      // alive, and sometimes that is the whole of it.
+      if (this.chance(0.6)) s.wounds = Math.max(0, s.wounds - 1);
+      if (by === 'you') this.speak(this.pick([
+        `You told me to hold on. So I held on. I want it written down that I held on because you told me to.`,
+        `I am going to live. You do not get to take the credit for that and you are going to anyway.`,
+      ]), 'close');
+    } else {
+      this.condition('faith', FAITH.absent, 'silence, in the dark, at the worst of it');
+      this.speak(this.fresh(VOICE.absent), 'absent');
+    }
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
+      text: key === 'hold'
+        ? `I asked whether I would live, and you told me to hold on. [${by === 'you' ? 'you' : 'she'} decided]`
+        : `I asked whether I would live, and heard nothing back. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
+  }
+
+  // ───────────────────────────────────────────────── is this what peace is, Angel
+  // A woven choice: not a crisis, just a quiet night and a question she turns to you with.
+  // Your answer nudges who she becomes — toward the road alone, or toward people — and a
+  // woman who is not a deep thinker is left turning "somewhat" over and getting nowhere.
+  reflect() {
+    const s = this.state;
+    if (s.pending.length) return;   // she does not muse about peace with anything else unanswered
+    if (s.wounds > 0 || s.attention >= 8 || this.eff('heart') < 7) return;   // only when she is genuinely at rest
+    if (s.day - (s.lastReflect ?? -30) < 20) return;
+    if (!this.chance(0.045)) return;
+    s.lastReflect = s.day;
+    s.pending.push({
+      id: `reflect_${s.day}`, kind: 'reflect', raisedOn: s.day, dueOn: s.day + 3,
+      prompt: `I got a room. Bolt on the inside of the door, coin in my boot, nothing hunting me tonight. I have been sitting here a while now. Is this what peace is, Angel?`,
+      options: { yes: 'Yes', no: 'No', somewhat: 'Somewhat' },
+    });
+  }
+
+  resolveReflect(j, key, by) {
+    const s = this.state;
+    if (key === 'yes') {
+      this.drift('sociable', -0.03);
+      this.condition('heart', +1, 'peace');
+      this.speak(`Then I will take it. Just me, the bolt, and you. I have had worse company and worse locks.`, 'close');
+    } else if (key === 'no') {
+      this.drift('sociable', +0.04);
+      this.speak(`No. I did not think so either. A locked room is not the same as not being alone in it. I should find someone before I forget how.`, 'close');
+    } else {
+      // SOMEWHAT. A considered answer for a woman with the wits to hold it — and a snare for
+      // one without, who cannot keep the shape of it and is left worse than before she asked.
+      if (this.eff('eye') + this.eff('nerve') >= 20) {
+        this.speak(`Somewhat. It is peace and it is a held breath at the same time, and I have learned to live in the difference.`, 'close');
+      } else {
+        this.condition('heart', -1, 'left turning it over');
+        this.speak(`Somewhat. I cannot — I cannot hold the shape of that. It slips when I look at it straight. I am better with a road than a question and now I am up all night with the question.`, 'cold');
+      }
+    }
+    s.log.push({
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
+      text: `I asked you whether this was peace, and you answered. [${by === 'you' ? 'you' : 'she'} decided]`,
+    });
   }
 
   // ============================================================== THE WORLD TICK
@@ -1002,6 +1603,10 @@ export class Sim {
     // because it is one.
     if (this.state.news.some((n) => n.text === text)) return;
     this.state.news.push({ text, where: where?.name ?? null, on: this.state.day, delay });
+    // AND YOU SEE IT HAPPEN. The world feed is the Angel's sight: the event goes up here the
+    // day it happens, in the third person, while she is still days from hearing of it — if she
+    // ever does. The gap between this line and the one she eventually writes is the lens.
+    this.around(`${text}.`, 'world');
   }
 
   // ==================================================================== THE LENS
@@ -1067,6 +1672,15 @@ export class Sim {
       // There is a market here and she has money in her pocket. That is the whole of the
       // condition — she does not go shopping on a mountain.
       buy: market && s.coin >= 70 ? 3 + Math.min(4, s.coin / 220) : 0,
+
+      // SHE GIVES. Generosity had almost no daily expression — it moved whether she sold a
+      // sworn blade and whether she armed a companion, and that was all, so the dial you set
+      // to "gives" mostly did nothing you could see. A generous woman gives: to the people in
+      // the room, to whoever is worse off, on the road. It is where the Open Hand is earned,
+      // and it is the one place a benevolent reputation (Name) is built without a fight.
+      give: (figures.length || market) && s.coin >= 20
+        ? Math.max(0, 2 + 6 * this.off('generous'))
+        : 0,
 
       // THE BOARD, AND THE THING ON IT. A posting is read where people are; a beast is
       // fought where it lives. And she goes at the one she took the money for far harder
@@ -1187,27 +1801,47 @@ export class Sim {
         // focus, twice, in a fortnight.
         if (underAsk(it, s) && !this.chance(0.12 + 0.18 * Math.max(0, this.off('reckless')))) {
           return this.say(
-            `she priced ${it.name} at ${this.here().name} and put it back. it is more than she can handle and she knows exactly by how much.`,
+            `I priced ${it.name} at ${this.here().name} and put it back. It is more than I can handle and I know exactly by how much.`,
             'kit', { id: act });
         }
 
         const price = Math.round(it.worth * (1.1 - this.st('tongue') * 0.3));
         if (price > s.coin) {
           return this.say(
-            `she priced ${it.name} at ${this.here().name} and walked away from it, and has thought about it every day since.`,
+            `I priced ${it.name} at ${this.here().name} and walked away from it, and I have thought about it every day since.`,
             'kit', { id: act });
         }
         this.use('tongue');
         s.coin -= price;
         if (!this.gain(it, FROM.bought(this.here().name))) {
           s.coin += price;   // she already had better. she put it back.
-          return this.say(`she looked at ${it.name} at ${this.here().name} and decided that what she has is better.`, 'kit', { id: act });
+          return this.say(`I looked at ${it.name} at ${this.here().name} and decided that what I have is better.`, 'kit', { id: act });
         }
         if (this.chance(0.4)) this.speak(this.fresh(OF_KIT.bought), 'close');
         return this.say(
-          `she bought ${it.name} at ${this.here().name}, for ${price} coin.` +
-          (underAsk(it, s) ? ' it is more than she can handle, and she knew that when she paid for it.' : ''),
+          `I bought ${it.name} at ${this.here().name}, for ${price} coin.` +
+          (underAsk(it, s) ? ' It is more than I can handle, and I knew that when I paid for it.' : ''),
           'kit', { id: act });
+      }
+
+      // ─────────────────────────────────────────────────────────────── SHE GIVES
+      // Not a transaction. A thing handed to somebody who needed it more, with nothing asked
+      // back — which is exactly why it builds her a KIND name and not a feared one, and why
+      // it slowly refills the Heart that everything else in this game spends.
+      case 'give': {
+        s.lived.gave++;
+        const alms = Math.min(s.coin, this.int(5, 25));
+        s.coin -= alms;
+        this.condition('heart', HEART.kindness, 'gave');
+        // a kind name travels, slowly, and the orders remember who is easy with them
+        if (this.chance(0.4)) this.use('name');
+        for (const f of ctx.factions) this.nudge(f.name, f.kind === 'order' ? 0.4 : 0);
+        return this.say(this.pick([
+          `I gave what I had at ${this.here().name} — ${alms} coin, and no name to go with it — to somebody who needed it more, and did not stay to be thanked.`,
+          `There was a family at ${this.here().name} with less than I have, which is not a high bar, and I left them the difference and moved on before the crying started.`,
+          `I paid a stranger's toll at ${this.here().name} and told them it was already settled. It was not. It is now.`,
+          `I have started leaving coin where the hungry ones at ${this.here().name} will find it and I will not have to watch them take it.`,
+        ]), 'event', { id: act });
       }
 
       case 'defy':
@@ -1618,8 +2252,8 @@ export class Sim {
       this.use('name');
       return this.say(
         b.friction > 0
-          ? `${f.name} knew who she was at ${this.here().name} before she said a word, and had already decided. she has stopped being surprised by this and has not stopped minding it.`
-          : `${f.name} had heard of her at ${this.here().name}, and was pleased to, and she cannot work out whether that is worse.`,
+          ? `${f.name} knew who I was at ${this.here().name} before I said a word, and had already decided. I have stopped being surprised by this and I have not stopped minding it.`
+          : `${f.name} had heard of me at ${this.here().name}, and was pleased to, and I cannot work out whether that is worse.`,
         'event', { id: 'meet' });
     }
 
@@ -1629,8 +2263,8 @@ export class Sim {
       shift(b, { friction: +1 }, null, s.day);
       this.use('nerve');
       return this.say(this.pick([
-        `${f.name} was at ${this.here().name}. neither of them left, and neither of them spoke, and the whole room understood.`,
-        `she and ${f.name} were in one room at ${this.here().name} for an hour. she counted every minute of it.`,
+        `${f.name} was at ${this.here().name}. Neither of us left, and neither of us spoke, and the whole room understood.`,
+        `${f.name} and I were in one room at ${this.here().name} for an hour. I counted every minute of it.`,
       ]), 'event', { id: 'meet' });
     }
 
@@ -1640,9 +2274,9 @@ export class Sim {
         closeness: this.chance(0.3) ? +1 : 0,
       }, 'they cannot leave each other alone', s.day);
       return this.say(this.pick([
-        `she drank with ${f.name} at ${this.here().name} and they argued about nothing for three hours, and both enjoyed it, and neither will admit that.`,
-        `${f.name} still wants ${b.node?.wants ?? 'the thing she wants'}. so does she. they were civil about it, and it cost them both.`,
-        `she and ${f.name} were pleasant to each other at ${this.here().name}. it was the most unpleasant hour of her week.`,
+        `I drank with ${f.name} at ${this.here().name} and we argued about nothing for three hours, and both enjoyed it, and neither will admit it.`,
+        `${f.name} still wants ${b.node?.wants ?? 'the thing I want'}. So do I. We were civil about it, and it cost us both.`,
+        `${f.name} and I were pleasant to each other at ${this.here().name}. It was the most unpleasant hour of my week.`,
       ]), 'event', { id: 'meet' });
     }
 
@@ -1654,10 +2288,10 @@ export class Sim {
     this.ripple(f.name, 0.5);   // even drinking with somebody is taking a side, a little
 
     return this.say(this.pick([
-      `she met ${f.name} at ${this.here().name}. they want ${f.wants ?? 'something they would not say'}. she has not decided yet whether that is a problem.`,
-      `she drank with ${f.name} at ${this.here().name}, who said out loud what they wanted, which she found either brave or stupid.`,
-      `${f.name} bought her a drink at ${this.here().name} and asked her nothing, and she has been braced ever since.`,
-      `${f.name} is at ${this.here().name}, known for ${f.known_for ?? 'nothing she can confirm'}. she has been careful to be somewhere else, and today she was not.`,
+      `I met ${f.name} at ${this.here().name}. They want ${f.wants ?? 'something they would not say'}. I have not decided yet whether that is a problem.`,
+      `I drank with ${f.name} at ${this.here().name}, who said out loud what they wanted, which I found either brave or stupid.`,
+      `${f.name} bought me a drink at ${this.here().name} and asked me nothing, and I have been braced ever since.`,
+      `${f.name} is at ${this.here().name}, known for ${f.known_for ?? 'nothing I can confirm'}. I have been careful to be somewhere else, and today I was not.`,
     ]), 'event', { id: 'meet' });
   }
 
@@ -1737,6 +2371,7 @@ export class Sim {
         b.carries = spare;
         shift(b, { closeness: +2, trust: +1 }, `she gave them ${spare.name}`, s.day, true);
         this.condition('heart', HEART.kindness, 'gave');
+        s.lived.gave++;
         return this.say(
           `she put ${spare.name} into ${b.who}'s hands at ${this.here().name} and told them not to make a thing of it.`,
           'bond');
@@ -1989,6 +2624,7 @@ export class Sim {
     if (this.chance(0.35)) {
       g.settled = s.day;
       this.condition('heart', +3, 'settled');
+      s.lived.gave++;
       this.use('name');
       this.speak(this.pick([
         `I did the thing ${g.name} wanted. They are still dead. I know that. I did it anyway.`,
@@ -2087,7 +2723,7 @@ export class Sim {
       ]), 'cold');
     }
     s.log.push({
-      day: s.day, kind: 'judgment', by, id: j.id,
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
       text: key === 'yes'
         ? `she let herself have ${b.who}. [${by === 'you' ? 'you' : 'she'} decided]`
         : `she let ${b.who} go. [${by === 'you' ? 'you' : 'she'} decided]`,
@@ -2128,7 +2764,10 @@ export class Sim {
   counsel() {
     const s = this.state;
     if (s.pending.some((p) => p.kind === 'counsel')) return;
-    if (!this.chance(0.05 + 0.05 * (this.eff('faith') / 20))) return;   // she asks more if she believes in you
+    // she asks more if she believes in you — and MORE AGAIN if you are the only one left to
+    // ask, which is the whole of what "her only true friend" means at the mechanical level.
+    const lonely = this.aloneWithYou();
+    if (!this.chance((0.05 + 0.05 * (this.eff('faith') / 20)) * (lonely ? 1.8 : 1))) return;
 
     const ask = (id, who, prompt, options) => {
       s.pending.push({ id, kind: 'counsel', who, prompt, options, raisedOn: s.day, dueOn: s.day + 5 });
@@ -2202,7 +2841,7 @@ export class Sim {
   resolveCounsel(j, key, by) {
     const s = this.state;
     const b = s.bonds[j.who];
-    const said = (text) => s.log.push({ day: s.day, kind: 'judgment', by, id: j.id, text: `${text} [${by === 'you' ? 'you' : 'she'} decided]` });
+    const said = (text) => s.log.push({ day: s.day, kind: 'judgment', by, id: j.id, feed: 'her', text: `${text} [${by === 'you' ? 'you' : 'she'} decided]` });
 
     // ── trust
     if (j.id.startsWith('trust_')) {
@@ -2226,6 +2865,7 @@ export class Sim {
         s.attention += 2;
         shift(b, { closeness: +4, trust: +4, owes: -6 }, `she got them ${b.node.wants}. it cost her ${cost} coin and she has never mentioned it`, s.day, true);
         this.condition('heart', +2, 'gave');
+        s.lived.gave++;
         this.ripple(j.who, 1);   // helping somebody get what they want is a very loud position
         this.say(`she got ${j.who} what they wanted. it cost her ${cost} coin and she has not mentioned it, and will not.`, 'bond');
         said(`she got ${j.who} what they wanted`);
@@ -2264,6 +2904,7 @@ export class Sim {
         // FORGIVENESS IS THE HARDEST THING IN THE GAME AND IT COSTS THE MOST.
         shift(b, { friction: -6, trust: +1 }, 'she let it go, which nobody who knows her believed she would', s.day, true);
         this.condition('heart', +2, 'forgave');
+        s.lived.gave++;   // mercy is a thing given, and the Open Hand is earned off it
         this.speak(this.pick([
           'I let it go. I want to be clear that I did not forgive them. I let it go. There is a difference and it is the only thing I have.',
           'I did not settle it. Everyone is waiting for me to and I am not going to and I cannot explain why to them or to you.',
@@ -2311,6 +2952,7 @@ export class Sim {
         said(`she kept what ${g.name} was carrying`);
       } else {
         this.condition('heart', +2, 'buried it');
+        s.lived.gave++;
         this.speak(`It went in the ground with them. It was worth more than everything else I own. I have not regretted it and I have thought about it every day, and those are both true.`, 'grief');
         this.say(`she put ${it.name} in the ground with ${g.name}. it was worth more than everything else she owns.`, 'loss');
         said(`she buried ${g.name} with what she gave them`);
@@ -2325,6 +2967,7 @@ export class Sim {
         g.settled = s.day;
         s.coin = Math.max(0, s.coin - this.int(40, 120));
         this.condition('heart', +3, 'settled');
+        s.lived.gave++;
         this.speak('It is done. They are still dead. I knew they would still be dead.', 'grief');
         this.say(`she finished what ${g.name} started. it cost her, and it changed nothing, and she would do it again.`, 'bond');
         said(`she finished what ${g.name} wanted`);
@@ -2412,7 +3055,7 @@ export class Sim {
     }
 
     s.log.push({
-      day: s.day, kind: 'judgment', by, id: j.id,
+      day: s.day, kind: 'judgment', by, id: j.id, feed: 'her',
       text: key === 'take'
         ? `she is ${c.name} now. [${by === 'you' ? 'you' : 'she'} decided]`
         : `she refused ${c.name}. [${by === 'you' ? 'you' : 'she'} decided]`,
@@ -2480,15 +3123,21 @@ export class Sim {
     if (i < 0) return null;
     const j = s.pending.splice(i, 1)[0];
     // YOU CAME. This is the only number in the game the player is directly responsible
-    // for, and it is the one that can be lost.
+    // for, and it is the one that can be lost. And it is TALLIED: turning up again and again
+    // is one of the three things a visit asks for, and this is where "again and again" is
+    // counted.
     this.condition('faith', FAITH.answered, 'answered');
     s.lastAnswered = s.day;
+    s.answered = (s.answered ?? 0) + 1;
     if (j.kind === 'join') this.resolveJoin(j, key, 'you');
     else if (j.kind === 'romance') this.resolveRomance(j, key, 'you');
     else if (j.kind === 'counsel') this.resolveCounsel(j, key, 'you');
     else if (j.kind === 'calling') this.resolveCalling(j, key, 'you');
     else if (j.kind === 'bounty') this.resolveBounty(j, key, 'you');
     else if (j.kind === 'great') this.resolveGreat(j, key, 'you');
+    else if (j.kind === 'visit') this.resolveVisit(j, key, 'you');
+    else if (j.kind === 'plea') this.resolvePlea(j, key, 'you');
+    else if (j.kind === 'reflect') this.resolveReflect(j, key, 'you');
     else this.resolveHook(j, key, 'you');
     return j;
   }
@@ -2512,7 +3161,7 @@ export class Sim {
       ]), 'close');
     }
     this.state.log.push({
-      day: this.state.day, kind: 'judgment', by, id: j.id,
+      day: this.state.day, kind: 'judgment', by, id: j.id, feed: 'her',
       text: key === 'yes' ? `${j.who} walks with her now. [${by === 'you' ? 'you' : 'she'} decided]`
                           : `${j.who} does not. [${by === 'you' ? 'you' : 'she'} decided]`,
     });
@@ -2581,6 +3230,26 @@ export class Sim {
       this.speak(this.fresh(VOICE.absent), 'absent');
       return this.resolveRomance(j, yes ? 'yes' : 'no', 'her');
     }
+    if (j.kind === 'visit') {
+      // YOU STOOD IN FRONT OF HER, SHE ASKED YOU ONE THING, AND YOU WERE GONE BEFORE SHE
+      // FINISHED. That is its own small cruelty, and she answers it herself — she has just
+      // been visited, so her Faith is high, and she lets herself believe you will stay,
+      // which is the sadder of the two outcomes and she chooses it anyway.
+      this.speak(this.fresh(VOICE.absent), 'absent');
+      return this.resolveVisit(j, this.eff('faith') >= 12 ? 'stay' : 'once', 'her');
+    }
+    if (j.kind === 'plea') {
+      // SHE ASKED YOU WHETHER SHE WOULD LIVE, AND YOU WERE NOT THERE. She lives or dies on her
+      // own body now, not your word — the wound is already counted; this only decides whether
+      // she faced it believing anybody heard her. She did not.
+      return this.resolvePlea(j, 'quiet', 'her');
+    }
+    if (j.kind === 'reflect') {
+      // She asked you what this was, on a quiet night, and you did not answer. She decides —
+      // and a woman who has stopped believing anybody is listening settles into the room and
+      // the road and calls it peace, because the alternative is to keep asking an empty room.
+      return this.resolveReflect(j, this.eff('faith') < 8 ? 'yes' : 'somewhat', 'her');
+    }
     const w = {
       act: 0.3 + 0.5 * this.off('reckless'),
       tell: 0.3 + 0.5 * this.off('sociable'),
@@ -2631,7 +3300,7 @@ export class Sim {
         `she kept it to herself. ${j.collision}. it is the most valuable thing she owns and she cannot spend it.`,
       ]);
     }
-    this.state.log.push({ day: s.day, kind: 'judgment', by, text, id: j.id });
+    this.state.log.push({ day: s.day, kind: 'judgment', feed: 'her', by, text, id: j.id });
   }
 
   // ======================================================================== TICK
@@ -2655,14 +3324,18 @@ export class Sim {
     this.herTick();        // she does something, where she is
     this.peopleTick();     // and the people in her life live, or leave, or sell her
     this.betrayalTick();   // and somebody close enough to hurt her sometimes does
+    this.threatTick();     // and the world sets itself against her, in the feed only you can see
     this.ghostTick();      // and the dead keep asking for what they never got
+    this.reflect();        // and on a safe night she turns to you and asks what this is
     this.counsel();        // and sometimes she turns to you and asks what to do about a person
     this.raiseHooks();     // and sometimes puts two things together
     this.offerCompanion(); // and sometimes asks you about somebody
     this.offerCalling();   // and sometimes the world tells her what it has decided she is
     this.offerGreat();     // and one day she is standing outside the worst thing in the world
     this.earnTraits();     // and slowly becomes someone she did not choose to be
+    this.confide();        // and tells you how she feels about the people in her life
     this.maybeSpeak();     // and talks to you, less and less
+    this.communeTick();    // and answers, a day or two late, the things you asked her
 
     const learned = this.lens();   // and finds out — witnessed, or late and secondhand
     if (learned) this.say(learned.text, learned.kind);

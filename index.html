@@ -119,12 +119,25 @@
     <button id="tab-her-btn" class="tab" role="tab" aria-selected="false" aria-controls="tab-her">Her</button>
   </nav>
 
+  <!-- TWO FEEDS, side by side. HER ACCOUNT is her own hand — first person, only what she
+       knows. AROUND HER is what you can see closing on her and she cannot: the watcher, the
+       ambush being set. You decide whether to warn her, or leave her to it. -->
   <section id="tab-record" class="ledger" role="tabpanel" aria-labelledby="tab-record-btn">
     <div class="ledger-head">
-      <p class="eyebrow">Everything that has happened to her</p>
+      <p class="eyebrow">Her account, and what is closing on her</p>
       <span id="next-day" class="tick"></span>
     </div>
-    <div id="log" class="log"></div>
+    <div class="feeds">
+      <div class="feed feed-her">
+        <p class="feed-head warm">Her account</p>
+        <div id="log-her" class="log"></div>
+      </div>
+      <div class="feed feed-around">
+        <p class="feed-head">Around her <span class="feed-sub">— what you can see, and she cannot</span></p>
+        <div id="threats" class="threats"></div>
+        <div id="log-around" class="log around"></div>
+      </div>
+    </div>
   </section>
 
   <div id="tab-her" class="panel" role="tabpanel" aria-labelledby="tab-her-btn" hidden>
@@ -147,6 +160,20 @@
       <p class="eyebrow">What you can do for her</p>
       <p class="quiet small">She has to believe you are there. It lands on her Faith, and a woman who has stopped believing has nothing for it to land on.</p>
       <div id="bless" class="bless"></div>
+
+      <!-- THE VISIT. Not a blessing — a blessing proves you are real; this proves you are
+           HERE. Gated hardest of anything in the game: she must believe in you completely,
+           you must have been real to her once, and you must have turned up again and again. -->
+      <div id="visit" class="visit"></div>
+    </section>
+
+    <!-- THE CHANNEL BOTH WAYS. She talks to you, and asks you, all over this page. This is
+         the other direction: you asking her. She answers in a day or two, in her own voice,
+         out of her own state — she is walking a country, not sitting by a phone. -->
+    <section class="block">
+      <p class="eyebrow">Ask her something</p>
+      <p class="quiet small">She will answer when she gets to it — a day, maybe two. She has to still believe you are there to hear you at all.</p>
+      <div id="commune" class="commune"></div>
     </section>
 
     <!-- What she is hunting, and the one thing in this world that is hunting everybody. -->

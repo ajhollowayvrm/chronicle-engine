@@ -102,6 +102,20 @@ export const VOICE = {
     'I have got good at this. I would like the record to show that I did not want to.',
   ],
 
+  // ------------------------------------------------------ you are the only one left
+  // Fires when she is FAMOUS or ISOLATED enough that there is genuinely nobody else — a
+  // feared name nobody will sit near, a beloved one nobody truly knows, a woman who has
+  // outlived everyone who remembers her. In that state she reaches out to you far more, and
+  // this is the register she does it in: not warm exactly, but need, admitted.
+  only: [
+    'You are the only one who has been here the whole way. I did the arithmetic the other night. It comes out to you.',
+    'There is nobody left who remembers who I was before this. Except you, and you never met her, and I have started telling you about her.',
+    'I have a name in nine countries and not one person in any of them I could say this to. So it is you. It has been you for a long time.',
+    'They step aside for me now. All of them. Nobody steps toward me. You do not step at all and somehow that is more.',
+    'I talk to you more than I used to. I have noticed. It is not that I believe in you more. It is that the room got emptier.',
+    'Do not go quiet on me. Of everything I have lost I could not stand to lose the one thing that was never really here.',
+  ],
+
   // -------------------------------------------------------------- she is asking you
   // the prompt on a judgment. it is not an abstract question — it is HER, asking.
   ask: [
@@ -116,3 +130,89 @@ export const VOICE = {
 // She talks to you more when she is still listening, and hardly at all when she is not.
 // This is the curve, and it is the whole design in one function.
 export const speaksTo = (heeds) => 0.06 + 0.22 * heeds;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WHAT SHE CONFIDES — the people in her life, and how she actually feels about them.
+//
+// The chronicle says what she DID. Her voice, above, says how she is. This is the third
+// thing, and it is the one you asked for: she turns to you and tells you what she feels
+// about a specific person — that she is in love, that she wants somebody dead, that she owes
+// a debt she cannot say thank you for. You are the only one she will say any of it to. Some
+// of it she would deny to their face. That is exactly why it comes to you.
+//
+// Every bucket is chosen by the ACTUAL STATE of an ACTUAL bond (src/sim.js confide()), so
+// she never confides a love she does not have or a hatred she has not earned. `{who}` is the
+// person, filled in before you see it.
+export const CONFIDE = {
+  // she is in love, and it terrifies her, and she tells you and not them
+  love: [
+    'I am in love with {who}. I have not said it to them in those words. I said it to you first, which tells you which of the two of you I trust, and frightens me.',
+    'It is {who}. I did not go looking and I found it anyway. I have something to lose now — I feel the weight of it in every fight, and I am not giving it back.',
+    'I woke before {who} this morning and did not get up. I lay there. That is the whole of the entry, and it is more than I have had in years.',
+    'I love {who}. I am telling you because once I say it to them I cannot unsay it, and I am not ready, and I wanted it to exist somewhere first.',
+  ],
+  // it has not happened yet, and she can feel it deciding to
+  falling: [
+    'I could love {who}, if I let myself. I have been very careful not to let myself. I am telling you because you are the only one who will not go and tell them.',
+    'I keep finding reasons to be wherever {who} is. I have noticed I am doing it. I have not started stopping.',
+    'Something has changed with {who} and I have not decided whether to allow it. Do not say anything. I know exactly what you would say.',
+  ],
+  // close AND furious — the one that gets people killed, because she loved them once
+  feud_kill: [
+    'I want to kill {who}. I mean that plainly. And I loved them once, and that is the only reason it is still a want and not a thing already done.',
+    'There is nobody I hate the way I hate {who}, and nobody I have been closer to, and if you think those are two different sentences you have never hated anyone properly.',
+    '{who} and I are going to end each other one day. We both know it. We are only deciding which of us gets tired first.',
+  ],
+  // a rivalry with teeth — she is angry, and the anger does not cool, and she has started
+  // thinking about the person simply not being in the way
+  anger: [
+    'I am angry with {who} in a way that does not cool. We want the same thing and there is one of it, and I have started thinking about {who} not being in the way, and I mean that more literally each week.',
+    'I could do without {who}. I caught myself working out how permanent I would want that to be. The answer moved while I was looking at it, and I did not like where it went.',
+    'There is a thing between {who} and me that is going to have to be settled. I am telling you now, while I still mean "settled" and not the shorter, worse word I have been trying not to use.',
+    '{who} crossed me and has not stopped, and I have a long memory and a short list, and they have put themselves on it.',
+  ],
+
+  // clean hatred, no history to soften it
+  hate_kill: [
+    'I could kill {who} and sleep the same night. I have worked out how. I am telling you so that somebody knows it was not a thing that just happened to me.',
+    'I hate {who}. Cleanly. No history to complicate it. It is almost restful, hating somebody I never once liked.',
+    'If {who} died tomorrow I would not pretend to grieve — and I would not have had to do it myself, and I turn that second part over more than is good for me.',
+  ],
+  // they sold her, and they are still breathing
+  betrayed: [
+    'I want {who} dead for what they did to me. I gave them everything and they sold it. Tell me that is not a reason. You cannot, and you will not, and that is why I am telling you and not somebody who would stop me.',
+    'I trusted {who}. That is the whole of it. I do not want to talk about it, and I am telling you, which tells you what I am under the not-wanting.',
+    'Every road I walk now, I am half looking for {who}. Not to talk. I want you to know that about me, in case it matters later.',
+  ],
+  // closer to them than she trusts them, and she knows it
+  distrust: [
+    'I am closer to {who} than I trust them, and I know precisely how that sentence tends to end, and I keep letting them closer anyway.',
+    'I would put my back to {who}. I am not certain I should. I have not worked out whether that makes me a fool or just tired of checking.',
+  ],
+  // a life saved, a thank-you she cannot say
+  debt: [
+    'I owe {who} my life and I have not said thank you. I do not know how to begin, and the longer I do not, the more it curdles into something near resentment, and I am ashamed of that, and I am telling you the ashamed part too.',
+    '{who} stepped in front of a blade that had my name on it. Now I owe them, and owing somebody is its own kind of debt collector, and it does not sleep.',
+  ],
+  // she handed somebody the knife
+  secret: [
+    'I told {who} a thing I have told nobody. I put the knife in their hand myself. I have been sick about it all week. I would do it again, and I do not know what that says about me.',
+    '{who} knows the true thing about me now. I gave it to them freely, one night, because I wanted somebody in the world to be holding it. I am aware of what I have done.',
+  ],
+  // the warmth she will not admit to their face
+  fond: [
+    'I am fond of {who} in a way I would deny to their face and am admitting to yours. Do not make a thing of it.',
+    '{who} is easy to be around, and I have not had easy in a long time. I keep waiting for the price. There does not seem to be one, and that is its own kind of unease.',
+    'I took the second watch so {who} could sleep, and did not tell them, and I think they knew. That is the nearest thing to happy I can point at just now.',
+    '{who} makes me laugh, which I had thought was a thing that had been trained out of me. Apparently not. Apparently it was just waiting.',
+    'I trust {who}. I want that noted somewhere, because I do not say it about many people, and I have said it about fewer and been right about almost none.',
+    'If it came to it, I would stand between {who} and the thing coming for them, and I would not think about it first. I have thought about the not-thinking, though.',
+    'I told {who} a joke my mother used to tell. I have not thought about my mother in years. {who} is doing something to me and I have not decided to stop it.',
+  ],
+  // and the dead, who she still talks to
+  grief_person: [
+    'I still talk to {who} sometimes, out loud, on empty roads. They are dead. I know they are dead. I do it anyway.',
+    'I dreamed about {who} again. I woke before dawn and walked until it was light. I would give a great deal to have buried them old.',
+    'Nobody says {who}’s name any more except me, and I only say it to you. That is what it comes to, in the end. That is what a person comes to.',
+  ],
+};

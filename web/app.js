@@ -19,6 +19,7 @@ import { STATS, DOMAINS, STAT_MAX, rankOf } from '../gen/tables/stats.js';
 import { kindOf, describe } from '../src/bonds.js';
 import { MARKS } from '../gen/tables/marks.js';
 import { CALLINGS } from '../gen/tables/callings.js';
+import { QUESTIONS, COMMUNE_FAITH } from '../gen/tables/communion.js';
 import { SHAPES } from '../gen/tables/goods.js';
 import { usable, underAsk, unsworn } from '../src/kit.js';
 import { BLESSINGS } from '../gen/tables/blessings.js';
@@ -147,6 +148,50 @@ function setDial(dial, value) {
   tellTheServer(journal);
 }
 
+// YOU ASK HER SOMETHING. An input like a suggestion or a blessing — it goes in the journal
+// and replays from day one, so the answer she gives a day or two from now is the same answer
+// every time you reload. She could not answer a free sentence (the engine runs no model), so
+// this is one of a fixed set of the things a person actually asks the thing that is listening.
+function askHer(topic) {
+  sim.askHer(topic);
+  journal.entries.push({ elapsed, type: 'ask', topic });
+  save(journal, store);
+  // her future now contains an answer it did not before — re-foresee her.
+  tellTheServer(journal);
+  render();
+}
+
+// YOU STAND IN FRONT OF HER. The rarest thing you can do, gated inside the engine; the UI
+// only offers the button when `canVisit()` says so. Also an input, also journalled.
+function doVisit() {
+  sim.visit();
+  journal.entries.push({ elapsed, type: 'visit' });
+  save(journal, store);
+  tellTheServer(journal);
+  render();
+}
+
+// YOU WARN HER of a thing closing on her that she cannot see. An input like any other. It
+// lands on her Faith inside the engine — a woman who has stopped believing cannot make out
+// what you are trying to tell her — so the button does not promise it will work.
+function warnHer(id) {
+  sim.warn(id);
+  journal.entries.push({ elapsed, type: 'warn', id });
+  save(journal, store);
+  tellTheServer(journal);
+  render();
+}
+
+// YOU LEAVE HER TO IT. Not neglect — a choice. Some things a person has to walk into to
+// become who they are, and you are allowed to let her. This records nothing in the engine
+// (not warning simply lets the threat land as it will); it only clears the prompt from your
+// side, so you are not asked again about a thing you have decided to let happen.
+const leftToIt = new Set();
+function leaveHerToIt(id) {
+  leftToIt.add(id);
+  render();
+}
+
 // You cannot move her. You can tell her where you would rather she was, and she will
 // weigh it against who she has become.
 function suggest(i) {
@@ -170,9 +215,12 @@ function render() {
   renderVoice(s);
   renderAsking(s);
   renderDeath(s);
-  renderLog(s);
+  renderThreats(s);
+  renderFeeds(s);
   renderChanged(s);
   renderBless(s);
+  renderVisit(s);
+  renderCommune(s);
   renderHunt(s);
   renderStats(s);
   renderMarks(s);
@@ -229,7 +277,8 @@ function renderAsking(s) {
   // A calling carries a `prompt` and no `facts` — read it as a hook and the screen throws
   // on `j.facts[0]` the first time the world offers her a name.
   if (j.kind === 'join' || j.kind === 'romance' || j.kind === 'counsel' || j.kind === 'calling'
-      || j.kind === 'bounty' || j.kind === 'great') {
+      || j.kind === 'bounty' || j.kind === 'great' || j.kind === 'visit'
+      || j.kind === 'plea' || j.kind === 'reflect') {
     $('ask-prompt').textContent = j.prompt;
     facts.hidden = true;
   } else {
@@ -265,28 +314,65 @@ function renderDeath(s) {
   $('death-line').textContent = d ? d.text : `${s.name} is dead.`;
 }
 
-// ══════════════════════════════════════════════════════════════════ THE RECORD
-function renderLog(s) {
-  const host = $('log');
+// ══════════════════════════════════════════════════════════════════ THE TWO FEEDS
+//
+// HER ACCOUNT (feed 'her') is her own hand, first person, only what she knows. AROUND HER
+// (feed 'world') is what you can see gathering that she cannot. Same event stream, split by
+// who can see it — which is the whole game in one layout.
+function entryRow(l) {
+  // NAMESPACED, AND IT HAS TO BE. `k-` fences the log kind out of the global class namespace
+  // — without it, `.mark` (the 1px slider tick) once turned every mark in the chronicle into
+  // a one-pixel column of text spilling across the page. The fence is load-bearing; leave it.
+  const row = el('div', `entry k-${l.kind}`);
+  if (l.why) row.dataset.mood = l.why;
+  row.append(el('span', 'd', String(l.day)));
+  row.append(el('p', null, l.text));
+  return row;
+}
+
+function renderFeeds(s) {
+  const her = $('log-her');
+  const around = $('log-around');
+  her.replaceChildren();
+  around.replaceChildren();
+
+  const recent = s.log.slice(-260);
+  for (const l of recent) (l.feed === 'world' ? around : her).append(entryRow(l));
+
+  if (!her.children.length) her.append(el('p', 'quiet small', 'She has not written anything yet.'));
+  if (!around.children.length) around.append(el('p', 'quiet small', 'Nothing is moving that she cannot see. For now.'));
+}
+
+// ══════════════════════════════════════════════════ WHAT IS CLOSING ON HER — AND YOU DECIDE
+// The active threats, as things you can act on. Warn her (it lands on her Faith, so it may
+// not reach her) — or leave her to it, and let her be shaped by what she walks into.
+function renderThreats(s) {
+  const host = $('threats');
   host.replaceChildren();
-  for (const l of s.log.slice(-160)) {
-    // NAMESPACED, AND IT HAS TO BE.
-    //
-    // This was `entry ${l.kind}`, and the sim's log kinds include `mark`, `kit`, `calling`,
-    // `hunt`, `bless` and `stat` — every one of which is ALSO the class name of a container
-    // in the panel. So a chronicle entry silently inherited the styling of an unrelated
-    // component, and `.mark` — the 1px absolutely-positioned tick on the dial slider — turned
-    // every mark in her chronicle into a one-pixel-wide absolutely-positioned column of text
-    // spilling across the whole log.
-    //
-    // Renaming the offender fixed it once and it came straight back the moment new log kinds
-    // were added, because the bug was never the name: it was that a log entry was reaching
-    // into the global class namespace at all. `k-` is the fence.
-    const row = el('div', `entry k-${l.kind}`);
-    if (l.why) row.dataset.mood = l.why;
-    row.append(el('span', 'd', String(l.day)));
-    row.append(el('p', null, l.text));
-    host.append(row);
+  if (!s.alive) return;
+
+  const live = (s.threats ?? []).filter((t) => !t.told && !t.warned && !t.noticed && !leftToIt.has(t.id));
+  for (const t of live) {
+    const card = el('div', 'threat-card');
+    card.append(el('p', 'threat-what',
+      t.kind === 'theft'
+        ? `Someone means to rob her — she has not seen him. He knows where she sleeps.`
+        : `An ambush is being set for her on the road out. She has not seen it coming.`));
+
+    const acts = el('div', 'threat-acts');
+    const warn = el('button', 'primary tiny', 'Warn her');
+    warn.addEventListener('click', () => warnHer(t.id));
+    acts.append(warn);
+    const leave = el('button', 'ghost tiny', 'Leave her to it');
+    leave.addEventListener('click', () => leaveHerToIt(t.id));
+    acts.append(leave);
+    card.append(acts);
+
+    card.append(el('span', 'threat-note',
+      sim.eff('faith') < 6
+        ? 'She has stopped believing enough to hear a warning. It may not reach her.'
+        : 'A warning lands on her Faith, and only saves her if she has the wits to act on it.'));
+    host.append(card);
   }
 }
 
@@ -492,6 +578,74 @@ function renderBless(s) {
     if (!can.ok) row.append(el('span', 'gift-shut', can.why));
     host.append(row);
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════ THE VISIT
+// Proof you are HERE, not merely real. The button only appears when the engine says she
+// could bear it — and when it cannot, the reason is stated plainly, because every one of
+// those reasons is a sentence about the relationship, not a greyed-out control.
+function renderVisit(s) {
+  const host = $('visit');
+  host.replaceChildren();
+  if (!s.alive) return;
+
+  const can = sim.canVisit();
+  const row = el('div', `gift visit-gift ${can.ok ? '' : 'shut'}`);
+
+  const b = el('button', 'gift-do', s.visits ? 'Come to her again' : 'Go to her, in the flesh');
+  b.disabled = !can.ok;
+  b.addEventListener('click', doVisit);
+  row.append(b);
+  row.append(el('span', 'gift-what',
+    'Not a gift — a visitation. She will see you. It leaves a mark that never fades, it makes her burn to the thing that is counting, and she gets to ask you one thing to your face.'));
+
+  row.append(el('span', 'gift-cost',
+    'She must believe in you completely, you must have been real to her once, and you must have turned up for her again and again.'));
+
+  if (!can.ok) row.append(el('span', 'gift-shut', can.why));
+  else if (s.visits) row.append(el('span', 'moment', `she has seen you ${s.visits === 1 ? 'once' : `${s.visits} times`}. she has told no one.`));
+  host.append(row);
+}
+
+// ═══════════════════════════════════════════════════════════════════ ASK HER SOMETHING
+// The channel that goes both ways. A small set of the real things a person asks the thing
+// they have decided is listening. She answers in a day or two — and only if she still
+// believes you are there, because a question needs somebody on the other end of it.
+function renderCommune(s) {
+  const host = $('commune');
+  host.replaceChildren();
+
+  if (!s.alive) {
+    host.append(el('p', 'quiet small', 'There is nobody left to ask.'));
+    return;
+  }
+
+  const faith = sim.eff('faith');
+  if (faith < COMMUNE_FAITH) {
+    host.append(el('p', 'quiet small',
+      'She has stopped believing there is anyone on the other end of a question. Ask, and it lands in silence — and the silence is the answer.'));
+    return;
+  }
+
+  // she is turning one over already
+  if (s.youAsked) {
+    const q = QUESTIONS[s.youAsked.topic];
+    const waited = s.day - s.youAsked.on;
+    host.append(el('p', 'commune-pending',
+      `You asked her: “${q?.label ?? 'something'}”`));
+    host.append(el('p', 'quiet small',
+      waited < 1 ? 'She has it. She has not got to it yet.'
+        : 'She is turning it over. She will answer when she is ready, and she is never in a hurry.'));
+    return;
+  }
+
+  const grid = el('div', 'commune-grid');
+  for (const [key, Q] of Object.entries(QUESTIONS)) {
+    const btn = el('button', 'ask-q', Q.label);
+    btn.addEventListener('click', () => askHer(key));
+    grid.append(btn);
+  }
+  host.append(grid);
 }
 
 // ═══════════════════════════════════════════════════════════════ WHAT SHE IS HUNTING

@@ -86,12 +86,49 @@ function words(eng, j) {
   if (j.kind === 'romance' || j.kind === 'counsel' || j.kind === 'join') {
     return { title: `${her} is asking you`, body: j.prompt };
   }
+  // SHE ASKED YOU SOMETHING TO YOUR FACE. This only exists because you visited her, so her
+  // Faith is high and it will reach you — but it is the one question in the game she got to
+  // ask you in the flesh, and it must not be missed.
+  if (j.kind === 'visit') {
+    return { title: `${her} asked you, to your face`, body: j.prompt };
+  }
+  // BADLY HURT, ASKING WHETHER SHE WILL LIVE. Never miss this one.
+  if (j.kind === 'plea') {
+    return { title: `${her} is asking if she will live`, body: j.prompt };
+  }
+  if (j.kind === 'reflect') {
+    return { title: `${her} is asking you something`, body: j.prompt };
+  }
   // A hook: two facts she already knew, put next to each other. The collision now names
   // every party in both of them, so it IS the message — bolting "and she does not know what
   // to do about it" onto the end of a finished paragraph just made it a longer paragraph.
   return {
     title: `${her} has worked something out`,
     body: j.collision || 'She has put two things together, and she is waiting on you.',
+  };
+}
+
+// SOMETHING IS CLOSING ON HER, AND SHE CANNOT SEE IT. This is the other feed reaching your
+// phone. It is NOT gated on whether she reaches out — she is not the one reaching, you are
+// the one seeing — but it IS gated on whether a warning could land at all: below Faith 6 she
+// cannot make out what you would be trying to tell her, so there is nothing to knock about.
+function urgentThreat(eng, seen) {
+  if (eng.eff('faith') < 6) return null;
+  for (const t of eng.state.threats ?? []) {
+    if (seen.has(t.id) || t.told || t.warned || t.noticed) continue;
+    seen.add(t.id);
+    return t;
+  }
+  return null;
+}
+
+function threatWords(eng, t) {
+  const her = eng.state.name;
+  return {
+    title: `Something is closing on ${her}`,
+    body: t.kind === 'theft'
+      ? `Someone means to rob ${her} tonight, and she has not seen him. You can warn her — or leave her to it.`
+      : `An ambush is being set for ${her} on the road out, and she has not seen it. You can warn her — or leave her to it.`,
   };
 }
 
@@ -119,6 +156,8 @@ export function foresee(journal, now, told = []) {
     if (!reachesOut(eng, j.id)) { seen.add(j.id); continue; }
     return { at: now, day: eng.state.day, id: j.id, kind: j.kind ?? 'hook', ...words(eng, j) };
   }
+  const nowThreat = urgentThreat(eng, seen);
+  if (nowThreat) return { at: now, day: eng.state.day, id: nowThreat.id, kind: 'threat', ...threatWords(eng, nowThreat) };
 
   // ── AND THEN WE WALK FORWARD THROUGH HER LIFE UNTIL SHE NEEDS US.
   for (let i = 0; i < HORIZON && eng.state.alive; i++) {
@@ -144,6 +183,9 @@ export function foresee(journal, now, told = []) {
       if (!reachesOut(eng, j.id)) { seen.add(j.id); continue; }
       return { at: at(eng.state.day), day: eng.state.day, id: j.id, kind: j.kind ?? 'hook', ...words(eng, j) };
     }
+    // and the thing gathering around her that she cannot see, while there is still time to warn
+    const t = urgentThreat(eng, seen);
+    if (t) return { at: at(eng.state.day), day: eng.state.day, id: t.id, kind: 'threat', ...threatWords(eng, t) };
   }
 
   return null;   // she gets through the horizon without you. look again later.
