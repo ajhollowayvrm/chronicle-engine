@@ -36,7 +36,7 @@ import {
 } from './kit.js';
 import { bestiary } from './beasts.js';
 import { GREAT, POSTED, TOOK, REFUSED } from '../gen/tables/beasts.js';
-import { BLESSINGS, FIRST, UNFELT } from '../gen/tables/blessings.js';
+import { BLESSINGS, FIRST, UNFELT, GIFT } from '../gen/tables/blessings.js';
 import { QUESTIONS, COMMUNE_FAITH, VISIT } from '../gen/tables/communion.js';
 
 // YOU CANNOT BE A CONSTANT MIRACLE. A long silence between blessings, or she stops being a
@@ -50,6 +50,14 @@ const BLESS_GAP = 25;
 const VISIT_FAITH = 16;   // near the top of the scale: she trusts you more than herself
 const VISIT_GAP = 55;     // longer than two blessings put together
 const VISIT_ANSWERED = 3; // you have actually turned up, more than once
+
+// THE GIFT IS RAREST OF ALL. A blessing proves you are REAL; a visit proves you are HERE;
+// making a thing appear in her hand proves you can REACH IN. So it asks for exactly what the
+// visit asks — deep belief, a prior blessing, a record of turning up — on a silence longer
+// than any other, because a world where objects keep materialising is a world with no weight.
+const GIFT_FAITH = 16;
+const GIFT_GAP = 60;      // longer than the visit: matter does not come cheap
+const GIFT_ANSWERED = 3;
 
 // A WARNING LANDS ON FAITH, exactly like a blessing. You can see the thing closing on her;
 // whether she can make out what you are trying to tell her depends on whether she still
@@ -427,7 +435,9 @@ export class Sim {
     // is worse than the one she has, she does not take it.
     const had = wielded(s, item.shape);
     if (had) {
-      if (had.worth >= item.worth) return null;
+      // she does not trade away a thing the Angel put in her hand for anything she finds on a
+      // road, however fine. a kept thing stays until force takes it.
+      if (had.kept || had.worth >= item.worth) return null;
       s.kit = s.kit.filter((i) => i !== had);
       // she does not throw away a thing somebody gave her. she keeps it and says nothing.
       s.coin += had.given_by ? 0 : Math.round(had.worth * 0.4);
@@ -480,7 +490,7 @@ export class Sim {
   // magics, charging THIS world's price, in the words the seed wrote for it.
   //
   // A relic is never rolled at random — she has to go looking.
-  mintHere(shape) {
+  mintHere(shape, tier) {
     const roll = {
       pick: (a) => this.pick(a),
       int: (lo, hi) => this.int(lo, hi),
@@ -494,6 +504,7 @@ export class Sim {
       magic: this.law('magic') ?? {},
       factions: this.factionsHere(),
       where: this.here().name,
+      tier,                                 // forced when the Angel makes it; rolled otherwise
     });
   }
 
@@ -1255,6 +1266,67 @@ export class Sim {
     return { visited: true };
   }
 
+  // ═════════════════════════════════════════════════════════════════════════ THE GIFT
+  //
+  // The Angel reaches into the world and puts a thing in her hand that was not there
+  // yesterday. Gated exactly like the visit — she has to believe in you completely, you have
+  // to have been real to her once, you have to have turned up again and again — on the
+  // longest silence in the game. It is never pushed as "available"; you discover it by
+  // opening her. Journalled as {type:'gift', shape} and replayed deterministically, because
+  // the shape is data and every number falls out of the shape — there is no dial for how
+  // strong it is, which is the whole point: you choose WHAT it is, never HOW GOOD.
+  canGift() {
+    const s = this.state;
+    if (!s.alive) return { ok: false, why: 'no' };
+    if (s.day - (s.lastGifted ?? -GIFT_GAP) < GIFT_GAP) {
+      return { ok: false, why: `not yet — a thing like this cannot come often. ${GIFT_GAP - (s.day - s.lastGifted)} days` };
+    }
+    if (this.eff('faith') < GIFT_FAITH) return { ok: false, why: 'she does not believe in you deeply enough to receive this — her Faith is not high enough' };
+    if ((s.blessings ?? 0) < 1) return { ok: false, why: 'she has never once felt you were real. bless her first — a gift needs a believer to put it into the hand of' };
+    if ((s.answered ?? 0) < GIFT_ANSWERED) return { ok: false, why: 'you have not turned up enough. answer her when she asks, and keep answering, and then reach in' };
+    return { ok: true };
+  }
+
+  gift(shape) {
+    const s = this.state;
+    if (!this.canGift().ok) return { gifted: false };
+    const S = SHAPES[shape];
+    if (!S) return { gifted: false };
+
+    // The best of this world's version of the thing — its top tier, forced. A relic needs
+    // this world to HAVE a magic to make it of; if it does not, the gift cannot be that
+    // shape, and we say so rather than mint nothing.
+    const it = this.mintHere(shape, S.tiers.length - 1);
+    if (!it) return { gifted: false };
+
+    s.lastGifted = s.day;
+    s.gifts = (s.gifts ?? 0) + 1;
+
+    // IT IS BLESSED, IT IS HERS, AND IT WAS NOT HERE YESTERDAY.
+    it.blessed = true;
+    it.kept = true;                                   // she never sells it; only force takes it
+    for (const k of Object.keys(it.gives)) it.gives[k] *= 1.8;
+    it.worth = Math.round(it.worth * 2.5);
+    it.asks = {};                                     // fitted to her hand — it never strains her
+    it.only = null;                                   // made for her, not for a rank she must hold
+    it.name = `${it.name}, and it was not here yesterday`;
+    it.from = 'it was not in her hand yesterday, and it is now';
+    it.given_by = 'you';
+    it.since = s.day;
+
+    // she carries one of each shape; the gift takes the slot, and the old one is set aside.
+    const had = wielded(s, shape);
+    if (had) s.kit = s.kit.filter((i) => i !== had);
+    s.kit.push(it);
+
+    // proof again — not the first, but the largest kind. you did not send a feeling. you
+    // reached in and left something she can hold in the morning.
+    this.condition('faith', +2, 'you reached into the world');
+    this.say(GIFT.line, 'bless');
+    this.speak(this.fresh(GIFT.she), 'afraid');
+    return { gifted: true, item: it };
+  }
+
   resolveVisit(j, key, by) {
     const s = this.state;
     if (key === 'stay') {
@@ -1773,9 +1845,12 @@ export class Sim {
           * Math.max(0.1, 1 + this.bonus('toll') - this.st('tongue') * 0.45));
 
         // SHE CANNOT PAY IT. So they take something, and they take the good one, and this
-        // is why an object in this game has to be losable to be worth having.
-        if (toll > s.coin && s.kit.length && this.chance(0.5)) {
-          const took = best(s.kit);
+        // is why an object in this game has to be losable to be worth having. But she will
+        // not hand over the Angel's gift for a toll — she gives them the best of the rest, or
+        // makes a scene; only outright force (robbery, betrayal) ever takes a kept thing.
+        const sellable = s.kit.filter((i) => !i.kept);
+        if (toll > s.coin && sellable.length && this.chance(0.5)) {
+          const took = best(sellable);
           s.kit = s.kit.filter((i) => i !== took);
           s.attention += 1;
           this.speak(this.fresh(OF_KIT.sold), 'cold');

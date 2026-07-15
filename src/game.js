@@ -139,6 +139,12 @@ export function replay(journal, toElapsed) {
         // gated inside the engine on Faith, on a prior blessing, and on how often you have
         // answered her, so replaying it reproduces exactly the visit you were allowed.
         eng.visit();
+      } else if (entry.type === 'gift') {
+        // YOU REACHED INTO THE WORLD and left a thing in her hand. An input like any other:
+        // the SHAPE is journalled, and every number falls out of the shape (top tier, blessed),
+        // so replay mints the identical object from day one. There is no stat in the journal —
+        // you chose what it is, never how good, which is the whole invariant.
+        eng.gift(entry.shape);
       } else if (entry.type === 'warn') {
         // YOU WARNED HER of a thing closing on her that she could not yet see. An input like
         // any other, replayed by the threat's id — the same threat is rebuilt deterministically

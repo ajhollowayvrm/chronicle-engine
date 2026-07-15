@@ -171,6 +171,17 @@ function doVisit() {
   render();
 }
 
+// YOU REACH INTO THE WORLD and leave a thing in her hand. You choose the SHAPE; the world
+// names it and every number falls out of the shape, so only the shape is journalled. Also an
+// input, also replayed from day one — the identical object mints every time.
+function doGift(shape) {
+  sim.gift(shape);
+  journal.entries.push({ elapsed, type: 'gift', shape });
+  save(journal, store);
+  tellTheServer(journal);
+  render();
+}
+
 // YOU WARN HER of a thing closing on her that she cannot see. An input like any other. It
 // lands on her Faith inside the engine — a woman who has stopped believing cannot make out
 // what you are trying to tell her — so the button does not promise it will work.
@@ -220,6 +231,7 @@ function render() {
   renderChanged(s);
   renderBless(s);
   renderVisit(s);
+  renderGift(s);
   renderCommune(s);
   renderHunt(s);
   renderStats(s);
@@ -605,6 +617,41 @@ function renderVisit(s) {
 
   if (!can.ok) row.append(el('span', 'gift-shut', can.why));
   else if (s.visits) row.append(el('span', 'moment', `she has seen you ${s.visits === 1 ? 'once' : `${s.visits} times`}. she has told no one.`));
+  host.append(row);
+}
+
+// ══════════════════════════════════════════════════════════════════════════ THE GIFT
+// Rarest of all — you reach in and leave a thing in her hand. The panel only appears when
+// the engine says she could receive it. You pick the KIND; you never set a number. When it
+// cannot be done, the reason is a sentence about the relationship, never a greyed-out button.
+function renderGift(s) {
+  const host = $('gift');
+  host.replaceChildren();
+  if (!s.alive) return;
+
+  const can = sim.canGift();
+  const row = el('div', `gift visit-gift ${can.ok ? '' : 'shut'}`);
+
+  row.append(el('span', 'gift-what',
+    'Reach into the world and leave a thing in her hand that was not there before. You choose what kind of thing; the world it grows in names it and decides its worth. It is the best of its kind, blessed from the first, and hers — she will never sell it, though force can still take it.'));
+
+  if (can.ok) {
+    // one button per shape. she carries one of each, so a gift of a shape she already has
+    // replaces it. the label is the world-word for the thing, not a stat.
+    const pick = el('div', 'gift-shapes');
+    for (const [key, S] of Object.entries(SHAPES)) {
+      const b = el('button', 'gift-do', `Give her ${S.plural ? '' : 'a '}${S.noun}`);
+      b.addEventListener('click', () => doGift(key));
+      pick.append(b);
+    }
+    row.append(pick);
+  } else {
+    row.append(el('span', 'gift-cost',
+      'The rarest reach there is. She must believe in you completely, you must have been real to her once, and you must have turned up for her again and again.'));
+    row.append(el('span', 'gift-shut', can.why));
+  }
+
+  if (s.gifts) row.append(el('span', 'moment', `you have reached in ${s.gifts === 1 ? 'once' : `${s.gifts} times`}. she carries what you made, and tells no one where it came from.`));
   host.append(row);
 }
 

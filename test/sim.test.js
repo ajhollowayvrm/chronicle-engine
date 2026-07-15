@@ -432,6 +432,45 @@ test('the visit is the most-gated thing in the game, and it leaves a mark that n
   assert.ok(s.state.marks.some((m) => m.key === 'seen_you'), 'being seen wore off, and it must not');
 });
 
+test('the gift reaches into the world, gated like the visit, and it is hers', () => {
+  const s = new Sim({ seed: 7, dials: { reckless: 20 } });
+  s.run(40);
+  assert.ok(s.state.alive, 'the setup needs a living woman');
+
+  // same three gates as the visit: belief, a prior blessing, and turning up again and again
+  s.state.stat.faith = 20;
+  s.state.blessings = 0;
+  s.state.answered = 0;
+  assert.strictEqual(s.canGift().ok, false, 'she received a made thing having never felt you were real');
+  s.state.blessings = 1;
+  assert.strictEqual(s.canGift().ok, false, 'she received a made thing without your ever turning up');
+  s.state.answered = 3;
+  s.state.stat.faith = COMMUNE_FAITH;
+  assert.strictEqual(s.canGift().ok, false, 'she took a gift on thin faith');
+  s.state.stat.faith = 20;
+  assert.ok(s.canGift().ok, 'a devoted relationship could not earn a gift');
+
+  // IT COSTS HER NOTHING — like every blessing now — and it is the best of its kind, blessed,
+  // fitted to her hand, and unmistakably hers.
+  const loud = s.state.attention;
+  const before = s.state.kit.length;
+  const r = s.gift('blade');
+  assert.ok(r.gifted, 'the gift did not happen');
+  assert.strictEqual(s.state.attention, loud, 'the gift must not cost her attention');
+  const made = s.state.kit.find((i) => i.kept);
+  assert.ok(made && made.blessed, 'the made thing is not blessed');
+  assert.strictEqual(made.given_by, 'you', 'the made thing does not know who made it');
+  assert.strictEqual(made.only, null, 'a gift must not be locked to a calling');
+  assert.deepStrictEqual(made.asks, {}, 'a gift fitted to her hand must not strain her');
+
+  // she will not sell it for a toll, but outright force can still take it, so it stays a
+  // possession — a thing that cannot be lost is not one.
+  assert.ok(made.kept, 'the gift is not marked kept');
+
+  // and it does not come round again tomorrow — the longest silence in the game
+  assert.strictEqual(s.canGift().ok, false, 'she was given a made thing twice inside the cooldown');
+});
+
 test('a life with communion and a visit replays from the journal exactly', () => {
   // Asking her things and going to her are INPUTS. If either fails to replay, the save
   // silently stops reproducing her — the one thing it exists to do.

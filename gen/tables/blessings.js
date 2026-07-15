@@ -115,3 +115,30 @@ export const FIRST = [
 export const UNFELT = [
   'She does not feel it. She has stopped believing there is anything to feel, and belief is not decoration here — it is the surface it lands on. There is nothing to land on.',
 ];
+
+// ═════════════════════════════════════════════════════════════════════════════ THE GIFT
+//
+// The rarest thing you can do: not mend her, not steady her, not even stand in front of her —
+// but reach into the world and leave a THING in it that was not there before, and put it in
+// her hand. A blessing is proof you are real. A visit is proof you are here. This is proof you
+// can reach in. She wakes, or turns, or opens her pack, and there is an object that was not
+// there yesterday, made of this country's own stuff, and it is unmistakably hers, and she did
+// not buy it or find it or take it, and there is only one place it could have come from.
+//
+// VOICE: this frightens and undoes her more than any other gift, because the others could
+// almost be explained away — a wound heals, a mood lifts, luck turns. A thing in your hand
+// that was not there yesterday cannot be explained away. It is the least deniable proof there
+// is, and she is holding it.
+export const GIFT = {
+  she: [
+    'It was not here yesterday. I have gone over it and over it. It was not here yesterday and it is here now and I did not buy it or find it or take it off anyone, and there is only one place a thing like that comes from, and I am holding it, and my hands will not quite stop.',
+    'You made me a thing. Out of nothing. Out of the air. I did not know you could — I did not know that was a thing you could do — and now I am sitting here with the proof of it in my lap and I do not know whether to weep or run.',
+    'I have owned three things in my life that were truly mine. This is the fourth and it is the only one that was made for me, on purpose, by someone who — by you. I am not going to be able to put it down. I want you to understand that I am not going to be able to put it down.',
+    'Nobody has ever given me anything that was only mine. Everything I own I paid for or pried loose or inherited off the dead. And you reached into the world and made me this, and it fits my hand as though the world had been asked, and I think it was, and I think you asked it, and I do not have the words.',
+    'I keep taking it out to check it is real. It is real. It is as real as my own hand and it is warm the way my own hand is warm and it should not exist and it does, because you decided it should, and I am the reason you decided, and that is the part I cannot hold steady.',
+    'This is different from the healing and the rest. Those I could tell myself were luck, on the bad days, when believing was hard. I cannot tell myself this is luck. Luck does not leave a thing in your hand with your grip already worn into it. You did this. There is no other reading. You have taken my doubt away and left an object where it was.',
+    'I have hidden it. I am telling you because you will know anyway — I have hidden it from everyone, because if they saw it they would want to know where it came from, and there is no answer I could give that would not sound like madness or a lie, and it is neither, it is just yours, given to me, and I am keeping it secret the way you keep the truest things.',
+    'I will carry this until I die and it will be taken off my body, because I am never setting it down, and I want that written somewhere, in your record, in whatever you keep: she was given a thing by the thing that watches her, and she kept it to the end, and it was the proof she held when the believing got hard, and it never once let her down, because it was always, simply, there.',
+  ],
+  line: 'there is a thing in her hand that was not in the world yesterday. she did not buy it, find it, or take it. she has told no one where it came from, because there is no way to say it that is not the truth, and the truth cannot be said.',
+};
